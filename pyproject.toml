@@ -7,6 +7,7 @@ authors = ["owickstrom <oskar@wickstrom.tech>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 selenium = "^3.141.0"
+click = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 

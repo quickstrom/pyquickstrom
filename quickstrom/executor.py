@@ -1,10 +1,12 @@
 import io
 import subprocess
 import json
+import logging
 
 class Check():
 
     def __init__(self, module: str):
+        self.log = logging.getLogger('quickstrom.executor')
         self.module = module
 
     def execute(self):
@@ -14,32 +16,37 @@ class Check():
                 def receive():
                     if p.poll() is None:
                         msg = json.loads(p.stdout.readline())
-                        #print("Received", msg)
+                        self.log.debug("Received %s", msg)
                         return msg
                     else:
-                        print("Done, can't receive.")
+                        raise "Done, can't receive."
 
                 def send(msg):
-                    #print("Sending", msg)
+                    self.log.debug("Sending %s", msg)
                     if p.poll() is None:
                         p.stdin.write(json.dumps(msg) + '\n')
                     else:
-                        print("Done, can't send.")
+                        raise "Done, can't send."
+
+                def query(deps):
+                    return { 'foo': [{ 'disabled': False }], 'bar': [{ 'disabled': False }], 'button': [{ 'ref': 'btn', 'disabled': False }] }
 
                 def run_sessions():
                     while True:
                         msg = receive()
                         if msg['tag'] == 'Start':
                             send({ 'tag': 'Event', 'contents': [{ 'tag': 'Loaded' }, { 'foo': [{ 'disabled': False }], 'bar': [{ 'disabled': False }], 'button': [{ 'ref': 'btn', 'disabled': False }] }] })
-                            await_session_commands()
+                            await_session_commands(msg['dependencies'])
                         elif msg['tag'] == 'Done':
                             return msg['results']
 
-                def await_session_commands():
+                def await_session_commands(deps):
+                    self.log.info("Dependencies: %s", deps)
                     while True:
                         msg = receive()
                         if msg['tag'] == 'RequestAction':
-                            send({ 'tag': 'Performed', 'contents': { 'foo': [{ 'disabled': False }], 'bar': [{ 'disabled': False }], 'button': [{ 'ref': 'btn', 'disabled': False }] } })
+                            state = query(deps)
+                            send({ 'tag': 'Performed', 'contents': state })
                         elif msg['tag'] == 'End':
                             return
 
