@@ -1,7 +1,6 @@
-
 let disable! = click!(`button`);
 
-let active = not (`foo`.disabled && `bar`.disabled);
+let active = not (`[name=foo]`.disabled || `[name=bar]`.disabled);
 
 let prop = active && next (not active);
 
