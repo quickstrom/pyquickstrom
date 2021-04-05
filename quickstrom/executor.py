@@ -138,7 +138,7 @@ class Check():
 
     def launch_specstrom(self, ilog):
         includes = list(map(lambda i: "-I" + i, self.include_paths))
-        cmd = ["specstrom", "check", self.module] + includes
+        cmd = ["specstrom", "check", self.module] + includes + ["+RTS", "-p"]
         self.log.debug("Invoking Specstrom with: %s", " ".join(cmd))
         return subprocess.Popen(
             cmd,
