@@ -38,9 +38,8 @@ class Check():
                         return None
                     else:
                         try:
-                            msg = json.loads(line)
-                            self.log.info("Received %s", msg)
-                            return msg
+                            self.log.debug("Received JSON: %s", line)
+                            return json.loads(line)
                         except json.JSONDecodeError as err:
                             raise Exception(
                                 f"Can't decode line '{line}', {err}")
@@ -48,7 +47,6 @@ class Check():
                 def send(msg):
                     if p.poll() is None:
                         encoded = json.dumps(msg)
-                        self.log.info("Sending %s", msg)
                         self.log.debug("Sending JSON: %s", encoded)
                         p.stdin.write(encoded + '\n')
                     else:
@@ -84,7 +82,6 @@ class Check():
                             element_state = get_element_state(schema, element)
                             element_states.append(element_state)
                         state[selector] = element_states
-                        self.log.info('%s: %s', selector, element_states)
 
                     return state
 
@@ -96,6 +93,7 @@ class Check():
                             raise SpecstromError(
                                 "Specstrom invocation failed", p.poll(), logs)
                         elif msg['tag'] == 'Start':
+                            self.log.info("Starting session")
                             chrome_options = Options()
                             chrome_options.add_argument("--headless")
                             driver = webdriver.Chrome(options=chrome_options)
