@@ -1,7 +1,9 @@
-let disable! = click!(`button`);
+import quickstrom;
 
-let active = not (`[name=foo]`.disabled || `[name=bar]`.disabled);
+action disable! = click!(`button`);
 
-let prop = active && next (not active);
+let active = `[name=foo]`.enabled || `[name=bar]`.enabled;
 
-check prop with disable!;
+let prop = active && next (not active) && next (next active);
+
+check prop with disable! when loaded?;

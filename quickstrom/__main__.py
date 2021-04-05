@@ -10,9 +10,10 @@ def cli(log_level):
 @click.command()
 @click.argument('module')
 @click.argument('origin')
-def check(module, origin):
+@click.option('-I', '--include', multiple=True, help='include a path in the Specstrom module search paths')
+def check(module, origin, include):
     """Checks the configured properties in the given module."""
-    executor.Check(module, origin).execute()
+    executor.Check(module, origin, include).execute()
 
 cli.add_command(check)
 

@@ -15,7 +15,7 @@
         const disable = document.querySelector("#disable");
         disable.addEventListener("click", () => {
             inputs.forEach(i => {
-                i.disabled = true;
+                i.disabled = !i.disabled;
             });
         });
     </script>
