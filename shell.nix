@@ -5,7 +5,7 @@ let
   # specstrom = (import (fetchTarball
   #   "https://github.com/quickstrom/specstrom/archive/15cc4c145319d9770e797e9b1afa8ac10a73fa85.tar.gz")
   #   { inherit pkgs; }).specstrom;
-  specstrom = pkgs.haskell.lib.enableExecutableProfiling (import ../../specstrom { inherit pkgs; }).specstrom;
+  specstrom = (import ../../specstrom { inherit pkgs; enableProfiling = true; }).specstrom;
 
   wd-chrome = pkgs.writeShellScriptBin "quickstrom-wd-chrome" ''
     docker run --rm -d \

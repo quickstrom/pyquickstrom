@@ -1,11 +1,13 @@
 import quickstrom;
 
-action disable! = click!(`button`);
+action ~disable! = click!(`button`);
 
-let disabled = not (`[name=foo]`.enabled || `[name=bar]`.enabled);
+let ~disabled = not (`[name=foo]`.enabled || `[name=bar]`.enabled);
 
-let enabled = `[name=foo]`.enabled && `[name=bar]`.enabled;
+let ~enabled = `[name=foo]`.enabled && `[name=bar]`.enabled;
 
-let prop = always (enabled || disabled);
+let always'(~p) = always {100} p;
+
+let ~prop = always'(enabled || disabled);
 
 check prop with disable! when loaded?;

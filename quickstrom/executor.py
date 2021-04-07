@@ -3,15 +3,27 @@ import subprocess
 import json
 import logging
 from dataclasses import dataclass
-from typing import List
+from dataclasses_json import dataclass_json
+from typing import List, Dict
 
 from selenium import webdriver
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
+Selector = str
 Url = str
+Schema = Dict[str, object] # mypy doesn't support recursive types :(
 
+@dataclass
+@dataclass_json
+class Start():
+    dependencies: Dict[Selector, Schema]
+
+@dataclass
+@dataclass_json
+class End(): pass
 
 @dataclass
 class SpecstromError(Exception):
@@ -106,7 +118,7 @@ class Check():
                         elif msg['tag'] == 'Done':
                             return msg['results']
 
-                def await_session_commands(driver, deps):
+                def await_session_commands(driver: WebDriver, deps):
                     try:
                         while True:
                             msg = receive()
@@ -127,10 +139,22 @@ class Check():
 
                 try:
                     results = run_sessions()
-                    print("Results:")
                     for result in results:
-                        print(
-                            f" - {result['valid']['tag']} {result['valid']['contents']}")
+                        print(f"Result: {result['valid']['tag']} {result['valid']['contents']}")
+                        print("Trace:")
+                        trace = result['trace']
+                        for i, element in zip(range(1, len(trace) + 1), trace):
+                            if element['tag'] == 'TraceAction':
+                                for action in element['contents']:
+                                    label = "Event" if action['isEvent'] else "Action"
+                                    print(f"  {i}. {label}: {action['id']}({', '.join(action['args'])})")
+                            else:
+                                state = element['contents']
+                                print(f"  {i}. State")
+                                for selector, elements in state.items():
+                                    print(f"    `{selector}`")
+                                    for element in elements:
+                                        print(f"      - {element}")
                 except SpecstromError as err:
                     print(err)
                     print("\n" + "\n".join(err.logs))
