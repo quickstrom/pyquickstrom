@@ -3,27 +3,17 @@ import subprocess
 import json
 import logging
 from dataclasses import dataclass
-from dataclasses_json import dataclass_json
 from typing import List, Dict
-
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
-Selector = str
+from quickstrom.printer import print_results
+from quickstrom.protocol import *
+
 Url = str
-Schema = Dict[str, object] # mypy doesn't support recursive types :(
-
-@dataclass
-@dataclass_json
-class Start():
-    dependencies: Dict[Selector, Schema]
-
-@dataclass
-@dataclass_json
-class End(): pass
 
 @dataclass
 class SpecstromError(Exception):
@@ -51,14 +41,14 @@ class Check():
                     else:
                         try:
                             self.log.debug("Received JSON: %s", line)
-                            return json.loads(line)
+                            return decode_protocol_message(line)
                         except json.JSONDecodeError as err:
                             raise Exception(
                                 f"Can't decode line '{line}', {err}")
 
                 def send(msg):
                     if p.poll() is None:
-                        encoded = json.dumps(msg)
+                        encoded = encode_protocol_message(msg)
                         self.log.debug("Sending JSON: %s", encoded)
                         p.stdin.write(encoded + '\n')
                     else:
@@ -77,8 +67,8 @@ class Check():
                     return element_state
 
                 def perform_action(driver, action):
-                    if action['id'] == 'click':
-                        id = action['args'][0]
+                    if action.id == 'click':
+                        id = action.args[0]
                         element = WebElement(driver, id)
                         element.click()
                     else:
@@ -104,19 +94,19 @@ class Check():
                             logs = ilog.readlines()
                             raise SpecstromError(
                                 "Specstrom invocation failed", p.poll(), logs)
-                        elif msg['tag'] == 'Start':
+                        elif isinstance(msg, Start):
                             self.log.info("Starting session")
                             chrome_options = Options()
                             chrome_options.add_argument("--headless")
                             driver = webdriver.Chrome(options=chrome_options)
                             driver.get(self.origin)
-                            deps = msg['dependencies']
-                            state = query(driver, deps)
-                            event = {'id': 'loaded', 'isEvent': True, 'args': [], 'timeout': None }
+                            state = query(driver, msg.dependencies)
+                            event = {'id': 'loaded', 'isEvent': True,
+                                     'args': [], 'timeout': None}
                             send({'tag': 'Event', 'contents': [event, state]})
-                            await_session_commands(driver, deps)
-                        elif msg['tag'] == 'Done':
-                            return msg['results']
+                            await_session_commands(driver, msg.dependencies)
+                        elif isinstance(msg, Done):
+                            return msg.results
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
@@ -125,11 +115,11 @@ class Check():
                             if not msg:
                                 raise Exception(
                                     "No more messages from Specstrom, expected RequestAction or End.")
-                            elif msg['tag'] == 'RequestAction':
-                                perform_action(driver, msg['action'])
+                            elif isinstance(msg, RequestAction):
+                                perform_action(driver, msg.action)
                                 state = query(driver, deps)
                                 send({'tag': 'Performed', 'contents': state})
-                            elif msg['tag'] == 'End':
+                            elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
                             else:
@@ -139,22 +129,7 @@ class Check():
 
                 try:
                     results = run_sessions()
-                    for result in results:
-                        print(f"Result: {result['valid']['tag']} {result['valid']['contents']}")
-                        print("Trace:")
-                        trace = result['trace']
-                        for i, element in zip(range(1, len(trace) + 1), trace):
-                            if element['tag'] == 'TraceAction':
-                                for action in element['contents']:
-                                    label = "Event" if action['isEvent'] else "Action"
-                                    print(f"  {i}. {label}: {action['id']}({', '.join(action['args'])})")
-                            else:
-                                state = element['contents']
-                                print(f"  {i}. State")
-                                for selector, elements in state.items():
-                                    print(f"    `{selector}`")
-                                    for element in elements:
-                                        print(f"      - {element}")
+                    print_results(results)
                 except SpecstromError as err:
                     print(err)
                     print("\n" + "\n".join(err.logs))
