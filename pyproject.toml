@@ -8,6 +8,7 @@ authors = ["owickstrom <oskar@wickstrom.tech>"]
 python = "^3.8"
 selenium = "^3.141.0"
 click = "^7.1.2"
+jsonlines = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.6"

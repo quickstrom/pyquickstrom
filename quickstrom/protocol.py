@@ -1,4 +1,5 @@
 import json
+import jsonlines
 from typing import List, Dict, Optional, Literal, Union
 from dataclasses import dataclass
 
@@ -67,12 +68,13 @@ class RequestAction():
     action: Action
 
 
-def encode_protocol_message(obj):
-    return json.dumps(obj, cls=_ProtocolEncoder)
+def message_writer(fp):
+    return jsonlines.Writer(fp, dumps=lambda obj: json.dumps(obj, cls=_ProtocolEncoder), flush=True)
 
 
-def decode_protocol_message(s):
-    return json.loads(s, object_hook=_decode_hook)
+def message_reader(fp):
+    def loads(s): return json.loads(s, object_hook=_decode_hook)
+    return jsonlines.Reader(fp, loads=loads)
 
 
 class _ProtocolEncoder(json.JSONEncoder):

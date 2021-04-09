@@ -1,6 +1,7 @@
 import io
 import subprocess
 import json
+import jsonlines
 import logging
 from dataclasses import dataclass
 from typing import List, Dict
@@ -19,7 +20,7 @@ Url = str
 class SpecstromError(Exception):
     message: str
     exit_code: int
-    logs: List[str]
+    log_file: str
 
     def __str__(self): return f"{self.message}, exit code {self.exit_code}"
 
@@ -34,33 +35,53 @@ class Check():
     def execute(self):
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
+                input_messages = message_reader(p.stdout)
+                output_messages = message_writer(p.stdin)
                 def receive():
-                    line = p.stdout.readline().strip()
-                    if line == '' and p.poll():
-                        return None
+                    msg = input_messages.read()
+                    self.log.debug(f"Got message: {msg}")
+                    exit_code = p.poll()
+                    if msg is None and exit_code is not None:
+                        if exit_code == 0:
+                            return None
+                        else:
+                            raise SpecstromError(
+                                "Specstrom invocation failed", exit_code, ilog.name)
                     else:
-                        try:
-                            self.log.debug("Received JSON: %s", line)
-                            return decode_protocol_message(line)
-                        except json.JSONDecodeError as err:
-                            raise Exception(
-                                f"Can't decode line '{line}', {err}")
+                        self.log.debug("Received %s", msg)
+                        return msg
 
                 def send(msg):
                     if p.poll() is None:
-                        encoded = encode_protocol_message(msg)
-                        self.log.debug("Sending JSON: %s", encoded)
-                        p.stdin.write(encoded + '\n')
+                        self.log.debug("Sending %s", msg)
+                        output_messages.write(msg)
                     else:
                         raise Exception("Done, can't send.")
 
-                def get_element_state(schema, element):
+                def get_element_css_values(element, schema):
+                    css_values = {}
+                    for name, schema in schema.items():
+                        css_values[name] = element.value_of_css_property(name)
+                    return css_values
+
+                def get_element_state(driver, schema, element):
                     element_state = {}
                     for key, sub_schema in schema.items():
                         if key == 'ref':
                             element_state[key] = element.id
                         elif key == 'enabled':
                             element_state[key] = element.is_enabled()
+                        elif key == 'visible':
+                            element_state[key] = element.is_displayed()
+                        elif key == 'active':
+                            active = driver.switch_to.active_element
+                            element_state[key] = element.id == active.id if active else False
+                        elif key == 'textContent':
+                            element_state[key] = element.get_property('textContent')
+                        elif key == 'value':
+                            element_state[key] = element.get_property('value')
+                        elif key == 'css':
+                            element_state[key] = get_element_css_values(element, sub_schema)
                         else:
                             raise Exception(
                                 f"Unsupported element state: {key}")
@@ -71,6 +92,14 @@ class Check():
                         id = action.args[0]
                         element = WebElement(driver, id)
                         element.click()
+                    elif action.id == 'focus':
+                        id = action.args[0]
+                        element = WebElement(driver, id)
+                        element.send_keys("")
+                    elif action.id == 'keyPress':
+                        char = action.args[0]
+                        element = driver.switch_to.active_element
+                        element.send_keys(char)
                     else:
                         raise Exception(f'Unsupported action: {action}')
 
@@ -81,7 +110,7 @@ class Check():
                             selector)
                         element_states = []
                         for element in elements:
-                            element_state = get_element_state(schema, element)
+                            element_state = get_element_state(driver, schema, element)
                             element_states.append(element_state)
                         state[selector] = element_states
 
@@ -90,11 +119,8 @@ class Check():
                 def run_sessions():
                     while True:
                         msg = receive()
-                        if msg is None:
-                            logs = ilog.readlines()
-                            raise SpecstromError(
-                                "Specstrom invocation failed", p.poll(), logs)
-                        elif isinstance(msg, Start):
+                        assert msg is not None
+                        if isinstance(msg, Start):
                             self.log.info("Starting session")
                             chrome_options = Options()
                             chrome_options.add_argument("--headless")
@@ -132,7 +158,7 @@ class Check():
                     print_results(results)
                 except SpecstromError as err:
                     print(err)
-                    print("\n" + "\n".join(err.logs))
+                    print(f"See interpreter log file for details: {err.log_file}")
                     exit(1)
 
     def launch_specstrom(self, ilog):

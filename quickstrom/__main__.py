@@ -4,10 +4,16 @@ from typing import List
 
 import quickstrom.executor as executor
 
+class NoWebdriverFilter(logging.Filter):
+    def filter(self, record):
+        return not record.name.startswith('selenium.webdriver.remote')
+
 @click.group()
 @click.option('--log-level', default='WARN', help='log level (DEBUG|INFO|WARN|EROR)')
 def cli(log_level):
     logging.basicConfig(level=getattr(logging, log_level.upper()))
+    logging.getLogger("urllib3").setLevel(logging.INFO)
+    logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
 
 @click.command()
 @click.argument('module')
