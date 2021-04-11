@@ -126,16 +126,17 @@ let ~addNew =
       | case "All". lastItem ==' pendingText
       | case "Active". lastItem ==' pendingText
       | case "Completed". unchanged(items)
+      | case other. false
     })
     ;
 
 let ~checkOne =
   unchanged(pendingText)
     && unchanged(selectedFilter)
-    && (selectedFilter != "Completed")
     && (match selectedFilter {
       | case "All". unchanged(numItems) && (numChecked <' numChecked)
       | case "Active". (numItems >' numItems) && (numItemsLeft >' numItemsLeft)
+      | case other. false
     });
 
 let ~uncheckOne =
@@ -144,28 +145,34 @@ let ~uncheckOne =
     && (match selectedFilter {
       | case "All". unchanged(numItems) && numChecked >' numChecked
       | case "Completed". numItems >' numItems && numItemsLeft <' numItemsLeft
-      | case "Active". false
+      | case other. false
     });
 
 let ~delete =
   unchanged(pendingText)
     && (selectedFilter != null)
-//    && numItems != 0
-//    && (numItems == 1) ==>
-//      (if selectedFilter == "All" { 
-//        // removing the last todo item causes the filters to be hidden
-//        nextT (numItems == 0 && selectedFilter == null) 
-//      } else {
-//        // in other filters, there *might* be other todo items that are just not visible
-//        nextT (numItems == 0) && unchanged(selectedFilter)
-//      })
-//    && ((numItems > 1) ==> 
-//      (unchanged(selectedFilter)
-//        && (numItems -=' 1)
-//        && ((selectedFilter == "Active" && numItemsLeft -=' 1)
-//         || (selectedFilter == "Completed" ==> unchanged(numItemsLeft))
-//           )
-//        ))
+    && (match numItems {
+      | case 0 { false }
+      | case 1 {
+        match selectedFilter {
+          | case "All" { 
+            // removing the last todo item causes the filters to be hidden
+            nextT (numItems == 0 && selectedFilter == null) 
+          }
+          | case other {
+            // in other filters, there *might* be other todo items that are just not visible
+            nextT (numItems == 0) && unchanged(selectedFilter)
+          }
+        }
+      }
+      | case other {
+        unchanged(selectedFilter)
+          && (numItems -=' 1)
+          && ((selectedFilter == "Active" && numItemsLeft -=' 1)
+          || (selectedFilter == "Completed" ==> unchanged(numItemsLeft))
+            )
+      }
+    })
   ;
 
 let ~toggleAll =
