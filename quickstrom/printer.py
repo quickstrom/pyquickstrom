@@ -3,8 +3,6 @@ from quickstrom.protocol import *
 
 def print_results(results: List[Result]):
     for result in results:
-        print(
-            f"Result: {result.valid.certainty} {result.valid.value}")
         print("Trace:")
         for i, element in zip(range(1, len(result.trace) + 1), result.trace):
             if isinstance(element, TraceActions):
@@ -18,3 +16,5 @@ def print_results(results: List[Result]):
                     print(f"    `{selector}`")
                     for state_element in elements:
                         print(f"      - {state_element}")
+        print(
+            f"Result: {result.valid.certainty} {result.valid.value}")

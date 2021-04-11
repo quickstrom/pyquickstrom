@@ -39,7 +39,6 @@ class Check():
                 output_messages = message_writer(p.stdin)
                 def receive():
                     msg = input_messages.read()
-                    self.log.debug(f"Got message: {msg}")
                     exit_code = p.poll()
                     if msg is None and exit_code is not None:
                         if exit_code == 0:
@@ -76,12 +75,14 @@ class Check():
                         elif key == 'active':
                             active = driver.switch_to.active_element
                             element_state[key] = element.id == active.id if active else False
-                        elif key == 'textContent':
-                            element_state[key] = element.get_property('textContent')
                         elif key == 'value':
                             element_state[key] = element.get_property('value')
                         elif key == 'css':
                             element_state[key] = get_element_css_values(element, sub_schema)
+                        elif key == 'textContent':
+                            element_state[key] = element.get_property('textContent')
+                        elif key == 'checked':
+                            element_state[key] = element.get_property('checked')
                         else:
                             raise Exception(
                                 f"Unsupported element state: {key}")
@@ -136,12 +137,15 @@ class Check():
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
+                        actionCount = 0
                         while True:
                             msg = receive()
                             if not msg:
                                 raise Exception(
                                     "No more messages from Specstrom, expected RequestAction or End.")
                             elif isinstance(msg, RequestAction):
+                                actionCount += 1
+                                self.log.info(f"Performing action #{actionCount}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
                                 send({'tag': 'Performed', 'contents': state})
