@@ -31,38 +31,12 @@ syntax _=='_ 8;
 let ~a ==' b = nextT (a == b);
 
 //-------------------------------------------------
-// Actions
-//-------------------------------------------------
-
-action ~selectOtherFilter! = click!(`.todoapp .filters a:not(.selected)`)
-  // weighted 5.0
-  ;
-
-action ~selectSameFilter! = click!(`.todoapp .filters a.selected`);
-
-action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`);
-
-action ~deleteTodo! = click!(`.todoapp .destroy`);
-
-action ~focusInput! = focus!(`.todoapp .new-todo`)
-  // weighted 5.0
-  ;
-
-// action ~clickAnyLink! = click!(`.todoapp a`)
-  // weighted 5.0
-// ;
-
-action ~createTodo! = [keyPress!(keys.return), keyPress!("a")] when first(for e in `.todoapp .new-todo`. e.active) ?? false
-  // weighted 5.0
-  ;
-
-//-------------------------------------------------
 // DOM state
 //-------------------------------------------------
 
 let ~selectedFilter = 
   let element = first(`.todoapp .filters a.selected`);
-  if element != null { element.textContent };
+  if element != null && element.visible { element.textContent };
 
 let ~items =
   for [li, label] in zip(`.todo-list li`, (for label in `.todo-list li label`. label.textContent)) {
@@ -90,42 +64,77 @@ let ~todoCount =
 let ~availableFilters = for f in `.todoapp .filters a`. f.textContent;
 
 //-------------------------------------------------
+// Actions
+//-------------------------------------------------
+
+action ~selectOtherFilter! = click!(`.todoapp .filters a:not(.selected)`)
+  // weighted 5.0
+  ;
+
+action ~selectSameFilter! = click!(`.todoapp .filters a.selected`);
+
+action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`);
+
+action ~deleteTodo! = click!(`.todoapp .destroy`);
+
+// action ~clickAnyLink! = click!(`.todoapp a`)
+  // weighted 5.0
+// ;
+
+action ~focusInput! = focus!(`.todoapp .new-todo`)
+  // weighted 5.0
+  ;
+
+action ~enterPendingText! = [keyPress!("a"), keyPress!("b")] when `.todoapp .new-todo`.active && pendingText == ""
+  // weighted 5.0
+  ;
+
+action ~createTodo! = [keyPress!(keys.return)] when pendingText != ""
+  // weighted 5.0
+  ;
+
+//-------------------------------------------------
 // States & Transitions
 //-------------------------------------------------
 
 let ~initial =
-    (selectedFilter == null || selectedFilter == "All")
+    selectedFilter == null
       && numItems == 0
       && pendingText == "";
 
 let ~enterText =
-    (not unchanged(pendingText))
-      && unchanged(items)
-      && unchanged(selectedFilter)
-      ;
+  (not unchanged(pendingText))
+    && unchanged(items)
+    && unchanged(selectedFilter);
 
 let ~changeFilter =
   (not unchanged(selectedFilter))
-  // going to a different filter should not change the pending todo item
+  // Going to a different filter should not change the pending todo item.
   && unchanged(pendingText)
-  && match selectedFilter {
-    // adding the first todo item switches to the All filter
-    | case null { selectedFilter ==' "All" }
-    // going from "All" to some filter (including "All") cannot increase number of items
+  && (match selectedFilter {
+    // Can't change filter when the filters are hidden.
+    | case null { false }
+    // Going from "All" to another filter cannot increase number of items.
     | case "All" { numItems <=' numItems }
-    // going to "Active" should only show as many items as are considered left to do
-    | case other { true }
-  }
-  ;
+    | case "Active" { selectedFilter ==' "All" || selectedFilter ==' "Completed" }
+    | case "Completed" { selectedFilter ==' "All" || selectedFilter ==' "Active" }
+  });
 
 let ~addNew =
-  nextT (pendingText == "")
+  pendingText ==' ""
   && nextT (selectedFilter != null)
   && (match selectedFilter {
-    | case "All". lastItem ==' pendingText
-    | case "Active". lastItem ==' pendingText
-    | case "Completed". unchanged(items)
-    | case other. false
+    // Adding the first item should enable the last used filter (which we don't know
+    // what it was).
+    | case null { 
+      not (selectedFilter ==' "Completed") ==> lastItem ==' pendingText 
+    }
+    // Both in the "All' and "Active" filters the item should be appended to the
+    // list of items.
+    | case "All" { lastItem ==' pendingText && unchanged(selectedFilter) }
+    | case "Active" { lastItem ==' pendingText && unchanged(selectedFilter) }
+    // In the "Completed" filter we can't see the new item.
+    | case "Completed" { unchanged([items, selectedFilter]) }
   });
 
 let ~checkOne =
@@ -152,16 +161,7 @@ let ~delete =
     && (match numItems {
       | case 0 { false }
       | case 1 {
-        match selectedFilter {
-          | case "All" { 
-            // removing the last todo item causes the filters to be hidden
-            nextT (numItems == 0 && selectedFilter == null) 
-          }
-          | case other {
-            // in other filters, there *might* be other todo items that are just not visible
-            nextT (numItems == 0) && unchanged(selectedFilter)
-          }
-        }
+        numItems ==' 0 && selectedFilter ==' null
       }
       | case other {
         unchanged(selectedFilter)
@@ -175,11 +175,9 @@ let ~delete =
 
 let ~doNothing =
   unchanged([
-    pendingText,
-    availableFilters 
-  ])
-  && (selectedFilter != null) ==> unchanged([
     selectedFilter,
+    pendingText,
+    availableFilters,
     items,
     numUnchecked,
     numChecked,

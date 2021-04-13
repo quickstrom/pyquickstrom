@@ -135,7 +135,7 @@ class Check():
                             driver = webdriver.Chrome(options=chrome_options)
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
-                            #time.sleep(3)
+                            time.sleep(2)
                             state = query(driver, msg.dependencies)
                             event = {'id': 'loaded', 'isEvent': True,
                                      'args': [], 'timeout': None}
@@ -147,7 +147,7 @@ class Check():
                 def await_session_commands(driver: WebDriver, deps):
                     try:
                         actionCount = 0
-                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount}.png")
+                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount:02d}.png")
                         while True:
                             msg = receive()
                             if not msg:
@@ -156,10 +156,10 @@ class Check():
                             elif isinstance(msg, RequestAction):
                                 actionCount += 1
                                 self.log.info(
-                                    f"Performing action #{actionCount}")
+                                    f"Performing action #{actionCount}: {msg.action}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
-                                driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount}.png")
+                                driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount:02d}.png")
                                 send({'tag': 'Performed', 'contents': state})
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
