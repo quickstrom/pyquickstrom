@@ -1,7 +1,6 @@
 // Would be nice to limit the imports as in the comments below.
 // Also they're commented out until we have deduplication of
-// imported definitions.
-
+// imported definitions. 
 // import list; // (zip, mapNotNull, length, first, last);
 // import string; //  (trim, split, parseInt);
 import quickstrom;
@@ -194,14 +193,26 @@ let ~toggleAll =
       | case null { false }
       | case "All" { 
         unchanged(numItems) 
-          // && nextT (numItems == numChecked)
+        && match numUnchecked {
+          // If there are no unchecked (active) items, all checked (completed) items 
+          // are unchecked.
+          | case 0 { 
+            numUnchecked ==' numChecked 
+            // true
+            }
+          // If there are unchecked (active) items, they're checked.
+          | case n { 
+            nextT (numItems == numChecked) 
+            // true
+            }
+        }
       }
       | case "Active" {
         match numUnchecked {
-          // If there are no unchecked (active) items, all checked (completed) items are unchecked
-          // (but we can't see how many there are, just more than 0)
+          // If there are no unchecked (active) items, all checked (completed) items
+          // are unchecked (but we can't see how many there are, just more than 0).
           | case 0 { nextT (numItems > 0) }
-          // If there are unchecked (active) items, they're checked
+          // If there are unchecked (active) items, they're checked.
           | case n { nextT (numItems == 0) }
         }
       }

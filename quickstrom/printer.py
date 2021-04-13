@@ -1,26 +1,25 @@
 from typing import List, cast
 from quickstrom.protocol import *
 from deepdiff import DeepDiff, extract
-from pprint import pprint
 import click
 
 def print_results(results: List[Result]):
     for result in results:
-        print("Trace:")
+        click.echo("Trace:")
         last_state = None
         for i, element in zip(range(1, len(result.trace) + 1), result.trace):
             if isinstance(element, TraceActions):
                 for action in element.actions:
                     label = "Event" if action.isEvent else "Action"
-                    heading = element_heading(f"{i}. {label}:")
-                    print(indent(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})", 1))
+                    heading = f"{i}. {label}:"
+                    click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1))
             elif isinstance(element, TraceState):
-                print(indent(element_heading(f"{i}. State"), 1))
+                click.echo(indent(element_heading(f"{i}. State"), 1))
                 state: State = element.state
                 diff = DeepDiff(last_state, state)
                 print_state_diff(diff, state, indent_level=2)
                 last_state = state
-        print(
+        click.echo(
             f"Result: {result.valid.certainty} {result.valid.value}")
 
 @dataclass
@@ -71,7 +70,7 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int):
         return diffs_by_path[diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
     for sel, elements in state.items():
-        print(indent(selector(f"`{sel}`"), indent_level))
+        click.echo(indent(selector(f"`{sel}`"), indent_level))
         for i, state_element in enumerate(elements):
             element_diff_key = f"root['{sel}'][{i}]"
 
@@ -99,7 +98,7 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int):
                 
 def element_heading(s): return click.style(s, bold=True, underline=True)
 
-def selector(s): return click.style(s, underline=True)
+def selector(s): return click.style(s, bold=True)
 
 def added(s): return click.style(s, fg='green')
 
