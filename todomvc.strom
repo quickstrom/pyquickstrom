@@ -80,9 +80,7 @@ let ~numUnchecked = length(for c in checkboxes. c when not c.checked);
 
 let ~numChecked = length(for c in checkboxes. c when c.checked);
 
-let ~pendingText = 
-  let element = first(`.todoapp .new-todo`);
-  if element != null { element.value } else { "" };
+let ~pendingText = first(for e in `.todoapp .new-todo` { e.value }) ?? "";
 
 let ~todoCount =
     let strong = first(for e in `.todoapp .todo-count strong`. e.textContent);
@@ -123,15 +121,13 @@ let ~changeFilter =
 
 let ~addNew =
   nextT (pendingText == "")
-    && not (nextT (selectedFilter == null))
-
-    && (match selectedFilter {
-      | case "All". lastItem ==' pendingText
-      | case "Active". lastItem ==' pendingText
-      | case "Completed". unchanged(items)
-      | case other. false
-    })
-    ;
+  && nextT (selectedFilter != null)
+  && (match selectedFilter {
+    | case "All". lastItem ==' pendingText
+    | case "Active". lastItem ==' pendingText
+    | case "Completed". unchanged(items)
+    | case other. false
+  });
 
 let ~checkOne =
   unchanged(pendingText)
@@ -196,26 +192,37 @@ let ~toggleAll =
     && unchanged(selectedFilter)
     && (match selectedFilter {
       | case null { false }
-      | case "All" { unchanged(numItems) && nextT (numItems == numChecked) }
-      | case "Active" {
-          // If there are active items, they're checked
-          (numItems > 0 && nextT (numItems == 0))
-          // If there are none, all checked items are unchecked (but we can't see how many
-          // there are, just more than 0)
-          || (numItems == 0 && nextT (numItems > 0))
+      | case "All" { 
+        unchanged(numItems) 
+          // && nextT (numItems == numChecked)
       }
-      | case "Completed" { numItems +=' todoCount }
+      | case "Active" {
+        match numUnchecked {
+          // If there are no unchecked (active) items, all checked (completed) items are unchecked
+          // (but we can't see how many there are, just more than 0)
+          | case 0 { nextT (numItems > 0) }
+          // If there are unchecked (active) items, they're checked
+          | case n { nextT (numItems == 0) }
+        }
+      }
+      | case "Completed" { 
+        match todoCount {
+          | case 0 { numItems ==' 0 }
+          | case n { numItems +=' todoCount }
+        }
+        
+      }
     });
 
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
 
 let ~correctFilterStates =
-  // selectedFilter != null ==>
   match selectedFilter {
-    | case "All"  { todoCount <= numItems }
-    | case "Active"  { true } // todoCount == numUnchecked && numItems == numUnchecked }
-    | case other { true }
+    | case null { true }
+    | case "All"  { todoCount == numUnchecked && todoCount <= numItems }
+    | case "Active"  { numItems == todoCount }
+    | case "Completed" { true }
   };
 
 let ~prop_safety =

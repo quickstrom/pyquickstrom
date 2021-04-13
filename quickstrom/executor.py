@@ -147,6 +147,7 @@ class Check():
                 def await_session_commands(driver: WebDriver, deps):
                     try:
                         actionCount = 0
+                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount}.png")
                         while True:
                             msg = receive()
                             if not msg:
@@ -158,6 +159,7 @@ class Check():
                                     f"Performing action #{actionCount}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
+                                driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount}.png")
                                 send({'tag': 'Performed', 'contents': state})
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")

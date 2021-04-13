@@ -23,39 +23,91 @@ def print_results(results: List[Result]):
         print(
             f"Result: {result.valid.certainty} {result.valid.value}")
 
+@dataclass
+class Diff():
+    def formatted(self): str
+
+@dataclass
+class Added(Diff):
+    value: object
+
+    def formatted(self):
+        return added(repr(self.value))
+
+@dataclass
+class Removed(Diff):
+    value: object
+
+    def formatted(self):
+        return removed(repr(self.value))
+
+@dataclass
+class Modified(Diff):
+    old: object
+    new: object
+
+    def formatted(self):
+        return modified(repr(self.old) + " -> " + repr(self.new))
+
+@dataclass
+class Unmodified(Diff):
+    value: object
+
+    def formatted(self):
+        return unmodified(repr(self.value))
+
 def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int): 
-    colored = {}
+    diffs_by_path: 'Dict[str, Diff]' = {}
     for key, diffs in state_diff.items():
         for path, diff in diffs.items():
             if key == 'values_changed':
-                colored[path] = removed(repr(diff['old_value'])) + " -> " + added(repr(diff['new_value']))
+                diffs_by_path[path] = Modified(diff['old_value'], diff['new_value'])
             if key == 'iterable_item_added':
-                colored[path] = added(f"{repr(diff)}")
+                diffs_by_path[path] = Added(diff)
             if key == 'iterable_item_removed':
-                colored[path] = removed(f"{repr(diff)}")
+                diffs_by_path[path] = Removed(diff)
 
-    def color_value(diff_key, value) -> str:
-        return colored[diff_key] if diff_key in colored else repr(value)
+    def value_diff(diff_path: str, value: object) -> Diff:
+        return diffs_by_path[diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
     for sel, elements in state.items():
         print(indent(selector(f"`{sel}`"), indent_level))
         for i, state_element in enumerate(elements):
             element_diff_key = f"root['{sel}'][{i}]"
-            element_suffix = " (" + color_value(f"{element_diff_key}['ref']", state_element['ref']) + ")" if 'ref' in state_element else ""
-            click.echo(indent(f"- Element{element_suffix}", indent_level+1))
-            for key, value in [(key, value) for key, value in state_element.items() if key != 'ref']:
-                diff_key = f"{element_diff_key}['{key}']"
-                click.echo(indent(f"- {key}: {color_value(diff_key, value)}", indent_level+2))
-                
-def element_heading(s): return click.style(s, bold=True)
 
-def selector(s): return click.style(s, fg='cyan')
+            def element_prefix() -> str:
+                element_diff = value_diff(element_diff_key, state_element)
+                if isinstance(element_diff, Added):
+                    return added("+ Element")
+                elif isinstance(element_diff, Removed):
+                    return removed("- Element")
+                elif isinstance(element_diff, Modified):
+                    return modified("~ Element")
+                else:
+                    return "* Element"
+
+            def element_suffix() -> str:
+                if 'ref' in state_element: 
+                    return " (" + value_diff(element_diff_key + "['ref']", state_element['ref']).formatted() + ")" 
+                else: 
+                    return ""
+
+            click.echo(indent(f"{element_prefix()}{element_suffix()}", indent_level+1))
+            for key, value in [(key, value) for key, value in state_element.items() if key != 'ref']:
+                diff = value_diff(f"{element_diff_key}['{key}']", value)
+                click.echo(indent(f"* {key}: {diff.formatted()}", indent_level+2))
+                
+def element_heading(s): return click.style(s, bold=True, underline=True)
+
+def selector(s): return click.style(s, underline=True)
 
 def added(s): return click.style(s, fg='green')
 
 def removed(s): return click.style(s, fg='red')
 
-def modified(s): return click.style(s, fg='yellow')
+def modified(s): return click.style(s, fg='blue')
+
+def unmodified(s): return click.style(s, dim=True)
 
 def indent(s: str, level: int) -> str:
     return f"{' ' * level * 2}{s}"
