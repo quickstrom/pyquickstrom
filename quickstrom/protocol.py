@@ -10,7 +10,7 @@ Schema = Dict[str, object]
 
 ElementState = Dict[str, object]
 
-State = Dict[Selector, ElementState]
+State = Dict[Selector, List[ElementState]]
 
 
 @dataclass

@@ -3,6 +3,7 @@ import subprocess
 import json
 import jsonlines
 import logging
+import time
 from dataclasses import dataclass
 from typing import List, Dict
 from selenium import webdriver
@@ -15,6 +16,7 @@ from quickstrom.printer import print_results
 from quickstrom.protocol import *
 
 Url = str
+
 
 @dataclass
 class SpecstromError(Exception):
@@ -37,6 +39,7 @@ class Check():
             with self.launch_specstrom(ilog) as p:
                 input_messages = message_reader(p.stdout)
                 output_messages = message_writer(p.stdin)
+
                 def receive():
                     msg = input_messages.read()
                     exit_code = p.poll()
@@ -78,11 +81,14 @@ class Check():
                         elif key == 'value':
                             element_state[key] = element.get_property('value')
                         elif key == 'css':
-                            element_state[key] = get_element_css_values(element, sub_schema)
+                            element_state[key] = get_element_css_values(
+                                element, sub_schema)
                         elif key == 'textContent':
-                            element_state[key] = element.get_property('textContent')
+                            element_state[key] = element.get_property(
+                                'textContent')
                         elif key == 'checked':
-                            element_state[key] = element.get_property('checked')
+                            element_state[key] = element.get_property(
+                                'checked')
                         else:
                             raise Exception(
                                 f"Unsupported element state: {key}")
@@ -111,7 +117,8 @@ class Check():
                             selector)
                         element_states = []
                         for element in elements:
-                            element_state = get_element_state(driver, schema, element)
+                            element_state = get_element_state(
+                                driver, schema, element)
                             element_states.append(element_state)
                         state[selector] = element_states
 
@@ -127,6 +134,8 @@ class Check():
                             chrome_options.add_argument("--headless")
                             driver = webdriver.Chrome(options=chrome_options)
                             driver.get(self.origin)
+                            # horrible hack that should be removed once we have events!
+                            #time.sleep(3)
                             state = query(driver, msg.dependencies)
                             event = {'id': 'loaded', 'isEvent': True,
                                      'args': [], 'timeout': None}
@@ -145,7 +154,8 @@ class Check():
                                     "No more messages from Specstrom, expected RequestAction or End.")
                             elif isinstance(msg, RequestAction):
                                 actionCount += 1
-                                self.log.info(f"Performing action #{actionCount}")
+                                self.log.info(
+                                    f"Performing action #{actionCount}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
                                 send({'tag': 'Performed', 'contents': state})
@@ -162,7 +172,8 @@ class Check():
                     print_results(results)
                 except SpecstromError as err:
                     print(err)
-                    print(f"See interpreter log file for details: {err.log_file}")
+                    print(
+                        f"See interpreter log file for details: {err.log_file}")
                     exit(1)
 
     def launch_specstrom(self, ilog):

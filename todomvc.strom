@@ -11,22 +11,22 @@ import quickstrom;
 //-------------------------------------------------
 
 syntax _>'_ 8;
-let ~x >' n = freeze x' = x. nextT (x' > n);
+let ~x >' n = nextT (x > n);
 
 syntax _>='_ 8;
-let ~x >=' n = freeze x' = x. nextT (x' >= n);
+let ~x >=' n = nextT (x >= n);
 
 syntax _<'_ 8;
-let ~x <' n = freeze x' = x. nextT (x' > n);
+let ~x <' n = nextT (x > n);
 
 syntax _<='_ 8;
-let ~x >=' n = freeze x' = x. nextT (x' >= n);
+let ~x <=' n = nextT (x <= n);
 
 syntax _+='_ 8;
-let ~x +=' n = freeze x' = x. nextT (x' == x + n);
+let ~x +=' n = freeze x' = x. nextT (x == x' + n);
 
 syntax _-='_ 8;
-let ~x -=' n = freeze x' = x. nextT (x' == x - n);
+let ~x -=' n = freeze x' = x. nextT (x == x' - n);
 
 syntax _=='_ 8;
 let ~a ==' b = nextT (a == b);
@@ -53,9 +53,13 @@ action ~focusInput! = focus!(`.todoapp .new-todo`)
   // weighted 5.0
 // ;
 
-action ~createTodo! = [keyPress!(keys.return), keyPress!("a")] when first(`.todoapp .new-todo`).active
+action ~createTodo! = [keyPress!(keys.return), keyPress!("a")] when first(for e in `.todoapp .new-todo`. e.active) ?? false
   // weighted 5.0
   ;
+
+//-------------------------------------------------
+// DOM state
+//-------------------------------------------------
 
 let ~selectedFilter = 
   let element = first(`.todoapp .filters a.selected`);
@@ -80,8 +84,8 @@ let ~pendingText =
   let element = first(`.todoapp .new-todo`);
   if element != null { element.value } else { "" };
 
-let ~numItemsLeft =
-    let strong = first(`.todoapp .todo-count strong`).textContent;
+let ~todoCount =
+    let strong = first(for e in `.todoapp .todo-count strong`. e.textContent);
     if strong != null {
       parseInt(first(split(" ", trim(strong))))
     } else { 0 };
@@ -103,19 +107,18 @@ let ~enterText =
       && unchanged(selectedFilter)
       ;
 
-// let ~changeFilter =
-//   // adding the first todo item switches to the All filter
-//   (selectedFilter == null && nextT selectedFilter == "All")
-//   // going from "All" to some filter (including "All") cannot increase number of items
-//   || (selectedFilter == "All" && numItems >=' numItems)
-//   // going to "Active" should only show as many items as are considered left to do
-//   || (nextT (selectedFilter == "Active" && numItemsLeft == numUnchecked && numItems == numUnchecked))
-//   // going to a different filter should not change the pending todo item
-//   || (not unchanged(selectedFilter) && unchanged(pendingText))
-//   ;
 let ~changeFilter =
+  (not unchanged(selectedFilter))
   // going to a different filter should not change the pending todo item
-  not unchanged(selectedFilter) && unchanged(pendingText)
+  && unchanged(pendingText)
+  && match selectedFilter {
+    // adding the first todo item switches to the All filter
+    | case null { selectedFilter ==' "All" }
+    // going from "All" to some filter (including "All") cannot increase number of items
+    | case "All" { numItems <=' numItems }
+    // going to "Active" should only show as many items as are considered left to do
+    | case other { true }
+  }
   ;
 
 let ~addNew =
@@ -135,7 +138,7 @@ let ~checkOne =
     && unchanged(selectedFilter)
     && (match selectedFilter {
       | case "All". unchanged(numItems) && (numChecked <' numChecked)
-      | case "Active". (numItems >' numItems) && (numItemsLeft >' numItemsLeft)
+      | case "Active". (numItems >' numItems) && (todoCount >' todoCount)
       | case other. false
     });
 
@@ -144,7 +147,7 @@ let ~uncheckOne =
     && unchanged(selectedFilter)
     && (match selectedFilter {
       | case "All". unchanged(numItems) && numChecked >' numChecked
-      | case "Completed". numItems >' numItems && numItemsLeft <' numItemsLeft
+      | case "Completed". numItems >' numItems && todoCount <' todoCount
       | case other. false
     });
 
@@ -168,33 +171,52 @@ let ~delete =
       | case other {
         unchanged(selectedFilter)
           && (numItems -=' 1)
-          && ((selectedFilter == "Active" && numItemsLeft -=' 1)
-          || (selectedFilter == "Completed" ==> unchanged(numItemsLeft))
+          && ((selectedFilter == "Active" && todoCount -=' 1)
+          || (selectedFilter == "Completed" ==> unchanged(todoCount))
             )
       }
     })
   ;
 
-let ~toggleAll =
-    let whenAllSelected = selectedFilter == "All" && unchanged(numItems) && nextT (numItems == numChecked);
-    let whenActiveSelected =
-      selectedFilter == "Active"
-      && (
-        // If there are active items, they're checked
-        (numItems > 0 && nextT (numItems == 0))
-        // If there are none, all checked items are unchecked (but we can't see how many
-        // there are, just more than 0)
-        || (numItems == 0 && nextT (numItems > 0))
-      );
-    let whenCompletedSelected = selectedFilter == "Completed" && numItems +=' numItemsLeft;
+let ~doNothing =
+  unchanged([
+    pendingText,
+    availableFilters 
+  ])
+  && (selectedFilter != null) ==> unchanged([
+    selectedFilter,
+    items,
+    numUnchecked,
+    numChecked,
+    todoCount
+  ]);
 
-    unchanged(pendingText)
-      && unchanged(selectedFilter)
-      && selectedFilter != null
-      && (whenAllSelected || whenActiveSelected || whenCompletedSelected);
+let ~toggleAll =
+  unchanged(pendingText)
+    && unchanged(selectedFilter)
+    && (match selectedFilter {
+      | case null { false }
+      | case "All" { unchanged(numItems) && nextT (numItems == numChecked) }
+      | case "Active" {
+          // If there are active items, they're checked
+          (numItems > 0 && nextT (numItems == 0))
+          // If there are none, all checked items are unchecked (but we can't see how many
+          // there are, just more than 0)
+          || (numItems == 0 && nextT (numItems > 0))
+      }
+      | case "Completed" { numItems +=' todoCount }
+    });
 
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
+
+let ~correctFilterStates =
+  // selectedFilter != null ==>
+  match selectedFilter {
+    | case "All"  { todoCount <= numItems }
+    | case "Active"  { true } // todoCount == numUnchecked && numItems == numUnchecked }
+    | case other { true }
+  };
 
 let ~prop_safety =
   initial
@@ -206,8 +228,8 @@ let ~prop_safety =
            || uncheckOne
            || delete
            || toggleAll
+           || doNothing
        )
-    && always hasFilters
-    ;
+    && always (hasFilters && correctFilterStates);
 
 check prop_safety with * when loaded?;
