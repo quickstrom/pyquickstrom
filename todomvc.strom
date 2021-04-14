@@ -5,67 +5,8 @@
 // import list;
 // import string;
 import quickstrom;
-
-//-------------------------------------------------
-// Operators
-//-------------------------------------------------
-
-syntax _>'_ 8;
-let ~x >' n = nextT (x > n);
-
-syntax _>='_ 8;
-let ~x >=' n = nextT (x >= n);
-
-syntax _<'_ 8;
-let ~x <' n = nextT (x > n);
-
-syntax _<='_ 8;
-let ~x <=' n = nextT (x <= n);
-
-syntax _+='_ 8;
-let ~x +=' n = freeze x' = x { nextT (x == x' + n) };
-
-syntax _-='_ 8;
-let ~x -=' n = freeze x' = x { nextT (x == x' - n) };
-
-syntax _=='_ 8;
-let ~a ==' b = nextT (a == b);
-
-syntax _!='_ 8;
-let ~a !=' b = nextT (a != b);
-
-//-------------------------------------------------
-// DOM elements
-//-------------------------------------------------
-
-let ~selectedFilter = 
-  let element = first(`.todoapp .filters a.selected`);
-  if element != null && element.visible { element.textContent };
-
-let ~items =
-  for [li, label] in zip(`.todo-list li`, (for label in `.todo-list li label` { label.textContent })) {
-    if li.css.display != "none" { trim(label) }
-  };
-
-let ~lastItem = last(items);
-
-let ~numItems = length(items);
-
-let ~checkboxes = `.todo-list li input[type=checkbox]`;
-
-let ~numUnchecked = length(for c in checkboxes { c when not c.checked });
-
-let ~numChecked = length(for c in checkboxes { c when c.checked });
-
-let ~pendingText = first(for e in `.todoapp .new-todo` { e.value });
-
-let ~todoCount =
-    let strong = first(for e in `.todoapp .todo-count strong` { e.textContent });
-    if strong != null {
-      parseInt(first(split(" ", trim(strong))))
-    } else { 0 };
-
-let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
+import todomvc/operators;
+import todomvc/elements;
 
 //-------------------------------------------------
 // Actions

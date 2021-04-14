@@ -32,6 +32,7 @@ class Check():
     module: str
     origin: str
     include_paths: List[str]
+    capture_screenshots: bool
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
     def execute(self):
@@ -144,10 +145,15 @@ class Check():
                         elif isinstance(msg, Done):
                             return msg.results
 
+                def screenshot(driver: WebDriver, n: int):
+                    if self.capture_screenshots:
+                        self.log.debug("Capturing screenshot at state {n}")
+                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{n:02d}.png")
+
                 def await_session_commands(driver: WebDriver, deps):
                     try:
                         actionCount = 0
-                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount:02d}.png")
+                        screenshot(driver, actionCount)
                         while True:
                             msg = receive()
                             if not msg:
@@ -159,7 +165,7 @@ class Check():
                                     f"Performing action #{actionCount}: {msg.action}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
-                                driver.get_screenshot_as_file(f"/tmp/quickstrom-{actionCount:02d}.png")
+                                screenshot(driver, actionCount)
                                 send({'tag': 'Performed', 'contents': state})
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")

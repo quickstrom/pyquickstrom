@@ -19,9 +19,10 @@ def cli(log_level):
 @click.argument('module')
 @click.argument('origin')
 @click.option('-I', '--include', multiple=True, help='include a path in the Specstrom module search paths')
-def check(module: str, origin: str, include: List[str]):
+@click.option('-S', '--capture-screenshots', help='capture a screenshot at each state and write to /tmp')
+def check(module: str, origin: str, include: List[str], capture_screenshots):
     """Checks the configured properties in the given module."""
-    executor.Check(module, origin, include).execute()
+    executor.Check(module, origin, include, capture_screenshots).execute()
 
 cli.add_command(check)
 
