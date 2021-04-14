@@ -7,19 +7,25 @@ let ~selectedFilter =
   if element != null && element.visible { element.textContent };
 
 let ~items =
-  for [li, label] in zip(`.todo-list li`, (for label in `.todo-list li label` { label.textContent })) {
-    if li.css.display != "none" { trim(label) }
+  for [visible, [text, checked]] in zip(
+    (for item in `.todo-list li` { item.css.display != "none" }),  
+    zip(
+      (for label in `.todo-list li label` { label.textContent }),
+      (for cb in `.todo-list li input[type=checkbox]` { cb.checked })
+    )
+  ) {
+    if visible { { text: trim(text), checked: checked } }
   };
 
-let ~lastItem = last(items);
+let ~lastItemText = 
+  let item = last(items);
+  if item != null { item.text };
 
 let ~numItems = length(items);
 
-let ~checkboxes = `.todo-list li input[type=checkbox]`;
+let ~numUnchecked = length(for i in items { i when not i.checked });
 
-let ~numUnchecked = length(for c in checkboxes { c when not c.checked });
-
-let ~numChecked = length(for c in checkboxes { c when c.checked });
+let ~numChecked = length(for i in items { i when i.checked });
 
 let ~pendingText = first(for e in `.todoapp .new-todo` { e.value });
 
@@ -30,3 +36,5 @@ let ~todoCount =
     } else { 0 };
 
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
+
+let ~toggleAllChecked = first(for c in `.todoapp #toggle-all` { c.checked }) ?? false;
