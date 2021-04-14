@@ -1,8 +1,9 @@
 // Would be nice to limit the imports as in the comments below.
 // Also they're commented out until we have deduplication of
 // imported definitions. 
-// import list; // (zip, mapNotNull, length, first, last);
-// import string; //  (trim, split, parseInt);
+// 
+// import list;
+// import string;
 import quickstrom;
 
 //-------------------------------------------------
@@ -34,7 +35,7 @@ syntax _!='_ 8;
 let ~a !=' b = nextT (a != b);
 
 //-------------------------------------------------
-// DOM state
+// DOM elements
 //-------------------------------------------------
 
 let ~selectedFilter = 
@@ -79,10 +80,6 @@ action ~selectSameFilter! = click!(`.todoapp .filters a.selected`);
 action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`);
 
 action ~deleteTodo! = click!(`.todoapp .destroy`);
-
-// action ~clickAnyLink! = click!(`.todoapp a`)
-  // weighted 5.0
-// ;
 
 action ~focusInput! = focus!(`.todoapp .new-todo`)
   // weighted 5.0
@@ -169,11 +166,13 @@ let ~delete =
         numItems ==' 0 && selectedFilter ==' null
       }
       | case other {
-        unchanged(selectedFilter)
+          unchanged(selectedFilter)
           && (numItems -=' 1)
-          && ((selectedFilter == "Active" && todoCount -=' 1)
-          || (selectedFilter == "Completed" ==> unchanged(todoCount))
-            )
+          && match selectedFilter {
+            | case "Active" { todoCount -=' 1 }
+            | case "Completed" { unchanged(todoCount) }
+            | case "All" { true }
+          }
       }
     })
   ;
