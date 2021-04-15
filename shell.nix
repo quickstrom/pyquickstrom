@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? (import ./nix/nixpkgs.nix) }:
 let
   specstrom = (import ./nix/specstrom.nix {
     inherit pkgs;
@@ -6,20 +6,17 @@ let
   });
   appEnv = pkgs.poetry2nix.mkPoetryEnv {
     projectDir = ./.;
-    editablePackageSources = {
-      my-app = ./.;
-    };
+    editablePackageSources = { my-app = ./.; };
   };
-in
-pkgs.mkShell {
-  buildInputs = [ 
-     pkgs.bashInteractive
-    
-     appEnv
-  
-     pkgs.geckodriver
-     pkgs.chromedriver
+in pkgs.mkShell {
+  buildInputs = [
+    pkgs.bashInteractive
 
-     specstrom
+    appEnv
+
+    pkgs.geckodriver
+    pkgs.firefox
+
+    specstrom
   ];
 }

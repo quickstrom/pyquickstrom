@@ -8,8 +8,10 @@ from shutil import which
 from dataclasses import dataclass
 from typing import List, Dict
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.keys import Keys
 import selenium.webdriver.chrome.options as chrome
 import selenium.webdriver.firefox.options as firefox
@@ -120,8 +122,7 @@ class Check():
                 def query(driver, deps):
                     state = {}
                     for selector, schema in deps.items():
-                        elements = driver.find_elements_by_css_selector(
-                            selector)
+                        elements = driver.find_elements(by=By.CSS_SELECTOR, value=selector)
                         element_states = []
                         for element in elements:
                             element_state = get_element_state(
@@ -213,6 +214,7 @@ class Check():
             options = firefox.Options()
             options.add_argument("--headless")
             options.binary = which("firefox")
-            return webdriver.Firefox(options=options)
+            service = webdriver.firefox.service.Service('geckodriver', port=1234)
+            return webdriver.Firefox(service=service, options=options)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")

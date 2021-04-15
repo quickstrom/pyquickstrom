@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? (import ./nix/nixpkgs.nix) }:
 let
   specstrom = (import ./nix/specstrom.nix {
     inherit pkgs;
@@ -11,7 +11,7 @@ in pkgs.poetry2nix.mkPoetryApplication {
     specstrom
     pkgs.geckodriver
     pkgs.firefox
-    pkgs.chromedriver
-    pkgs.chromium
+    # pkgs.chromedriver
+    # pkgs.chromium
   ];
 }

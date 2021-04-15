@@ -19,7 +19,7 @@ def root(log_level):
 @click.command()
 @click.argument('module')
 @click.argument('origin')
-@click.option('-B', '--browser', default='chrome')
+@click.option('-B', '--browser', default='firefox')
 @click.option('-I', '--include', multiple=True, help='include a path in the Specstrom module search paths')
 @click.option('-S', '--capture-screenshots', help='capture a screenshot at each state and write to /tmp')
 def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
