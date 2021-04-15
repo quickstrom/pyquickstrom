@@ -1,14 +1,9 @@
 { pkgs ? import <nixpkgs> { } }:
-
 let
-
-  # specstrom = (import (fetchTarball
-  #   "https://github.com/quickstrom/specstrom/archive/15cc4c145319d9770e797e9b1afa8ac10a73fa85.tar.gz")
-  #   { inherit pkgs; }).specstrom;
-  specstrom = (import ../../specstrom {
+  specstrom = (import ./nix/specstrom.nix {
     inherit pkgs;
     enableProfiling = false;
-  }).specstrom;
+  });
 in pkgs.poetry2nix.mkPoetryApplication { 
   projectDir = ./.;
   python = pkgs.python38;
