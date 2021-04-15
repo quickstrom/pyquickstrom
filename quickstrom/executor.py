@@ -209,12 +209,13 @@ class Check():
             options = chrome.Options()
             options.add_argument("--headless")
             options.binary_location = which("chrome") or which("chromium")
+            service = webdriver.chrome.service.Service(which('chromedriver'), port=1234)
             return webdriver.Chrome(options=options)
         elif self.browser == 'firefox':
             options = firefox.Options()
             options.add_argument("--headless")
             options.binary = which("firefox")
-            service = webdriver.firefox.service.Service('geckodriver', port=1234)
+            service = webdriver.firefox.service.Service(which('geckodriver'), port=1234)
             return webdriver.Firefox(service=service, options=options)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")

@@ -11,7 +11,7 @@ in pkgs.poetry2nix.mkPoetryApplication {
     specstrom
     pkgs.geckodriver
     pkgs.firefox
-    # pkgs.chromedriver
-    # pkgs.chromium
+    pkgs.chromedriver
+    pkgs.chromium
   ];
 }

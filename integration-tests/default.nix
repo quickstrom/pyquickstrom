@@ -47,28 +47,28 @@ in makeTests {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "firefox";
+    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-backbone = {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "firefox";
+    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-react = {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "firefox";
+    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-angularjs = {
     module = "todomvc";
     origin = "${todomvc}/examples/angularjs/index.html";
     options = "";
-    browser = "firefox";
+    browser = "chrome";
     expectedExitCode = 3;
   };
 }

@@ -1,5 +1,5 @@
 import (fetchTarball
-  "https://github.com/NixOS/nixpkgs/archive/1ea4855ce699b9db2a7d7212089980635060e032.tar.gz") {
+  "https://github.com/NixOS/nixpkgs/archive/e019872af81e4013fd518fcacfba74b1de21a50e.tar.gz") {
     config.allowUnfree = true;
   }
 
