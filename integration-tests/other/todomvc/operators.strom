@@ -23,5 +23,5 @@ let ~x -= n = freeze x' = x { nextT (x == x' - n) };
 syntax _becomes_ 8;
 let ~a becomes b = nextT (a == b);
 
-syntax _doesn't become_ 8;
-let ~a doesn't become b = nextT (a != b);
+syntax _does not become_ 8;
+let ~a does not become b = nextT (a != b);
