@@ -1,4 +1,3 @@
-// vim: syntax=haskell
 // This is the TodoMVC specification from 
 // https://wickstrom.tech/programming/2020/07/02/the-todomvc-showdown-testing-with-webcheck.html
 // ported to the new Specstrom-backed implementation of Quickstrom.
