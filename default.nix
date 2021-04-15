@@ -7,7 +7,7 @@ let
   #   { inherit pkgs; }).specstrom;
   specstrom = (import ../../specstrom {
     inherit pkgs;
-    enableProfiling = true;
+    enableProfiling = false;
   }).specstrom;
 in pkgs.poetry2nix.mkPoetryApplication { 
   projectDir = ./.;
