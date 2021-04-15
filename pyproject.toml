@@ -19,7 +19,7 @@ rope = "^0.18.0"
 flake8 = "^3.9.0"
 
 [tool.poetry.scripts]
-quickstrom = 'quickstrom.__main__:run'
+quickstrom = 'quickstrom.cli:run'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
