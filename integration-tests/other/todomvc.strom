@@ -1,3 +1,7 @@
+// This is the TodoMVC specification from 
+// https://wickstrom.tech/programming/2020/07/02/the-todomvc-showdown-testing-with-webcheck.html
+// ported to the new Specstrom-backed implementation of Quickstrom.
+// 
 // Would be nice to limit the imports as in the comments below.
 // Also they're commented out until we have deduplication of
 // imported definitions. 
