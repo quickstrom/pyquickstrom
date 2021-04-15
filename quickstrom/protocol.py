@@ -12,6 +12,37 @@ ElementState = Dict[str, object]
 
 State = Dict[Selector, List[ElementState]]
 
+@dataclass
+class Action():
+    id: str
+    args: List[object]
+    isEvent: bool
+    timeout: Optional[int]
+
+@dataclass
+class TraceActions():
+    actions: List[Action]
+
+
+@dataclass
+class TraceState():
+    state: State
+
+TraceElement = Union[TraceActions, TraceState]
+
+Trace = List[TraceElement]
+
+
+@dataclass
+class Validity():
+    certainty: Union[Literal['Definitely'], Literal['Probably']]
+    value: bool
+
+
+@dataclass
+class Result():
+    valid: Validity
+    trace: Trace
 
 @dataclass
 class Start():
@@ -26,41 +57,6 @@ class End():
 @dataclass
 class Done():
     results: List[Result]
-
-
-@dataclass
-class TraceActions():
-    actions: List[Action]
-
-
-@dataclass
-class TraceState():
-    state: State
-
-
-TraceElement = Union[TraceActions, TraceState]
-
-Trace = List[TraceElement]
-
-
-@dataclass
-class Result():
-    valid: Validity
-    trace: Trace
-
-
-@dataclass
-class Validity():
-    certainty: Literal['Definitely'] | Literal['Probably']
-    value: bool
-
-
-@dataclass
-class Action():
-    id: str
-    args: List[object]
-    isEvent: bool
-    timeout: Optional[int]
 
 
 @dataclass

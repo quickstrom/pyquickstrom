@@ -1,6 +1,7 @@
 import logging
 import click
 from typing import List
+from urllib.parse import urljoin
 
 import quickstrom.executor as executor
 
@@ -18,12 +19,15 @@ def cli(log_level):
 @click.command()
 @click.argument('module')
 @click.argument('origin')
+@click.option('-B', '--browser', default='chrome')
 @click.option('-I', '--include', multiple=True, help='include a path in the Specstrom module search paths')
 @click.option('-S', '--capture-screenshots', help='capture a screenshot at each state and write to /tmp')
-def check(module: str, origin: str, include: List[str], capture_screenshots):
+def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
     """Checks the configured properties in the given module."""
-    executor.Check(module, origin, include, capture_screenshots).execute()
+    origin_url = urljoin("file://", origin)
+    executor.Check(module, origin_url, browser, include, capture_screenshots).execute()
 
 cli.add_command(check)
 
-cli()
+def run():
+    cli()

@@ -4,13 +4,15 @@ import json
 import jsonlines
 import logging
 import time
+from shutil import which
 from dataclasses import dataclass
 from typing import List, Dict
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
+import selenium.webdriver.chrome.options as chrome
+import selenium.webdriver.firefox.options as firefox
 
 from quickstrom.printer import print_results
 from quickstrom.protocol import *
@@ -27,10 +29,14 @@ class SpecstromError(Exception):
     def __str__(self): return f"{self.message}, exit code {self.exit_code}"
 
 
+Browser = Union[Literal['chrome'], Literal['firefox']]
+
+
 @dataclass
 class Check():
     module: str
     origin: str
+    browser: Browser
     include_paths: List[str]
     capture_screenshots: bool
     log: logging.Logger = logging.getLogger('quickstrom.executor')
@@ -131,9 +137,7 @@ class Check():
                         assert msg is not None
                         if isinstance(msg, Start):
                             self.log.info("Starting session")
-                            chrome_options = Options()
-                            chrome_options.add_argument("--headless")
-                            driver = webdriver.Chrome(options=chrome_options)
+                            driver = self.new_driver()
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
                             time.sleep(2)
@@ -148,7 +152,8 @@ class Check():
                 def screenshot(driver: WebDriver, n: int):
                     if self.capture_screenshots:
                         self.log.debug("Capturing screenshot at state {n}")
-                        driver.get_screenshot_as_file(f"/tmp/quickstrom-{n:02d}.png")
+                        driver.get_screenshot_as_file(
+                            f"/tmp/quickstrom-{n:02d}.png")
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
@@ -178,6 +183,8 @@ class Check():
                 try:
                     results = run_sessions()
                     print_results(results)
+                    if any([not r.valid.value for r in results]):
+                        exit(3)
                 except SpecstromError as err:
                     print(err)
                     print(
@@ -195,3 +202,17 @@ class Check():
             stderr=ilog,
             stdin=subprocess.PIPE,
             bufsize=0)
+
+    def new_driver(self):
+        if self.browser == 'chrome':
+            options = chrome.Options()
+            options.add_argument("--headless")
+            options.binary_location = which("chrome") or which("chromium")
+            return webdriver.Chrome(options=options)
+        elif self.browser == 'firefox':
+            options = firefox.Options()
+            options.add_argument("--headless")
+            options.binary = which("firefox")
+            return webdriver.Firefox(options=options)
+        else:
+            raise Exception(f"Unsupported browser: {self.browser}")
