@@ -3,16 +3,16 @@
 //-------------------------------------------------
 
 syntax _ becomes <_ 8;
-let ~x becomes < n = nextT (x > n);
+let ~x becomes < n = nextT (x < n);
 
 syntax _becomes <=_ 8;
-let ~x becomes <= n = nextT (x >= n);
+let ~x becomes <= n = nextT (x <= n);
 
 syntax _becomes >_ 8;
 let ~x becomes > n = nextT (x > n);
 
 syntax _becomes >=_ 8;
-let ~x becomes >= n = nextT (x <= n);
+let ~x becomes >= n = nextT (x >= n);
 
 syntax _+=_ 8;
 let ~x += n = freeze x' = x { nextT (x == x' + n) };
