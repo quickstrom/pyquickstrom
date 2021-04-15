@@ -146,16 +146,16 @@ let ~toggleAll =
           // are unchecked.
           | case 0 { numUnchecked becomes numChecked }
           // If there are unchecked (active) items, they're checked.
-          | case n { nextT (numItems == numChecked) }
+          | case n { numItems becomes numChecked) 
         }
       }
       | case "Active" {
         match numUnchecked {
           // If there are no unchecked (active) items, all checked (completed) items
           // are unchecked (but we can't see how many there are, just more than 0).
-          | case 0 { nextT (numItems > 0) }
+          | case 0 { numItems becomes > 0 }
           // If there are unchecked (active) items, they're checked.
-          | case n { nextT (numItems == 0) }
+          | case n { numItems becomes 0 }
         }
       }
       | case "Completed" { 
