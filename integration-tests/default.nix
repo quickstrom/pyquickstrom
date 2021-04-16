@@ -1,7 +1,7 @@
 { pkgs ? import ../nix/nixpkgs.nix, browser ? "chrome" }:
 let
   geckodriver-headless = pkgs.writeShellScriptBin "geckodriver" ''
-    ${pkgs.xvfb_run}/bin/xvfb-run ${pkgs.geckodriver}/bin/geckodriver "$@"
+    ${pkgs.xvfb_run}/bin/xvfb-run ${pkgs.geckodriver}/bin/geckodriver $@
   '';
   quickstrom = (import ../. { inherit pkgs; geckodriver = geckodriver-headless; });
 
