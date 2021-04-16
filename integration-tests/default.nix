@@ -20,6 +20,7 @@ let
               toString expectedExitCode
             }) was returned."
         else 
+            cat geckodriver.log || echo "No geckodriver log"
             cat interpreter.log
             echo "Expected exit code ${
               toString expectedExitCode
