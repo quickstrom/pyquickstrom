@@ -1,9 +1,9 @@
 { pkgs ? import ../nix/nixpkgs.nix, browser ? "chrome" }:
 let
-  geckodriver-headless = pkgs.writeShellScriptBin "geckodriver" ''
-    ${pkgs.xvfb_run}/bin/xvfb-run ${pkgs.geckodriver}/bin/geckodriver $@
+  firefox-xvfb = pkgs.writeShellScriptBin "firefox" ''
+    ${pkgs.xvfb_run}/bin/xvfb-run ${pkgs.firefox}/bin/firefox $@
   '';
-  quickstrom = (import ../. { inherit pkgs; geckodriver = geckodriver-headless; });
+  quickstrom = (import ../. { inherit pkgs; firefox = firefox-xvfb; });
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
