@@ -213,7 +213,7 @@ class Check():
             return webdriver.Chrome(options=options)
         elif self.browser == 'firefox':
             options = firefox.Options()
-            options.add_argument("--headless")
+            options.headless = True
             options.binary = which("firefox")
             service = webdriver.firefox.service.Service(which('geckodriver'), port=4444, service_args=['--marionette-host', '127.0.0.1', '--marionette-port', '4445'])
             return webdriver.Firefox(service=service, options=options)
