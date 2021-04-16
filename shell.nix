@@ -14,8 +14,8 @@ in pkgs.mkShell {
 
     appEnv
 
-    pkgs.geckodriver
     pkgs.firefox
+    pkgs.geckodriver
     pkgs.chromedriver
     pkgs.chromium
 

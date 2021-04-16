@@ -215,7 +215,7 @@ class Check():
             options = firefox.Options()
             options.headless = True
             options.binary = which("firefox")
-            service = webdriver.firefox.service.Service(which('geckodriver'), port=4444, service_args=['--marionette-host', '127.0.0.1', '--marionette-port', '4445'])
+            service = webdriver.firefox.service.Service(which('geckodriver'), port=4444)
             return webdriver.Firefox(service=service, options=options)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
