@@ -6,13 +6,15 @@ let
     pkgs.stdenv.mkDerivation {
       name = "quickstrom-integration-test-${name}";
       src = ./.;
-      phases = ["checkPhase"];
+      phases = [ "checkPhase" ];
       checkPhase = ''
         set +e
         mkdir -p $out
 
         # TODO: add ./failing and /passing includes later when required.
-        quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${./other} --browser=${browser} | tee $out/test-report.log
+        xvfb-run quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${
+          ./other
+        } --browser=${browser} | tee $out/test-report.log
         exit_code=$?
 
         if [ $exit_code == "${toString expectedExitCode}" ]; then
@@ -29,7 +31,7 @@ let
         fi
       '';
       doCheck = true;
-      buildInputs = [ quickstrom ];
+      buildInputs = [ quickstrom pkgs.xvfb_run ];
       __noChroot = browser == "chrome";
     };
 
