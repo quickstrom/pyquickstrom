@@ -1,8 +1,8 @@
-{ pkgs ? import ../nix/nixpkgs.nix }:
+{ pkgs ? import ../nix/nixpkgs.nix, browser ? "chrome" }:
 let
   quickstrom = (import ../. { inherit pkgs; });
 
-  makeTest = { name, module, origin, browser, options ? "", expectedExitCode }:
+  makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
       name = "quickstrom-integration-test-${name}";
       src = ./.;
@@ -47,28 +47,24 @@ in makeTests {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-backbone = {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-react = {
     module = "todomvc";
     origin = "${todomvc}/examples/vue/index.html";
     options = "";
-    browser = "chrome";
     expectedExitCode = 0;
   };
   todomvc-angularjs = {
     module = "todomvc";
     origin = "${todomvc}/examples/angularjs/index.html";
     options = "";
-    browser = "chrome";
     expectedExitCode = 3;
   };
 }
