@@ -15,7 +15,7 @@ let
         mkdir -p $out
 
         # TODO: add ./failing and /passing includes later when required.
-        xvfb-run quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${
+        quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${
           ./other
         } --browser=${browser} | tee $out/test-report.log
         exit_code=$?
@@ -34,7 +34,7 @@ let
         fi
       '';
       doCheck = true;
-      buildInputs = [ quickstrom pkgs.xvfb_run ];
+      buildInputs = [ quickstrom ];
       __noChroot = browser == "chrome";
     };
 
