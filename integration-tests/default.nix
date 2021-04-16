@@ -38,7 +38,7 @@ let
       '';
       doCheck = true;
       buildInputs = [ quickstrom ];
-      #__noChroot = browser == "chrome";
+      __noChroot = browser == "chrome";
     };
 
   makeTests =
