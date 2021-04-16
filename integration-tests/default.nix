@@ -3,7 +3,10 @@ let
   firefox-xvfb = pkgs.writeShellScriptBin "firefox" ''
     ${pkgs.xvfb_run}/bin/xvfb-run ${pkgs.firefox}/bin/firefox $@
   '';
-  quickstrom = (import ../. { inherit pkgs; firefox = firefox-xvfb; });
+  quickstrom = (import ../. {
+    inherit pkgs;
+    # firefox = firefox-xvfb;
+  });
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
