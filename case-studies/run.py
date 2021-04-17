@@ -3,7 +3,7 @@ import quickstrom.printer as printer
 import click
 import os
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from urllib.parse import urljoin
 import pathlib
 
@@ -37,21 +37,24 @@ def run(apps: List[TestApp]):
         for check in checks:
             with open(f"results/{app.name}.{app.module}.{check.browser}.log", "w") as results_file:
                 click.echo(heading1(f"{app.name}"))
-                click.echo(f"Browser: {check.browser}")
+                for key, value in asdict(check).items():
+                    if key != 'log':
+                        click.echo(f"{key}: {value}")
                 results = check.execute()
                 printer.print_results(results, file=results_file)
+                click.echo("")
 
                 for result in results:
                     color = success if result.valid.value else failure
-                    click.echo("Details: " + results_file.name)
+                    click.echo("details: " + results_file.name)
                     click.echo(
-                        "Result: " + color(f"{result.valid.certainty} {result.valid.value}"))
+                        "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
                     click.echo("")
 
 
 def todomvc_url(name: str) -> str:
     base = os.getenv("TODOMVC_DIR") or "https://todomvc.com"
-    return f"{base}/examples/{name}"
+    return f"{base}/examples/{name}/index.html"
 
 
 all_apps = [
