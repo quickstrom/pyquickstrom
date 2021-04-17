@@ -1,26 +1,25 @@
-from typing import List, cast
+from typing import List, cast, IO, Text
 from quickstrom.protocol import *
 from deepdiff import DeepDiff, extract
 import click
 
-def print_results(results: List[Result]):
+def print_results(results: List[Result], file: Optional[IO[Text]]):
     for result in results:
-        click.echo("Trace:")
+        click.echo("Trace:", file=file)
         last_state = None
         for i, element in zip(range(1, len(result.trace) + 1), result.trace):
             if isinstance(element, TraceActions):
                 for action in element.actions:
                     label = "Event" if action.isEvent else "Action"
                     heading = f"{i}. {label}:"
-                    click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1))
+                    click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1), file=file)
             elif isinstance(element, TraceState):
-                click.echo(indent(element_heading(f"{i}. State"), 1))
+                click.echo(indent(element_heading(f"{i}. State"), 1), file=file)
                 state: State = element.state
                 diff = DeepDiff(last_state, state)
-                print_state_diff(diff, state, indent_level=2)
+                print_state_diff(diff, state, indent_level=2, file=file)
                 last_state = state
-        click.echo(
-            f"Result: {result.valid.certainty} {result.valid.value}")
+        click.echo(f"Result: {result.valid.certainty} {result.valid.value}", file=file)
 
 @dataclass
 class Diff():
@@ -55,7 +54,7 @@ class Unmodified(Diff):
     def formatted(self):
         return unmodified(repr(self.value))
 
-def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int): 
+def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int, file: Optional[IO[Text]]): 
     diffs_by_path: 'Dict[str, Diff]' = {}
     for key, diffs in state_diff.items():
         for path, diff in diffs.items():
@@ -70,7 +69,7 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int):
         return diffs_by_path[diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
     for sel, elements in state.items():
-        click.echo(indent(selector(f"`{sel}`"), indent_level))
+        click.echo(indent(selector(f"`{sel}`"), indent_level), file=file)
         for i, state_element in enumerate(elements):
             element_diff_key = f"root['{sel}'][{i}]"
 
@@ -91,10 +90,10 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int):
                 else: 
                     return ""
 
-            click.echo(indent(f"{element_prefix()}{element_suffix()}", indent_level+1))
+            click.echo(indent(f"{element_prefix()}{element_suffix()}", indent_level+1), file=file)
             for key, value in [(key, value) for key, value in state_element.items() if key != 'ref']:
                 diff = value_diff(f"{element_diff_key}['{key}']", value)
-                click.echo(indent(f"* {key}: {diff.formatted()}", indent_level+2))
+                click.echo(indent(f"* {key}: {diff.formatted()}", indent_level+2), file=file)
                 
 def element_heading(s): return click.style(s, bold=True, underline=True)
 

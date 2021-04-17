@@ -43,7 +43,7 @@ class Check():
     capture_screenshots: bool
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
-    def execute(self):
+    def execute(self) -> List[Result]:
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
                 input_messages = message_reader(p.stdout)
@@ -181,16 +181,7 @@ class Check():
                     finally:
                         driver.close()
 
-                try:
-                    results = run_sessions()
-                    print_results(results)
-                    if any([not r.valid.value for r in results]):
-                        exit(3)
-                except SpecstromError as err:
-                    print(err)
-                    print(
-                        f"See interpreter log file for details: {err.log_file}")
-                    exit(1)
+                return run_sessions()
 
     def launch_specstrom(self, ilog):
         includes = list(map(lambda i: "-I" + i, self.include_paths))

@@ -4,6 +4,7 @@ from typing import List
 from urllib.parse import urljoin
 
 import quickstrom.executor as executor
+import quickstrom.printer as printer
 
 class NoWebdriverFilter(logging.Filter):
     def filter(self, record):
@@ -25,7 +26,16 @@ def root(log_level):
 def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
     """Checks the configured properties in the given module."""
     origin_url = urljoin("file://", origin)
-    executor.Check(module, origin_url, browser, include, capture_screenshots).execute()
+    try:
+        results = executor.Check(module, origin_url, browser, include, capture_screenshots).execute()
+        printer.print_results(results)
+        if any([not r.valid.value for r in results]):
+            exit(3)
+    except executor.SpecstromError as err:
+        print(err)
+        print(
+            f"See interpreter log file for details: {err.log_file}")
+        exit(1)
 
 root.add_command(check)
 
