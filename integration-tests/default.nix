@@ -1,8 +1,6 @@
 { pkgs ? import ../nix/nixpkgs.nix, browser ? "chrome" }:
 let
-  quickstrom = (import ../. {
-    inherit pkgs;
-  });
+  quickstrom = (import ../. { inherit pkgs; });
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
@@ -15,7 +13,7 @@ let
 
         # TODO: add ./failing and /passing includes later when required.
         quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${
-          ./other
+          ../case-studies
         } --browser=${browser} | tee $out/test-report.log
         exit_code=$?
 
