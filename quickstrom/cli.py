@@ -1,21 +1,25 @@
 import logging
 import click
+import sys
 from typing import List
 from urllib.parse import urljoin
 
 import quickstrom.executor as executor
 import quickstrom.printer as printer
 
+
 class NoWebdriverFilter(logging.Filter):
     def filter(self, record):
         return not record.name.startswith('selenium.webdriver.remote')
 
+
 @click.group()
-@click.option('--log-level', default='WARN', help='log level (DEBUG|INFO|WARN|EROR)')
+@click.option('--log-level', default='WARN', help='log level (DEBUG|INFO|WARN|ERROR)')
 def root(log_level):
     logging.basicConfig(level=getattr(logging, log_level.upper()))
     logging.getLogger("urllib3").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
+
 
 @click.command()
 @click.argument('module')
@@ -27,8 +31,9 @@ def check(module: str, origin: str, browser: executor.Browser, include: List[str
     """Checks the configured properties in the given module."""
     origin_url = urljoin("file://", origin)
     try:
-        results = executor.Check(module, origin_url, browser, include, capture_screenshots).execute()
-        printer.print_results(results)
+        results = executor.Check(
+            module, origin_url, browser, include, capture_screenshots).execute()
+        printer.print_results(results, file=sys.stdout)
         if any([not r.valid.value for r in results]):
             exit(3)
     except executor.SpecstromError as err:
@@ -37,6 +42,8 @@ def check(module: str, origin: str, browser: executor.Browser, include: List[str
             f"See interpreter log file for details: {err.log_file}")
         exit(1)
 
+
 root.add_command(check)
+
 
 def run(): root()

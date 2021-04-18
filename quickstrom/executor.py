@@ -16,7 +16,6 @@ from selenium.webdriver.common.keys import Keys
 import selenium.webdriver.chrome.options as chrome
 import selenium.webdriver.firefox.options as firefox
 
-from quickstrom.printer import print_results
 from quickstrom.protocol import *
 
 Url = str
