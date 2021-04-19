@@ -1,0 +1,22 @@
+import quickstrom;
+
+action moar! = click!(`button`);
+
+let buttons = for b in `button` {
+    { label: b.textContent, enabled: b.enabled }
+  };
+
+let allEnabled =
+  forall b in buttons {
+    b.label == "Moar" && b.enabled
+  };
+
+let allDone =
+  forall b in buttons {
+    b.label == "Done" && not b.enabled
+  };
+
+
+let prop = (eventually allDone) && (allEnabled until allDone);
+
+check prop with * when loaded?;
