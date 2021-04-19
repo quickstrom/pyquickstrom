@@ -1,24 +1,26 @@
+import sys
 from typing import List, cast, IO, Text
 from quickstrom.protocol import *
 from deepdiff import DeepDiff, extract
 import click
 
-def print_results(results: List[Result], file: Optional[IO[Text]]):
+def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, print_all_traces: bool = False):
     for result in results:
         click.echo("Trace:", file=file)
         last_state = None
-        for i, element in zip(range(1, len(result.trace) + 1), result.trace):
-            if isinstance(element, TraceActions):
-                for action in element.actions:
-                    label = "Event" if action.isEvent else "Action"
-                    heading = f"{i}. {label}:"
-                    click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1), file=file)
-            elif isinstance(element, TraceState):
-                click.echo(indent(element_heading(f"{i}. State"), 1), file=file)
-                state: State = element.state
-                diff = DeepDiff(last_state, state)
-                print_state_diff(diff, state, indent_level=2, file=file)
-                last_state = state
+        if not result.valid.value or print_all_traces:
+            for i, element in zip(range(1, len(result.trace) + 1), result.trace):
+                if isinstance(element, TraceActions):
+                    for action in element.actions:
+                        label = "Event" if action.isEvent else "Action"
+                        heading = f"{i}. {label}:"
+                        click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1), file=file)
+                elif isinstance(element, TraceState):
+                    click.echo(indent(element_heading(f"{i}. State"), 1), file=file)
+                    state: State = element.state
+                    diff = DeepDiff(last_state, state)
+                    print_state_diff(diff, state, indent_level=2, file=file)
+                    last_state = state
         click.echo(f"Result: {result.valid.certainty} {result.valid.value}", file=file)
 
 @dataclass

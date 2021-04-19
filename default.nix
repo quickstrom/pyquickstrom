@@ -6,9 +6,25 @@ let
     inherit pkgs;
     enableProfiling = false;
   });
-in pkgs.poetry2nix.mkPoetryApplication {
-  projectDir = ./.;
-  python = pkgs.python38;
-  propagatedBuildInputs =
-    [ specstrom geckodriver firefox chromedriver chromium ];
-}
+
+  quickstrom = pkgs.poetry2nix.mkPoetryApplication {
+    projectDir = ./.;
+    python = pkgs.python38;
+    propagatedBuildInputs =
+      [ specstrom geckodriver firefox chromedriver chromium ];
+  };
+
+  quickstrom-wrapped = pkgs.symlinkJoin {
+    name = "quickstrom";
+    paths = [ quickstrom ];
+    buildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      mkdir -p $out/share
+      cp -r ${./ulib} $out/share/ulib
+      wrapProgram $out/bin/specstrom \
+        --add-flags "-I$out/share/ulib"
+    '';
+  };
+in 
+  quickstrom-wrapped
+

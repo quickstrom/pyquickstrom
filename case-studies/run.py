@@ -26,11 +26,14 @@ def success(s): return click.style(s, fg='green')
 
 def failure(s): return click.style(s, fg='red')
 
+case_studies_dir = pathlib.Path(__file__).parent
+  
+ulib_dir = case_studies_dir.parent.joinpath("ulib")
 
 def run(apps: List[TestApp]):
     os.makedirs("results", exist_ok=True)
     browsers: List[executor.Browser] = ["chrome", "firefox"]
-    include_paths = [str(pathlib.Path(__file__).parent.absolute())]
+    include_paths = list(map(lambda p: str(p.absolute()), [case_studies_dir, ulib_dir]))
     for app in apps:
         checks = [executor.Check(app.module, origin=urljoin("file://", app.origin), browser=browser,
                                  include_paths=include_paths, capture_screenshots=False) for browser in browsers]

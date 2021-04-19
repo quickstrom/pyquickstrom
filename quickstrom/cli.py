@@ -1,6 +1,5 @@
 import logging
 import click
-import sys
 from typing import List
 from urllib.parse import urljoin
 
@@ -33,7 +32,7 @@ def check(module: str, origin: str, browser: executor.Browser, include: List[str
     try:
         results = executor.Check(
             module, origin_url, browser, include, capture_screenshots).execute()
-        printer.print_results(results, file=sys.stdout)
+        printer.print_results(results)
         if any([not r.valid.value for r in results]):
             exit(3)
     except executor.SpecstromError as err:

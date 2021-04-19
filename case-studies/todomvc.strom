@@ -24,17 +24,19 @@ action ~selectSameFilter! = click!(`.todoapp .filters a.selected`);
 
 action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`);
 
+action ~editTodo! = doubleClick!(`.todoapp .todo-list li label`);
+
 action ~deleteTodo! = click!(`.todoapp .destroy`);
 
 action ~focusInput! = focus!(`.todoapp .new-todo`)
   // weighted 5.0
   ;
 
-action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b")] when `.todoapp .new-todo`.active
+action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] when newTodoInput.focused || (editTodoInput != null && editTodoInput.focused)
   // weighted 5.0
   ;
 
-action ~createTodo! = [keyPress!(keys.return)] when pendingText != ""
+action ~createTodo! = [keyPress!(keys.return)] when newTodoInput != null && newTodoInput.pendingText != ""
   // weighted 5.0
   ;
 
@@ -45,17 +47,28 @@ action ~createTodo! = [keyPress!(keys.return)] when pendingText != ""
 let ~initial =
     selectedFilter == null
       && numItems == 0
-      && pendingText == "";
+      && newTodoInput.pendingText == "";
+
+let ~focusNewTodo =
+  not newTodoInput.focused
+    && newTodoInput.focused becomes true
+    && unchanged([
+      selectedFilter,
+      newTodoInput.pendingText,
+      availableFilters,
+      items,
+      todoCount
+    ]);
 
 let ~enterText =
-  (not unchanged(pendingText))
+  changed(newTodoInput.pendingText)
     && unchanged(items)
     && unchanged(selectedFilter);
 
 let ~changeFilter =
-  (not unchanged(selectedFilter))
+  changed(selectedFilter)
   // Going to a different filter should not change the pending todo item.
-  && unchanged(pendingText)
+  && unchanged(newTodoInput.pendingText)
   && (match selectedFilter {
     // Can't change filter when the filters are hidden.
     | case null { false }
@@ -65,10 +78,19 @@ let ~changeFilter =
     | case "Completed" { selectedFilter becomes "All" || selectedFilter becomes "Active" }
   });
 
+let ~setSameFilter =
+    unchanged([
+      selectedFilter,
+      newTodoInput.pendingText,
+      availableFilters,
+      items,
+      todoCount
+    ]);
+
 let ~addNew =
-  let trimmed = trim(pendingText);
+  let trimmed = trim(newTodoInput.pendingText);
   trimmed != ""
-  && pendingText becomes ""
+  && newTodoInput.pendingText becomes ""
   && selectedFilter does not become null
   && (match selectedFilter {
     // Adding the first item should enable the last used filter (which we don't know
@@ -85,7 +107,7 @@ let ~addNew =
   });
 
 let ~checkOne =
-  unchanged(pendingText)
+  unchanged(newTodoInput.pendingText)
     && unchanged(selectedFilter)
     && (match selectedFilter {
       | case "All" { unchanged(numItems) && (numChecked becomes < numChecked) }
@@ -94,7 +116,7 @@ let ~checkOne =
     });
 
 let ~uncheckOne =
-  unchanged(pendingText)
+  unchanged(newTodoInput.pendingText)
     && unchanged(selectedFilter)
     && (match selectedFilter {
       | case "All" { unchanged(numItems) && numChecked becomes > numChecked }
@@ -103,7 +125,7 @@ let ~uncheckOne =
     });
 
 let ~delete =
-  unchanged(pendingText)
+  unchanged(newTodoInput.pendingText)
     && (selectedFilter != null)
     && (match numItems {
       | case 0 { false }
@@ -122,19 +144,9 @@ let ~delete =
     })
   ;
 
-let ~doNothing =
-  unchanged([
-    selectedFilter,
-    pendingText,
-    availableFilters,
-    items,
-    numUnchecked,
-    numChecked,
-    todoCount
-  ]);
 
 let ~toggleAll =
-  unchanged(pendingText)
+  unchanged(newTodoInput.pendingText)
     && unchanged(selectedFilter)
     && nextT (if toggleAllChecked { numItems == numChecked } else { numItems == numUnchecked })
     && (match selectedFilter {
@@ -167,6 +179,31 @@ let ~toggleAll =
       }
     });
 
+let ~enterEditMode =
+  (numInEditMode == 0 ~> (numInEditMode == 1 && editTodoInput.focused))
+    && unchanged([
+      selectedFilter,
+      newTodoInput,
+      availableFilters,
+      items,
+      todoCount
+    ]);
+
+let ~exitEditMode =
+  (numInEditMode == 1 ~> numInEditMode == 0)
+    && match editTodoInput.pendingText {
+      | case "" { numItems -= 1 }
+      | case other { 
+        nextT (exists item in items { item.text == other})
+       }
+    }
+    && unchanged([
+      selectedFilter,
+      newTodoInput,
+      availableFilters,
+      items,
+      todoCount
+    ]);
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
 
@@ -181,14 +218,16 @@ let ~correctFilterStates =
 let ~prop_safety =
   initial
     && always
-       ( enterText
+       ( focusNewTodo
+           || enterText
            || addNew
            || changeFilter
+           || setSameFilter
            || checkOne
            || uncheckOne
            || delete
            || toggleAll
-           || doNothing
+           || enterEditMode
        )
     && always (hasFilters && correctFilterStates);
 

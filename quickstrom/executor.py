@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -94,6 +95,8 @@ class Check():
                         elif key == 'textContent':
                             element_state[key] = element.get_property(
                                 'textContent')
+                        elif key == 'classList':
+                            element_state[key] = driver.execute_script("return Array(...arguments[0].classList)", element)
                         elif key == 'checked':
                             element_state[key] = element.get_property(
                                 'checked')
@@ -107,6 +110,10 @@ class Check():
                         id = action.args[0]
                         element = WebElement(driver, id)
                         element.click()
+                    elif action.id == 'doubleClick':
+                        id = action.args[0]
+                        element = WebElement(driver, id)
+                        ActionChains(driver).double_click(element)
                     elif action.id == 'focus':
                         id = action.args[0]
                         element = WebElement(driver, id)
@@ -140,7 +147,7 @@ class Check():
                             driver = self.new_driver()
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
-                            time.sleep(2)
+                            time.sleep(3)
                             state = query(driver, msg.dependencies)
                             event = {'id': 'loaded', 'isEvent': True,
                                      'args': [], 'timeout': None}
