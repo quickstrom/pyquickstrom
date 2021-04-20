@@ -32,7 +32,7 @@ action ~focusInput! = focus!(`.todoapp .new-todo`)
   // weighted 5.0
   ;
 
-action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] when newTodoInput.focused || (editTodoInput != null && editTodoInput.focused)
+action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] when newTodoInput.focused || (exists item in items { item.editInput != null && item.editInput.focused })
   // weighted 5.0
   ;
 
@@ -180,7 +180,7 @@ let ~toggleAll =
     });
 
 let ~enterEditMode =
-  (numInEditMode == 0 ~> (numInEditMode == 1 && editTodoInput.focused))
+  (numInEditMode == 0) ~> (numInEditMode == 0 && (exists item in items { item.editInput.focused }))
     && unchanged([
       selectedFilter,
       newTodoInput,
@@ -191,12 +191,15 @@ let ~enterEditMode =
 
 let ~exitEditMode =
   (numInEditMode == 1 ~> numInEditMode == 0)
-    && match editTodoInput.pendingText {
-      | case "" { numItems -= 1 }
-      | case other { 
-        nextT (exists item in items { item.text == other})
-       }
-    }
+    && (forall item in items {
+      // TODO: Add a case for pressing the Escape key, which should discard any changes and exit edit mode.
+      match item.editInput.pendingText {
+        | case "" { numItems -= 1 }
+        | case newText { 
+          nextT (exists newItem in items { newItem.index == item.index ==> newItem.text == newText})
+        }
+      }
+    })
     && unchanged([
       selectedFilter,
       newTodoInput,

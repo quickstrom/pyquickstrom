@@ -43,8 +43,11 @@ def run(apps: List[TestApp]):
                 for key, value in asdict(check).items():
                     if key != 'log':
                         click.echo(f"{key}: {value}")
-                results = check.execute()
-                printer.print_results(results, file=results_file)
+                try:
+                    results = check.execute()
+                    printer.print_results(results, file=results_file)
+                except e:
+                    pass
                 click.echo("")
 
                 for result in results:

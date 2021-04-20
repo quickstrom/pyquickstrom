@@ -1,7 +1,8 @@
 import logging
 import click
 from typing import List
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
+from pathlib import Path
 
 import quickstrom.executor as executor
 import quickstrom.printer as printer
@@ -28,10 +29,14 @@ def root(log_level):
 @click.option('-S', '--capture-screenshots', help='capture a screenshot at each state and write to /tmp')
 def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
     """Checks the configured properties in the given module."""
-    origin_url = urljoin("file://", origin)
+    origin_url = urlparse(urljoin("file://", origin))
+    print(origin_url.geturl(), Path(origin_url.path).is_file())
+    if origin_url.scheme == "file" and not Path(origin_url.path).is_file():
+        print(f"File does not exist: {origin}")
+        exit(1)
     try:
         results = executor.Check(
-            module, origin_url, browser, include, capture_screenshots).execute()
+            module, origin_url.geturl(), browser, include, capture_screenshots).execute()
         printer.print_results(results)
         if any([not r.valid.value for r in results]):
             exit(3)

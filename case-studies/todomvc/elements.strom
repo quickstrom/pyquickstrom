@@ -7,14 +7,15 @@ let ~selectedFilter =
   if element != null && element.visible { element.textContent };
 
 let ~items =
-  for [[visible, editing], [text, checked]] in zip(
-    (for item in `.todo-list li` { [item.css.display != "none", contains("editing", item.classList)] }),  
-    zip(
-      (for label in `.todo-list li label` { label.textContent }),
-      (for cb in `.todo-list li input[type=checkbox]` { cb.checked })
-    )
-  ) {
-    if visible { { text: trim(text), checked: checked, editing: editing } }
+  let listItems = `.todo-list li`;
+  for [index, [visible, editing], text, checked, input] in zipAll([ 
+    range(0, length(listItems) - 1),
+    (for item in listItems { [item.css.display != "none", contains("editing", item.classList)] }),  
+    (for label in `.todo-list li label` { label.textContent }),
+    (for cb in `.todo-list li input[type=checkbox]` { cb.checked }),
+    (for e in `.todo-list li .edit` { { pendingText: e.value, focused: e.active } })
+  ]) {
+    if visible { { index: index, text: trim(text), checked: checked, editing: editing, editInput: input } }
   };
 
 let ~lastItemText = 
@@ -30,11 +31,6 @@ let ~numChecked = length(for i in items { i when i.checked });
 let ~itemsInEditMode = for item in items { item when item.editing };
 
 let ~numInEditMode = length(itemsInEditMode);
-
-let ~editTodoInput =
-  first(for e in `.todo-list li .edit` {
-    { pendingText: e.value, focused: e.active }
-  });
 
 let ~newTodoInput = 
   first(for e in `.todoapp .new-todo` {
