@@ -30,7 +30,6 @@ def root(log_level):
 def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
     """Checks the configured properties in the given module."""
     origin_url = urlparse(urljoin("file://", origin))
-    print(origin_url.geturl(), Path(origin_url.path).is_file())
     if origin_url.scheme == "file" and not Path(origin_url.path).is_file():
         print(f"File does not exist: {origin}")
         exit(1)

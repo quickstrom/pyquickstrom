@@ -17,6 +17,7 @@ in pkgs.mkShell {
     pkgs.bashInteractive
 
     appEnv
+    pkgs.poetry
 
     pkgs.firefox
     pkgs.geckodriver

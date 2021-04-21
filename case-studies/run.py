@@ -26,14 +26,20 @@ def success(s): return click.style(s, fg='green')
 
 def failure(s): return click.style(s, fg='red')
 
+
 case_studies_dir = pathlib.Path(__file__).parent
-  
+
 ulib_dir = case_studies_dir.parent.joinpath("ulib")
+
 
 def run(apps: List[TestApp]):
     os.makedirs("results", exist_ok=True)
-    browsers: List[executor.Browser] = ["chrome", "firefox"]
-    include_paths = list(map(lambda p: str(p.absolute()), [case_studies_dir, ulib_dir]))
+    browsers: List[executor.Browser] = [
+        "chrome",
+        #, "firefox"
+        ]
+    include_paths = list(map(lambda p: str(p.absolute()),
+                         [case_studies_dir, ulib_dir]))
     for app in apps:
         checks = [executor.Check(app.module, origin=urljoin("file://", app.origin), browser=browser,
                                  include_paths=include_paths, capture_screenshots=False) for browser in browsers]
@@ -43,31 +49,79 @@ def run(apps: List[TestApp]):
                 for key, value in asdict(check).items():
                     if key != 'log':
                         click.echo(f"{key}: {value}")
+                click.echo("details: " + results_file.name)
+
                 try:
                     results = check.execute()
                     printer.print_results(results, file=results_file)
-                except e:
-                    pass
+
+                    for result in results:
+                        color = success if result.valid.value else failure
+                        click.echo(
+                            "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
+                except Exception as e:
+                    click.echo(
+                        "Test failed with exception:\n{e}", file=results_file)
+                    click.echo("result: failed with exception")
+
                 click.echo("")
 
-                for result in results:
-                    color = success if result.valid.value else failure
-                    click.echo("details: " + results_file.name)
-                    click.echo(
-                        "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
-                    click.echo("")
 
-
-def todomvc_url(name: str) -> str:
+def todomvc_app(name: str) -> TestApp:
     base = os.getenv("TODOMVC_DIR") or "https://todomvc.com"
-    return f"{base}/examples/{name}/index.html"
+    url = f"{base}/examples/{name}/index.html"
+    return TestApp(name, "todomvc", url)
 
 
 all_apps = [
-    TestApp("backbone", "todomvc", todomvc_url("backbone")),
-    TestApp("react", "todomvc", todomvc_url("react")),
-    TestApp("angularjs", "todomvc", todomvc_url("angularjs")),
-    TestApp("mithril", "todomvc", todomvc_url("mithril")),
+    todomvc_app("angular2"),
+    todomvc_app("angularjs_require"),
+    todomvc_app("backbone_require"),
+    todomvc_app("closure"),
+    todomvc_app("duel"),
+    todomvc_app("enyo_backbone"),
+    todomvc_app("jquery"),
+    todomvc_app("knockoutjs"),
+    todomvc_app("mithril"),
+    todomvc_app("react-alt"),
+    todomvc_app("riotjs"),
+    todomvc_app("typescript-react"),
+    todomvc_app("angular2_es2015"),
+    todomvc_app("aurelia"),
+    todomvc_app("binding-scala"),
+    todomvc_app("cujo"),
+    todomvc_app("elm"),
+    todomvc_app("exoskeleton"),
+    todomvc_app("jsblocks"),
+    todomvc_app("knockoutjs_require"),
+    todomvc_app("polymer"),
+    todomvc_app("react-backbone"),
+    todomvc_app("scalajs-react"),
+    todomvc_app("vanilla-es6"),
+    todomvc_app("angular-dart"),
+    todomvc_app("backbone"),
+    todomvc_app("canjs"),
+    todomvc_app("dijon"),
+    todomvc_app("emberjs"),
+    todomvc_app("firebase-angular"),
+    todomvc_app("js_of_ocaml"),
+    todomvc_app("kotlin-react"),
+    todomvc_app("ractive"),
+    todomvc_app("react-hooks"),
+    todomvc_app("typescript-angular"),
+    todomvc_app("vanillajs"),
+    todomvc_app("angularjs"),
+    todomvc_app("backbone_marionette"),
+    todomvc_app("canjs_require"),
+    todomvc_app("dojo"),
+    todomvc_app("emberjs_require"),
+    todomvc_app("gwt"),
+    todomvc_app("knockback"),
+    todomvc_app("lavaca_require"),
+    todomvc_app("react"),
+    todomvc_app("reagent"),
+    todomvc_app("typescript-backbone"),
+    todomvc_app("vue"),
 ]
 
 if __name__ == "__main__":

@@ -32,7 +32,9 @@ action ~focusInput! = focus!(`.todoapp .new-todo`)
   // weighted 5.0
   ;
 
-action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] when newTodoInput.focused || (exists item in items { item.editInput != null && item.editInput.focused })
+action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] 
+  when newTodoInput.focused 
+    || (exists item in items { item.editInput != null && item.editInput.focused })
   // weighted 5.0
   ;
 

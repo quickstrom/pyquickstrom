@@ -204,7 +204,7 @@ class Check():
     def new_driver(self):
         if self.browser == 'chrome':
             options = chrome.Options()
-            options.add_argument("--headless")
+            options.headless = True
             options.binary_location = which("chrome") or which("chromium")
             service = webdriver.chrome.service.Service(which('chromedriver'))
             return webdriver.Chrome(options=options)
