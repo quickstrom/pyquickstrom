@@ -18,27 +18,37 @@ import todomvc/elements;
 
 action ~selectOtherFilter! = click!(`.todoapp .filters a:not(.selected)`)
   // weighted 5.0
+  when not isInEditMode
   ;
 
-action ~selectSameFilter! = click!(`.todoapp .filters a.selected`);
+action ~selectSameFilter! = click!(`.todoapp .filters a.selected`) when not isInEditMode;
 
-action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`);
+action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`) when not isInEditMode;
 
-action ~editTodo! = doubleClick!(`.todoapp .todo-list li label`);
+action ~editTodo! = doubleClick!(`.todoapp .todo-list li label`) when not isInEditMode;
 
-action ~deleteTodo! = click!(`.todoapp .destroy`);
+action ~deleteTodo! = click!(`.todoapp .destroy`) when not isInEditMode;
 
-action ~focusInput! = focus!(`.todoapp .new-todo`)
-  // weighted 5.0
-  ;
+action ~focusInput! = focus!(`.todoapp .new-todo`) when not isInEditMode;
 
-action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] 
+action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace), keyPress!(keys.escape)] 
   when newTodoInput.focused 
-    || (exists item in items { item.editInput != null && item.editInput.focused })
   // weighted 5.0
   ;
 
-action ~createTodo! = [keyPress!(keys.return)] when newTodoInput != null && newTodoInput.pendingText != ""
+action ~enterEditText! = [
+    keyPress!(" "), keyPress!("a"),
+    keyPress!(keys.backspace), 
+    keyPress!(keys.escape)
+  ] 
+  when isInEditMode
+  // weighted 5.0
+  ;
+
+action ~createTodo! = [keyPress!(keys.return)] 
+  when newTodoInput != null 
+    && newTodoInput.pendingText != ""
+    && newTodoInput.focused
   // weighted 5.0
   ;
 
@@ -185,20 +195,23 @@ let ~enterEditMode =
   (numInEditMode == 0) ~> (numInEditMode == 0 && (exists item in items { item.editInput.focused }))
     && unchanged([
       selectedFilter,
-      newTodoInput,
+      newTodoInput.pendingText,
       availableFilters,
-      items,
+      for item in items { item.text },
       todoCount
     ]);
 
 let ~exitEditMode =
   (numInEditMode == 1 ~> numInEditMode == 0)
     && (forall item in items {
-      // TODO: Add a case for pressing the Escape key, which should discard any changes and exit edit mode.
       match item.editInput.pendingText {
         | case "" { numItems -= 1 }
         | case newText { 
-          nextT (exists newItem in items { newItem.index == item.index ==> newItem.text == newText})
+          if contains(keyPress!(keys.escape), happened) {
+            unchanged(items)
+          } else {
+            nextT (exists newItem in items { newItem.index == item.index ==> newItem.text == newText})
+          }
         }
       }
     })

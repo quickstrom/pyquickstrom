@@ -113,7 +113,7 @@ class Check():
                     elif action.id == 'doubleClick':
                         id = action.args[0]
                         element = WebElement(driver, id)
-                        ActionChains(driver).double_click(element)
+                        ActionChains(driver).double_click(element).perform()
                     elif action.id == 'focus':
                         id = action.args[0]
                         element = WebElement(driver, id)

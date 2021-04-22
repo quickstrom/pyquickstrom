@@ -4,11 +4,11 @@ from quickstrom.protocol import *
 from deepdiff import DeepDiff, extract
 import click
 
-def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, print_all_traces: bool = False):
+def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, show_trace_on_success = False):
     for result in results:
         click.echo("Trace:", file=file)
         last_state = None
-        if not result.valid.value or print_all_traces:
+        if not result.valid.value or show_trace_on_success:
             for i, element in zip(range(1, len(result.trace) + 1), result.trace):
                 if isinstance(element, TraceActions):
                     for action in element.actions:
@@ -93,9 +93,21 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int, file
                     return ""
 
             click.echo(indent(f"{element_prefix()}{element_suffix()}", indent_level+1), file=file)
-            for key, value in [(key, value) for key, value in state_element.items() if key != 'ref']:
-                diff = value_diff(f"{element_diff_key}['{key}']", value)
-                click.echo(indent(f"* {key}: {diff.formatted()}", indent_level+2), file=file)
+
+            def print_value_diff(obj, diff_key: str, indent_level: int):
+                if isinstance(obj, dict):
+                    for key, value in [(key, value) for key, value in obj.items() if key != 'ref']:
+                        click.echo(indent(f"{key}:", indent_level), file=file)
+                        print_value_diff(value, f"{diff_key}['{key}']", indent_level=indent_level+2)
+                elif isinstance(obj, list):
+                    for i, value in enumerate(obj):
+                        click.echo(indent("*", indent_level), file=file)
+                        print_value_diff(value, f"{diff_key}[{i}]", indent_level=indent_level+2)
+                else:
+                    diff = value_diff(diff_key, obj)
+                    click.echo(indent(f"{diff.formatted()}", indent_level), file=file)
+
+            print_value_diff(state_element, diff_key=element_diff_key, indent_level=indent_level+2)
                 
 def element_heading(s): return click.style(s, bold=True, underline=True)
 

@@ -26,8 +26,9 @@ def root(log_level):
 @click.argument('origin')
 @click.option('-B', '--browser', default='firefox')
 @click.option('-I', '--include', multiple=True, help='include a path in the Specstrom module search paths')
-@click.option('-S', '--capture-screenshots', help='capture a screenshot at each state and write to /tmp')
-def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots):
+@click.option('-S', '--capture-screenshots/--no-capture-screenshots', default=False, help='capture a screenshot at each state and write to /tmp')
+@click.option('--show-trace-on-success/--no-show-trace-on-success', default=False, help='capture a screenshot at each state and write to /tmp')
+def check(module: str, origin: str, browser: executor.Browser, include: List[str], capture_screenshots: bool, show_trace_on_success: bool):
     """Checks the configured properties in the given module."""
     origin_url = urlparse(urljoin("file://", origin))
     if origin_url.scheme == "file" and not Path(origin_url.path).is_file():
@@ -36,7 +37,7 @@ def check(module: str, origin: str, browser: executor.Browser, include: List[str
     try:
         results = executor.Check(
             module, origin_url.geturl(), browser, include, capture_screenshots).execute()
-        printer.print_results(results)
+        printer.print_results(results, show_trace_on_success=show_trace_on_success)
         if any([not r.valid.value for r in results]):
             exit(3)
     except executor.SpecstromError as err:

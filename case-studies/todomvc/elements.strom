@@ -15,7 +15,7 @@ let ~items =
     (for cb in `.todo-list li input[type=checkbox]` { cb.checked }),
     (for e in `.todo-list li .edit` { { pendingText: e.value, focused: e.active } })
   ]) {
-    if visible { { index: index, text: trim(text), checked: checked, editing: editing, editInput: input } }
+    if visible { { index: index, text: text, checked: checked, editing: editing, editInput: input } }
   };
 
 let ~lastItemText = 
@@ -31,6 +31,8 @@ let ~numChecked = length(for i in items { i when i.checked });
 let ~itemsInEditMode = for item in items { item when item.editing };
 
 let ~numInEditMode = length(itemsInEditMode);
+
+let ~isInEditMode = numInEditMode > 1;
 
 let ~newTodoInput = 
   first(for e in `.todoapp .new-todo` {

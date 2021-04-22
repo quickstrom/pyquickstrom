@@ -36,8 +36,8 @@ def run(apps: List[TestApp]):
     os.makedirs("results", exist_ok=True)
     browsers: List[executor.Browser] = [
         "chrome",
-        #, "firefox"
-        ]
+        # , "firefox"
+    ]
     include_paths = list(map(lambda p: str(p.absolute()),
                          [case_studies_dir, ulib_dir]))
     for app in apps:
@@ -61,8 +61,8 @@ def run(apps: List[TestApp]):
                             "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
                 except Exception as e:
                     click.echo(
-                        "Test failed with exception:\n{e}", file=results_file)
-                    click.echo("result: failed with exception")
+                        f"Test failed with exception:\n{e}", file=results_file)
+                    click.echo(failure("result: failed with exception"))
 
                 click.echo("")
 
