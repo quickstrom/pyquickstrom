@@ -18,6 +18,7 @@ import selenium.webdriver.chrome.options as chrome
 import selenium.webdriver.firefox.options as firefox
 
 from quickstrom.protocol import *
+import quickstrom.printer as printer
 
 Url = str
 
@@ -145,6 +146,7 @@ class Check():
                         if isinstance(msg, Start):
                             self.log.info("Starting session")
                             driver = self.new_driver()
+                            driver.set_window_size(1200, 600)
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
@@ -174,7 +176,7 @@ class Check():
                             elif isinstance(msg, RequestAction):
                                 actionCount += 1
                                 self.log.info(
-                                    f"Performing action #{actionCount}: {msg.action}")
+                                    f"Performing action #{actionCount}: {printer.pretty_print_action(msg.action)}")
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
                                 screenshot(driver, actionCount)

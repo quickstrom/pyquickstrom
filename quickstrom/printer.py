@@ -2,7 +2,16 @@ import sys
 from typing import List, cast, IO, Text
 from quickstrom.protocol import *
 from deepdiff import DeepDiff, extract
+from selenium.webdriver.common.keys import Keys
 import click
+
+key_name_by_code = { code : key for key, code in vars(Keys).items() }
+
+def pretty_print_action(action: Action) -> str:
+    def format_arg(arg):
+        return key_name_by_code.get(arg, repr(arg)) if action.id == 'keyPress' else repr(arg)
+    return f"{action.id}({', '.join([format_arg(arg) for arg in action.args])})"
+
 
 def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, show_trace_on_success = False):
     for result in results:
@@ -14,7 +23,7 @@ def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, 
                     for action in element.actions:
                         label = "Event" if action.isEvent else "Action"
                         heading = f"{i}. {label}:"
-                        click.echo(indent(element_heading(f"{heading} {action.id}({', '.join([repr(arg) for arg in action.args])})"), 1), file=file)
+                        click.echo(indent(element_heading(f"{heading} {pretty_print_action(action)}"), 1), file=file)
                 elif isinstance(element, TraceState):
                     click.echo(indent(element_heading(f"{i}. State"), 1), file=file)
                     state: State = element.state

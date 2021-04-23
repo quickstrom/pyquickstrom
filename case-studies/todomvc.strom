@@ -31,24 +31,26 @@ action ~deleteTodo! = click!(`.todoapp .destroy`) when not isInEditMode;
 
 action ~focusInput! = focus!(`.todoapp .new-todo`) when not isInEditMode;
 
-action ~enterPendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace), keyPress!(keys.escape)] 
-  when newTodoInput.focused 
+action ~typePendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] 
+  when newTodoInput.active 
   // weighted 5.0
   ;
 
-action ~enterEditText! = [
-    keyPress!(" "), keyPress!("a"),
-    keyPress!(keys.backspace), 
-    keyPress!(keys.escape)
+action ~typeEditText! = [
+    keyPress!(" "),
+    keyPress!("a"),
+    keyPress!(keys.backspace),
   ] 
   when isInEditMode
   // weighted 5.0
   ;
 
+action ~abortEdit! = [keyPress!(keys.escape)] when isInEditMode;
+
 action ~createTodo! = [keyPress!(keys.return)] 
   when newTodoInput != null 
     && newTodoInput.pendingText != ""
-    && newTodoInput.focused
+    && newTodoInput.active
   // weighted 5.0
   ;
 
@@ -62,8 +64,8 @@ let ~initial =
       && newTodoInput.pendingText == "";
 
 let ~focusNewTodo =
-  not newTodoInput.focused
-    && newTodoInput.focused becomes true
+  not newTodoInput.active
+    && newTodoInput.active becomes true
     && unchanged([
       selectedFilter,
       newTodoInput.pendingText,
@@ -72,7 +74,7 @@ let ~focusNewTodo =
       todoCount
     ]);
 
-let ~enterText =
+let ~enterNewTodoText =
   changed(newTodoInput.pendingText)
     && unchanged(items)
     && unchanged(selectedFilter);
@@ -191,36 +193,43 @@ let ~toggleAll =
       }
     });
 
-let ~enterEditMode =
-  (numInEditMode == 0) ~> (numInEditMode == 0 && (exists item in items { item.editInput.focused }))
+let ~startEditing =
+  (numInEditMode == 0) ~> (numInEditMode == 1 && itemInEditMode.editInput.active)
     && unchanged([
       selectedFilter,
-      newTodoInput.pendingText,
       availableFilters,
       for item in items { item.text },
       todoCount
-    ]);
+    ])
+    && (newTodoInput != null ==> unchanged(newTodoInput.pendingText));
 
-let ~exitEditMode =
+let ~enterEditText =
+  numInEditMode == 1
+    && unchanged(numInEditMode)
+    && nextT (not contains(keyPress!(keys.escape), happened))
+    && changed(itemInEditMode.editInput.pendingText when itemInEditMode != null)
+    && unchanged(for item in items { item.text })
+    && unchanged(selectedFilter);
+
+let ~abortEdit =
   (numInEditMode == 1 ~> numInEditMode == 0)
-    && (forall item in items {
-      match item.editInput.pendingText {
-        | case "" { numItems -= 1 }
-        | case newText { 
-          if contains(keyPress!(keys.escape), happened) {
-            unchanged(items)
-          } else {
-            nextT (exists newItem in items { newItem.index == item.index ==> newItem.text == newText})
-          }
-        }
+    && nextT (contains(keyPress!(keys.escape), happened))
+    && unchanged(for item in items { item.text });
+
+let ~commitEdit =
+  (numInEditMode == 1 ~> numInEditMode == 0)
+    && nextT (not contains(keyPress!(keys.escape), happened))
+    && (match itemInEditMode.editInput.pendingText {
+      | case "" { numItems -= 1 }
+      | case newText { 
+          let oldItem = itemInEditMode;
+          nextT (exists item in items { item.index == oldItem.index && item.text == newText})
       }
     })
     && unchanged([
       selectedFilter,
-      newTodoInput,
-      availableFilters,
-      items,
-      todoCount
+      newTodoInput.pendingText,
+      availableFilters
     ]);
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
@@ -237,7 +246,7 @@ let ~prop_safety =
   initial
     && always
        ( focusNewTodo
-           || enterText
+           || enterNewTodoText
            || addNew
            || changeFilter
            || setSameFilter
@@ -245,7 +254,10 @@ let ~prop_safety =
            || uncheckOne
            || delete
            || toggleAll
-           || enterEditMode
+           || startEditing
+           || enterEditText
+           || abortEdit
+           || commitEdit
        )
     && always (hasFilters && correctFilterStates);
 
