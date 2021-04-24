@@ -6,6 +6,7 @@ from typing import List
 from dataclasses import dataclass, asdict
 from urllib.parse import urljoin
 import pathlib
+import subprocess
 
 
 @dataclass
@@ -32,43 +33,54 @@ case_studies_dir = pathlib.Path(__file__).parent
 ulib_dir = case_studies_dir.parent.joinpath("ulib")
 
 
+def todomvc_server():
+    return subprocess.Popen(["python3", "-m", "http.server", "--directory", os.getenv("TODOMVC_DIR"), "12345"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def run(apps: List[TestApp]):
-    os.makedirs("results", exist_ok=True)
-    browsers: List[executor.Browser] = [
-        "chrome",
-        # , "firefox"
-    ]
-    include_paths = list(map(lambda p: str(p.absolute()),
-                         [case_studies_dir, ulib_dir]))
-    for app in apps:
-        checks = [executor.Check(app.module, origin=urljoin("file://", app.origin), browser=browser,
-                                 include_paths=include_paths, capture_screenshots=False) for browser in browsers]
-        for check in checks:
-            with open(f"results/{app.name}.{app.module}.{check.browser}.log", "w") as results_file:
-                click.echo(heading1(f"{app.name}"))
-                for key, value in asdict(check).items():
-                    if key != 'log':
-                        click.echo(f"{key}: {value}")
-                click.echo("details: " + results_file.name)
+    with todomvc_server() as server:
+        try:
+            os.makedirs("results", exist_ok=True)
+            browsers: List[executor.Browser] = [
+                "chrome",
+                # , "firefox"
+            ]
+            include_paths = list(map(lambda p: str(p.absolute()),
+                                     [case_studies_dir, ulib_dir]))
+            for app in apps:
+                checks = [executor.Check(app.module, origin=urljoin("file://", app.origin), browser=browser,
+                                         include_paths=include_paths, capture_screenshots=False) for browser in browsers]
+                for check in checks:
+                    with open(f"results/{app.name}.{app.module}.{check.browser}.log", "w") as results_file:
+                        click.echo(heading1(f"{app.name}"))
+                        for key, value in asdict(check).items():
+                            if key != 'log':
+                                click.echo(f"{key}: {value}")
+                        click.echo("details: " + results_file.name)
 
-                try:
-                    results = check.execute()
-                    printer.print_results(results, file=results_file)
+                        try:
+                            results = check.execute()
+                            printer.print_results(results, file=results_file)
 
-                    for result in results:
-                        color = success if result.valid.value else failure
-                        click.echo(
-                            "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
-                except Exception as e:
-                    click.echo(
-                        f"Test failed with exception:\n{e}", file=results_file)
-                    click.echo(failure("result: failed with exception"))
+                            for result in results:
+                                color = success if result.valid.value else failure
+                                click.echo(
+                                    "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
+                        except KeyboardInterrupt:
+                            exit(1)
+                        except Exception as e:
+                            click.echo(
+                                f"Test failed with exception:\n{e}", file=results_file)
+                            click.echo(
+                                failure("result: failed with exception"))
 
-                click.echo("")
+                        click.echo("")
+        finally:
+            server.kill()
 
 
 def todomvc_app(name: str) -> TestApp:
-    base = os.getenv("TODOMVC_DIR") or "https://todomvc.com"
+    base = "http://localhost:12345"
     url = f"{base}/examples/{name}/index.html"
     return TestApp(name, "todomvc", url)
 
