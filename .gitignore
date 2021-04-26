@@ -143,3 +143,5 @@ cython_debug/
 
 # Haskell profiling
 /*.prof
+
+.direnv
