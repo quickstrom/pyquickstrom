@@ -97,7 +97,7 @@ let ~setSameFilter =
       selectedFilter,
       newTodoInput.pendingText,
       availableFilters,
-      items,
+      for item in items { item.text },
       todoCount
     ]);
 
