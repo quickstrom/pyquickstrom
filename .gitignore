@@ -145,3 +145,4 @@ cython_debug/
 /*.prof
 
 .direnv
+poetry.toml

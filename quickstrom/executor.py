@@ -1,19 +1,14 @@
-import io
 import subprocess
-import json
-import jsonlines
 import logging
 import time
 from shutil import which
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Union
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.keys import Keys
 import selenium.webdriver.chrome.options as chrome
 import selenium.webdriver.firefox.options as firefox
 
