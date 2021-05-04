@@ -3,7 +3,7 @@ import logging
 import time
 from shutil import which
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Union, Literal
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
