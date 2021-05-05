@@ -12,9 +12,9 @@ let
         mkdir -p $out
 
         # TODO: add ./failing and /passing includes later when required.
-        quickstrom --log-level=INFO check ${module} ${origin} ${options} -I${
+        quickstrom --log-level=INFO -I${
           ../case-studies
-        } --browser=${browser} | tee $out/test-report.log
+        } check ${module} ${origin} ${options} --browser=${browser} | tee $out/test-report.log
         exit_code=$?
 
         if [ $exit_code == "${toString expectedExitCode}" ]; then
@@ -52,15 +52,21 @@ in makeTests {
   };
   todomvc-backbone = {
     module = "todomvc";
-    origin = "${todomvc}/examples/vue/index.html";
+    origin = "${todomvc}/examples/backbone/index.html";
     options = "";
     expectedExitCode = 0;
   };
-  todomvc-react = {
+  todomvc-dojo = {
     module = "todomvc";
-    origin = "${todomvc}/examples/vue/index.html";
+    origin = "${todomvc}/examples/dojo/index.html";
     options = "";
     expectedExitCode = 0;
+  };
+  todomvc-emberjs = {
+    module = "todomvc";
+    origin = "${todomvc}/examples/emberjs/index.html";
+    options = "";
+    expectedExitCode = 3;
   };
   todomvc-angularjs = {
     module = "todomvc";

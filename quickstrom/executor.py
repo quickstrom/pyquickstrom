@@ -24,7 +24,8 @@ class SpecstromError(Exception):
     exit_code: int
     log_file: str
 
-    def __str__(self): return f"{self.message}, exit code {self.exit_code}"
+    def __str__(self):
+        return f"{self.message}, exit code {self.exit_code}"
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
@@ -52,8 +53,8 @@ class Check():
                         if exit_code == 0:
                             return None
                         else:
-                            raise SpecstromError(
-                                "Specstrom invocation failed", exit_code, ilog.name)
+                            raise SpecstromError("Specstrom invocation failed",
+                                                 exit_code, ilog.name)
                     else:
                         self.log.debug("Received %s", msg)
                         return msg
@@ -82,7 +83,8 @@ class Check():
                             element_state[key] = element.is_displayed()
                         elif key == 'active':
                             active = driver.switch_to.active_element
-                            element_state[key] = element.id == active.id if active else False
+                            element_state[
+                                key] = element.id == active.id if active else False
                         elif key == 'value':
                             element_state[key] = element.get_property('value')
                         elif key == 'css':
@@ -92,7 +94,9 @@ class Check():
                             element_state[key] = element.get_property(
                                 'textContent')
                         elif key == 'classList':
-                            element_state[key] = driver.execute_script("return Array(...arguments[0].classList)", element)
+                            element_state[key] = driver.execute_script(
+                                "return Array(...arguments[0].classList)",
+                                element)
                         elif key == 'checked':
                             element_state[key] = element.get_property(
                                 'checked')
@@ -124,7 +128,8 @@ class Check():
                 def query(driver, deps):
                     state = {}
                     for selector, schema in deps.items():
-                        elements = driver.find_elements(by=By.CSS_SELECTOR, value=selector)
+                        elements = driver.find_elements(by=By.CSS_SELECTOR,
+                                                        value=selector)
                         element_states = []
                         for element in elements:
                             element_state = get_element_state(
@@ -146,9 +151,11 @@ class Check():
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
                             state = query(driver, msg.dependencies)
-                            event = {'id': 'loaded', 'isEvent': True,
-                                     'args': [], 'timeout': None}
-                            send({'tag': 'Event', 'contents': [event, state]})
+                            event = Action(id='loaded',
+                                           isEvent=True,
+                                           args=[],
+                                           timeout=None)
+                            send(Event(event=event, state=state))
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
                             return msg.results
@@ -167,15 +174,17 @@ class Check():
                             msg = receive()
                             if not msg:
                                 raise Exception(
-                                    "No more messages from Specstrom, expected RequestAction or End.")
+                                    "No more messages from Specstrom, expected RequestAction or End."
+                                )
                             elif isinstance(msg, RequestAction):
                                 actionCount += 1
                                 self.log.info(
-                                    f"Performing action #{actionCount}: {printer.pretty_print_action(msg.action)}")
+                                    f"Performing action #{actionCount}: {printer.pretty_print_action(msg.action)}"
+                                )
                                 perform_action(driver, msg.action)
                                 state = query(driver, deps)
                                 screenshot(driver, actionCount)
-                                send({'tag': 'Performed', 'contents': state})
+                                send(Performed(state=state))
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
@@ -188,15 +197,15 @@ class Check():
 
     def launch_specstrom(self, ilog):
         includes = list(map(lambda i: "-I" + i, self.include_paths))
-        cmd = ["specstrom", "check", self.module] + includes # + ["+RTS", "-p"]
+        cmd = ["specstrom", "check", self.module
+               ] + includes    # + ["+RTS", "-p"]
         self.log.debug("Invoking Specstrom with: %s", " ".join(cmd))
-        return subprocess.Popen(
-            cmd,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=ilog,
-            stdin=subprocess.PIPE,
-            bufsize=0)
+        return subprocess.Popen(cmd,
+                                text=True,
+                                stdout=subprocess.PIPE,
+                                stderr=ilog,
+                                stdin=subprocess.PIPE,
+                                bufsize=0)
 
     def new_driver(self):
         if self.browser == 'chrome':

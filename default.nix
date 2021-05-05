@@ -21,7 +21,7 @@ let
     postBuild = ''
       mkdir -p $out/share
       cp -r ${./ulib} $out/share/ulib
-      wrapProgram $out/bin/specstrom \
+      wrapProgram $out/bin/quickstrom \
         --add-flags "-I$out/share/ulib"
     '';
   };
