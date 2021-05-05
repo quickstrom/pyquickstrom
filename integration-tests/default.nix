@@ -44,12 +44,6 @@ let
   };
 
 in makeTests {
-  todomvc-vue = {
-    module = "todomvc";
-    origin = "${todomvc}/examples/vue/index.html";
-    options = "";
-    expectedExitCode = 0;
-  };
   todomvc-backbone = {
     module = "todomvc";
     origin = "${todomvc}/examples/backbone/index.html";
@@ -61,12 +55,6 @@ in makeTests {
     origin = "${todomvc}/examples/dojo/index.html";
     options = "";
     expectedExitCode = 0;
-  };
-  todomvc-emberjs = {
-    module = "todomvc";
-    origin = "${todomvc}/examples/emberjs/index.html";
-    options = "";
-    expectedExitCode = 3;
   };
   todomvc-angularjs = {
     module = "todomvc";
