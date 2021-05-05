@@ -1,6 +1,6 @@
 import logging
 import click
-from typing import List
+from typing import cast, Dict, List
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
@@ -12,7 +12,7 @@ class NoWebdriverFilter(logging.Filter):
     def filter(self, record):
         return not record.name.startswith('selenium.webdriver.remote')
 
-global_options = { 'includes': [] }
+global_options: Dict[str, object] = { 'includes': [] }
 
 @click.group()
 @click.option('--log-level', default='WARN', help='log level (DEBUG|INFO|WARN|ERROR)')
@@ -38,7 +38,7 @@ def check(module: str, origin: str, browser: executor.Browser, capture_screensho
         exit(1)
     try:
         results = executor.Check(
-            module, origin_url.geturl(), browser, global_options['includes'], capture_screenshots).execute()
+            module, origin_url.geturl(), browser, cast(List[str], global_options['includes']), capture_screenshots).execute()
         printer.print_results(results, show_trace_on_success=show_trace_on_success)
         if any([not r.valid.value for r in results]):
             exit(3)
