@@ -12,12 +12,14 @@ ElementState = Dict[str, object]
 
 State = Dict[Selector, List[ElementState]]
 
+
 @dataclass
 class Action():
     id: str
     args: List[object]
     isEvent: bool
     timeout: Optional[int]
+
 
 @dataclass
 class TraceActions():
@@ -27,6 +29,7 @@ class TraceActions():
 @dataclass
 class TraceState():
     state: State
+
 
 TraceElement = Union[TraceActions, TraceState]
 
@@ -44,9 +47,10 @@ class Result():
     valid: Validity
     trace: Trace
 
+
 @dataclass
 class Start():
-    dependencies: Dict[Selector, State]
+    dependencies: Dict[Selector, Schema]
 
 
 @dataclass
@@ -64,22 +68,45 @@ class RequestAction():
     action: Action
 
 
+@dataclass
+class Performed():
+    state: State
+
+
+@dataclass
+class Event():
+    event: Action
+    state: State
+
+
 def message_writer(fp):
-    return jsonlines.Writer(fp, dumps=lambda obj: json.dumps(obj, cls=_ProtocolEncoder), flush=True)
+    return jsonlines.Writer(
+        fp,
+        dumps=lambda obj: json.dumps(obj, cls=_ProtocolEncoder),
+        flush=True)
 
 
 def message_reader(fp):
-    def loads(s): return json.loads(s, object_hook=_decode_hook)
+    def loads(s):
+        return json.loads(s, object_hook=_decode_hook)
+
     return jsonlines.Reader(fp, loads=loads)
 
 
 class _ProtocolEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, Start):
-            deps = json.JSONEncoder.default(self, obj.dependencies)
-            return {'tag': 'Start', 'dependencies': deps}
-        elif isinstance(obj, End):
-            return {'tag': 'End'}
+        if isinstance(obj, Performed):
+            return {'tag': 'Performed', 'contents': obj.state}
+        elif isinstance(obj, Event):
+            event = self.default(obj.event)
+            return {'tag': 'Event', 'contents': [event, obj.state]}
+        elif isinstance(obj, Action):
+            return {
+                'id': obj.id,
+                'args': obj.args,
+                'isEvent': obj.isEvent,
+                'timeout': obj.timeout
+            }
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -109,4 +136,4 @@ def _decode_hook(d):
     elif d['tag'] == 'TraceState':
         return TraceState(state=d['contents'])
     else:
-        raise(Exception(f"Unsupported tagged JSON type: {d['tag']}"))
+        raise (Exception(f"Unsupported tagged JSON type: {d['tag']}"))
