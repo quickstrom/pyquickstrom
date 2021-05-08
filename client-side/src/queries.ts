@@ -5,14 +5,12 @@ import { isElementVisible } from "./visibility";
 export type Selector = string;
 
 export interface Schema {
-    [k: string]: Schema,
+    [name: string]: Schema,
 };
 
 export interface Dependencies {
     [selector: string]: Schema,
 };
-
-export type Value = string | number | boolean | Element | null;
 
 interface ElementState {
     ref?: Element,
@@ -26,12 +24,12 @@ export interface QueriedState {
 
 export function runQuery(selector: Selector, schema: Schema): ElementState[] {
     function queryCssValues(element: Element, subSchema: Schema): any {
-        const css = {};
+        const css: ElementState = {};
         Object.entries(subSchema).forEach(([name, subSchema]) => {
-            if (subSchema !== {}) {
-                throw Error("Schema for CSS value cannot contain sub-schemas.");
+            if (Object.keys(subSchema).length > 0) {
+                throw Error("Schema for CSS value cannot contain sub-schemas: " + JSON.stringify(subSchema));
             } else {
-                return window
+                css[name] = window
                     .getComputedStyle(element)
                     .getPropertyValue(name);
             }
