@@ -14,6 +14,7 @@ import selenium.webdriver.firefox.options as firefox
 
 from quickstrom.protocol import *
 import quickstrom.printer as printer
+import os
 
 Url = str
 
@@ -88,7 +89,10 @@ class Check():
 
                 def elements_to_ids(obj):
                     if isinstance(obj, dict):
-                        return {key:elements_to_ids(value) for (key, value) in obj.items()}
+                        return {
+                            key: elements_to_ids(value)
+                            for (key, value) in obj.items()
+                        }
                     elif isinstance(obj, list):
                         return [elements_to_ids(value) for value in obj]
                     elif isinstance(obj, WebElement):
@@ -98,9 +102,14 @@ class Check():
 
                 def query_state(driver, deps):
                     self.log.debug("Deps: %s", json.dumps(deps))
-                    file = open('client-side/result/queryState.js'); 
+                    key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
+                    client_side_dir = os.getenv(key)
+                    if not client_side_dir:
+                        raise Exception(f'Environment variable {key} must be set')
+                    file = open(f'{client_side_dir}/queryState.js')
                     script = file.read()
-                    return elements_to_ids(driver.execute_async_script(script, deps));
+                    return elements_to_ids(
+                        driver.execute_async_script(script, deps))
 
                 def run_sessions():
                     while True:
