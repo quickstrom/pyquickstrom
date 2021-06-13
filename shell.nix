@@ -27,4 +27,5 @@ in pkgs.mkShell {
     specstrom
   ];
   TODOMVC_DIR = todomvc;
+  QUICKSTROM_CLIENT_SIDE_DIRECTORY = import ./client-side { inherit pkgs; };
 }

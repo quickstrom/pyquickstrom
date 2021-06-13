@@ -50,11 +50,11 @@ in makeTests {
     options = "";
     expectedExitCode = 0;
   };
-  todomvc-dojo = {
+  todomvc-mithril = {
     module = "todomvc";
-    origin = "${todomvc}/examples/dojo/index.html";
+    origin = "${todomvc}/examples/mithril/index.html";
     options = "";
-    expectedExitCode = 0;
+    expectedExitCode = 3;
   };
   todomvc-angularjs = {
     module = "todomvc";

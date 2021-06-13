@@ -14,6 +14,7 @@ import selenium.webdriver.firefox.options as firefox
 
 from quickstrom.protocol import *
 import quickstrom.printer as printer
+import os
 
 Url = str
 
@@ -66,45 +67,6 @@ class Check():
                     else:
                         raise Exception("Done, can't send.")
 
-                def get_element_css_values(element, schema):
-                    css_values = {}
-                    for name, schema in schema.items():
-                        css_values[name] = element.value_of_css_property(name)
-                    return css_values
-
-                def get_element_state(driver, schema, element):
-                    element_state = {}
-                    for key, sub_schema in schema.items():
-                        if key == 'ref':
-                            element_state[key] = element.id
-                        elif key == 'enabled':
-                            element_state[key] = element.is_enabled()
-                        elif key == 'visible':
-                            element_state[key] = element.is_displayed()
-                        elif key == 'active':
-                            active = driver.switch_to.active_element
-                            element_state[
-                                key] = element.id == active.id if active else False
-                        elif key == 'value':
-                            element_state[key] = element.get_property('value')
-                        elif key == 'css':
-                            element_state[key] = get_element_css_values(
-                                element, sub_schema)
-                        elif key == 'textContent':
-                            element_state[key] = element.get_property(
-                                'textContent')
-                        elif key == 'classList':
-                            element_state[key] = driver.execute_script(
-                                "return Array(...arguments[0].classList)",
-                                element)
-                        elif key == 'checked':
-                            element_state[key] = element.get_property(
-                                'checked')
-                        else:
-                            raise Exception(
-                                f"Unsupported element state: {key}")
-                    return element_state
-
                 def perform_action(driver, action):
                     if action.id == 'click':
                         id = action.args[0]
@@ -125,19 +87,29 @@ class Check():
                     else:
                         raise Exception(f'Unsupported action: {action}')
 
-                def query(driver, deps):
-                    state = {}
-                    for selector, schema in deps.items():
-                        elements = driver.find_elements(by=By.CSS_SELECTOR,
-                                                        value=selector)
-                        element_states = []
-                        for element in elements:
-                            element_state = get_element_state(
-                                driver, schema, element)
-                            element_states.append(element_state)
-                        state[selector] = element_states
+                def elements_to_ids(obj):
+                    if isinstance(obj, dict):
+                        return {
+                            key: elements_to_ids(value)
+                            for (key, value) in obj.items()
+                        }
+                    elif isinstance(obj, list):
+                        return [elements_to_ids(value) for value in obj]
+                    elif isinstance(obj, WebElement):
+                        return obj.id
+                    else:
+                        return obj
 
-                    return state
+                def query_state(driver, deps):
+                    self.log.debug("Deps: %s", json.dumps(deps))
+                    key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
+                    client_side_dir = os.getenv(key)
+                    if not client_side_dir:
+                        raise Exception(f'Environment variable {key} must be set')
+                    file = open(f'{client_side_dir}/queryState.js')
+                    script = file.read()
+                    return elements_to_ids(
+                        driver.execute_async_script(script, deps))
 
                 def run_sessions():
                     while True:
@@ -150,7 +122,7 @@ class Check():
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
-                            state = query(driver, msg.dependencies)
+                            state = query_state(driver, msg.dependencies)
                             event = Action(id='loaded',
                                            isEvent=True,
                                            args=[],
@@ -182,7 +154,7 @@ class Check():
                                     f"Performing action #{actionCount}: {printer.pretty_print_action(msg.action)}"
                                 )
                                 perform_action(driver, msg.action)
-                                state = query(driver, deps)
+                                state = query_state(driver, deps)
                                 screenshot(driver, actionCount)
                                 send(Performed(state=state))
                             elif isinstance(msg, End):

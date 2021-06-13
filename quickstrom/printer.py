@@ -105,7 +105,7 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int, file
 
             def print_value_diff(obj, diff_key: str, indent_level: int):
                 if isinstance(obj, dict):
-                    for key, value in [(key, value) for key, value in obj.items() if key != 'ref']:
+                    for key, value in [(key, value) for key, value in obj.items() if key not in ['ref', 'position']]:
                         click.echo(indent(f"{key}:", indent_level), file=file)
                         print_value_diff(value, f"{diff_key}['{key}']", indent_level=indent_level+2)
                 elif isinstance(obj, list):

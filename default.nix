@@ -14,6 +14,8 @@ let
       [ specstrom geckodriver firefox chromedriver chromium ];
   };
 
+  client-side = import ./client-side { inherit pkgs; };
+
   quickstrom-wrapped = pkgs.symlinkJoin {
     name = "quickstrom";
     paths = [ quickstrom ];
@@ -22,9 +24,10 @@ let
       mkdir -p $out/share
       cp -r ${./ulib} $out/share/ulib
       wrapProgram $out/bin/quickstrom \
+        --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
         --add-flags "-I$out/share/ulib"
+
     '';
   };
-in 
-  quickstrom-wrapped
+in quickstrom-wrapped
 
