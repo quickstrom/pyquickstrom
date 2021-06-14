@@ -1,5 +1,3 @@
-{ pkgs, enableProfiling ? false }:
 (import (fetchTarball
-  "https://github.com/quickstrom/specstrom/archive/00f5d71a19a8c63529c3fb4a3f13931358b155a3.tar.gz") {
-    inherit pkgs;
+  "https://github.com/quickstrom/specstrom/archive/292c8d64e915b4df9e309d993e65336d3e983965.tar.gz") {
   }).specstrom

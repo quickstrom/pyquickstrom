@@ -2,10 +2,7 @@
 , firefox ? pkgs.firefox, chromedriver ? pkgs.chromedriver
 , chromium ? pkgs.chromium }:
 let
-  specstrom = (import ./nix/specstrom.nix {
-    inherit pkgs;
-    enableProfiling = false;
-  });
+  specstrom = import ./nix/specstrom.nix;
 
   quickstrom = pkgs.poetry2nix.mkPoetryApplication {
     projectDir = ./.;
