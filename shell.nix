@@ -1,6 +1,5 @@
-{ pkgs ? (import ./nix/nixpkgs.nix) }:
+{ pkgs ? (import ./nix/nixpkgs.nix), specstrom ? import ./nix/specstrom.nix }:
 let
-  specstrom = import ./nix/specstrom.nix;
   appEnv = pkgs.poetry2nix.mkPoetryEnv {
     projectDir = ./.;
     editablePackageSources = { my-app = ./.; };
@@ -21,10 +20,7 @@ in pkgs.mkShell {
     pkgs.chromedriver
 
     specstrom
-  ] ++ pkgs.lib.optional pkgs.stdenv.isLinux [
-    pkgs.firefox
-    pkgs.chromium
-  ] ;
+  ] ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ];
   TODOMVC_DIR = todomvc;
   QUICKSTROM_CLIENT_SIDE_DIRECTORY = import ./client-side { inherit pkgs; };
 }
