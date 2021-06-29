@@ -101,7 +101,6 @@ class Check():
                         return obj
 
                 def query_state(driver, deps):
-                    self.log.debug("Deps: %s", json.dumps(deps))
                     key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
                     client_side_dir = os.getenv(key)
                     if not client_side_dir:
@@ -122,6 +121,7 @@ class Check():
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
+                            self.log.debug("Deps: %s", json.dumps(msg.dependencies))
                             state = query_state(driver, msg.dependencies)
                             event = Action(id='loaded',
                                            isEvent=True,

@@ -15,9 +15,9 @@ def pretty_print_action(action: Action) -> str:
 
 def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, show_trace_on_success = False):
     for result in results:
-        click.echo("Trace:", file=file)
         last_state = None
         if not result.valid.value or show_trace_on_success:
+            click.echo("Trace:", file=file)
             for i, element in zip(range(1, len(result.trace) + 1), result.trace):
                 if isinstance(element, TraceActions):
                     for action in element.actions:
