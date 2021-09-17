@@ -1,5 +1,7 @@
 # Quickstrom (in Python)
 
+[![Build and test](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml/badge.svg)](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml)
+
 A new Quickstrom based on Specstrom.
 
 ## Development Setup
