@@ -1,7 +1,7 @@
 import sys
-from typing import List, cast, IO, Text
+from typing import List, IO, Text
 from quickstrom.protocol import *
-from deepdiff import DeepDiff, extract
+from deepdiff import DeepDiff
 from selenium.webdriver.common.keys import Keys
 import click
 
@@ -34,8 +34,9 @@ def print_results(results: List[Result], file: Optional[IO[Text]] = sys.stdout, 
 
 @dataclass
 class Diff():
-    def formatted(self): str
-
+    def formatted(self) -> str:
+        raise NotImplementedError
+    
 @dataclass
 class Added(Diff):
     value: object
@@ -97,7 +98,8 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int, file
 
             def element_suffix() -> str:
                 if 'ref' in state_element: 
-                    return " (" + value_diff(element_diff_key + "['ref']", state_element['ref']).formatted() + ")" 
+                    diff = value_diff(element_diff_key + "['ref']", state_element['ref'])
+                    return " (" +  diff.formatted() + ")" 
                 else: 
                     return ""
 

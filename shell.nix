@@ -20,6 +20,7 @@ in pkgs.mkShell {
     pkgs.chromedriver
 
     specstrom
+    pkgs.nodePackages.pyright
   ] ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ];
   TODOMVC_DIR = todomvc;
   QUICKSTROM_CLIENT_SIDE_DIRECTORY = import ./client-side { inherit pkgs; };
