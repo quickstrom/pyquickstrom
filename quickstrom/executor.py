@@ -185,15 +185,17 @@ class Check():
             options = chrome_options.Options()
             options.headless = True
             options.binary_location = which("chrome") or which("chromium")
-            driver = webdriver.Chrome(options=options)
-            driver.service = chrome.Service(which('chromedriver'))
-            return driver
+            chromedriver_path = which('chromedriver')
+            if not chromedriver_path:
+                raise Exception("chromedriver not found in PATH")
+            return webdriver.Chrome(options=options, executable_path=chromedriver_path)
         elif self.browser == 'firefox':
             options = firefox_options.Options()
             options.headless = True
             options.binary = which("firefox")
-            driver = webdriver.Firefox(options=options)
-            driver.service = firefox.Service(which('geckodriver'))
-            return driver
+            geckodriver_path = which('geckodriver')
+            if not geckodriver_path:
+                raise Exception("geckodriver not found in PATH")
+            return webdriver.Firefox(options=options, executable_path=geckodriver_path)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
