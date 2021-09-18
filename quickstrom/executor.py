@@ -3,14 +3,15 @@ import logging
 import time
 from shutil import which
 from dataclasses import dataclass
-from typing import List, Union, Literal
+from typing import List, Union, Literal, Any
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-import selenium.webdriver.chrome.options as chrome
-import selenium.webdriver.firefox.options as firefox
+import selenium.webdriver.chrome.options as chrome_options
+import selenium.webdriver.chrome.service as chrome
+import selenium.webdriver.firefox.options as firefox_options
+import selenium.webdriver.firefox.service as firefox
 
 from quickstrom.protocol import *
 import quickstrom.printer as printer
@@ -100,7 +101,7 @@ class Check():
                     else:
                         return obj
 
-                def query_state(driver, deps):
+                def query_state(driver, deps) -> Any:
                     key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
                     client_side_dir = os.getenv(key)
                     if not client_side_dir:
@@ -181,16 +182,20 @@ class Check():
 
     def new_driver(self):
         if self.browser == 'chrome':
-            options = chrome.Options()
+            options = chrome_options.Options()
             options.headless = True
             options.binary_location = which("chrome") or which("chromium")
-            service = webdriver.chrome.service.Service(which('chromedriver'))
-            return webdriver.Chrome(options=options)
+            chromedriver_path = which('chromedriver')
+            if not chromedriver_path:
+                raise Exception("chromedriver not found in PATH")
+            return webdriver.Chrome(options=options, executable_path=chromedriver_path)
         elif self.browser == 'firefox':
-            options = firefox.Options()
+            options = firefox_options.Options()
             options.headless = True
             options.binary = which("firefox")
-            service = webdriver.firefox.service.Service(which('geckodriver'))
-            return webdriver.Firefox(service=service, options=options)
+            geckodriver_path = which('geckodriver')
+            if not geckodriver_path:
+                raise Exception("geckodriver not found in PATH")
+            return webdriver.Firefox(options=options, executable_path=geckodriver_path)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")

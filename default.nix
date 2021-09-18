@@ -9,6 +9,11 @@ let
     python = pkgs.python38;
     propagatedBuildInputs =
       [ specstrom geckodriver firefox chromedriver chromium ];
+    checkInputs = [pkgs.nodePackages.pyright];
+    checkPhase = ''
+      pyright quickstrom
+    '';
+
   };
 
   client-side = import ./client-side { inherit pkgs; };

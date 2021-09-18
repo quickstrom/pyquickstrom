@@ -37,3 +37,11 @@ poetry run quickstrom -Iulib -Icase-studies --log-level=debug check todomvc $TOD
 ```shell
 nix build -f integration-tests/default.nix --option sandbox relaxed
 ```
+
+## Typechecking
+
+This project uses Pyright. Typecheck all files like so:
+
+```shell
+poetry run pyright quickstrom
+```
