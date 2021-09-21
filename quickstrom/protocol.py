@@ -5,8 +5,7 @@ from dataclasses import dataclass
 
 Selector = str
 
-# mypy doesn't support recursive types :(
-Schema = Dict[str, object]
+Schema = Dict[str, 'Schema']
 
 ElementState = Dict[str, object]
 
@@ -35,18 +34,23 @@ TraceElement = Union[TraceActions, TraceState]
 
 Trace = List[TraceElement]
 
+Certainty = Union[Literal['Definitely'], Literal['Probably']]
 
 @dataclass
 class Validity():
-    certainty: Union[Literal['Definitely'], Literal['Probably']]
+    certainty: Certainty
     value: bool
 
-
 @dataclass
-class Result():
+class RunResult():
     valid: Validity
     trace: Trace
 
+@dataclass
+class ErrorResult():
+    error: str
+
+Result = Union[RunResult, ErrorResult]
 
 @dataclass
 class Start():
@@ -114,7 +118,7 @@ class _ProtocolEncoder(json.JSONEncoder):
 def _decode_hook(d):
     if 'tag' not in d:
         if 'valid' in d and 'trace' in d:
-            return Result(d['valid'], d['trace'])
+            return RunResult(d['valid'], d['trace'])
         if 'id' in d and 'args' in d and 'isEvent' in d and 'timeout' in d:
             return Action(d['id'], d['args'], d['isEvent'], d['timeout'])
         else:
