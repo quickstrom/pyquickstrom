@@ -9,9 +9,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import selenium.webdriver.chrome.options as chrome_options
-import selenium.webdriver.chrome.service as chrome
 import selenium.webdriver.firefox.options as firefox_options
-import selenium.webdriver.firefox.service as firefox
 
 from quickstrom.protocol import *
 import quickstrom.printer as printer

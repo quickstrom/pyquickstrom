@@ -112,26 +112,25 @@ main .controls button:active {
     font-weight: normal;
 }
 
-.action-sequence, .action, .states, .screenshots, .details {
+.actions, .action, .states, .screenshots, .details {
     width: 100%;
     display: flex;
 }
 
-.action-sequence {
+.actions {
     flex-direction: column;
     align-items: center;
-    color: #fff;
-}
 
-.action-sequence {
     width: calc(100%/6 * 3);
     margin: 2rem calc(100%/6 * 1.5) 1rem;
     border-top: 1px solid #666;
     border-left: 1px solid #666;
     border-right: 1px solid #666;
+
+    color: #fff;
 }
 
-.action-sequence .label {
+.actions .label {
     margin: -2rem 0 0;
     line-height: 1rem;
     background: #222;
@@ -141,7 +140,7 @@ main .controls button:active {
     color: #999;
 }
 
-.action-sequence-inner {
+.actions-inner {
     width: calc(100%/6 * 3);
     text-align: center;
     margin-top: 1.5rem;

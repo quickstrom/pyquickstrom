@@ -1,5 +1,6 @@
 from itertools import chain
 from typing import List
+import json
 import quickstrom.reporter.json as json_reporter
 from hypothesis.strategies._internal.misc import just
 import quickstrom.protocol as protocol
@@ -53,10 +54,7 @@ def traces(draw):
     def pairs(draw):
         return [draw(trace_actions()), draw(trace_states())]
 
-    first = draw(trace_states())
-    rest = list(chain(*draw(lists(pairs(), max_size=10))))
-
-    return [first] + rest
+    return list(chain(*draw(lists(pairs(), min_size=1, max_size=10))))
 
 
 @composite
@@ -92,7 +90,8 @@ def result_from_report(report: json_reporter.Report):
             ]
 
         initial: List[protocol.TraceElement] = [
-            protocol.TraceState(test.initial_state)
+            protocol.TraceActions(test.initial.events),
+            protocol.TraceState(test.initial.state),
         ]
         return initial + [
             e for t in test.transitions for e in to_trace_elements(t)
@@ -117,3 +116,8 @@ def test_json_reporter_roundtrip(result):
     report = json_reporter.report_from_result(result)
     new_result = result_from_report(report)
     assert new_result == result
+
+@given(results())
+def test_json_report_is_serializable(result):
+    report = json_reporter.report_from_result(result)
+    json.loads(json_reporter.encode_str(report))

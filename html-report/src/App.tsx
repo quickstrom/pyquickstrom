@@ -16,8 +16,6 @@ export type Passed = {
 
 export type Failed = {
     tag: "Failed";
-    numShrinks: number;
-    reason?: string;
     passedTests: Test[];
     failedTest: Test;
 };
@@ -29,15 +27,22 @@ export type Errored = {
 };
 
 type Test = {
+    validity: Validity;
+    initialState: State;
     transitions: Transition[];
 }
 
-type TestResult = "Passed" | "Failed";
-type TestWithResult = Test & { result: TestResult };
+type Certainty = "Definitely" | "Probably";
+
+type Validity = {
+    certainty: Certainty,
+    value: boolean,
+};
 
 type Transition = {
-    actionSequence?: NonEmptyArray<Action>;
-    states: { from: State, to: State };
+    fromState: State;
+    toState: State;
+    actions: NonEmptyArray<Action>;
     stutter: boolean;
 };
 
@@ -180,10 +185,6 @@ function ErroredReport({ report }: { report: Report<Errored> }) {
 }
 
 
-function pluralize(n: number, term: string): string {
-    return `${n} ${term}${n > 1 ? "s" : ""}`;
-}
-
 function ordinal(n: number): string {
     switch (n) {
         case 11: return "11th";
@@ -203,8 +204,7 @@ function Header({ report, onTestSelect }: { report: Report<Result>, onTestSelect
             case "Failed":
                 return <div class="summary failure">
                     <p>
-                        Failed on {ordinal(report.result.passedTests.length + 1)} test and after {pluralize(report.result.numShrinks, "shrink")}.
-              {report.result.reason}
+                        Failed on {ordinal(report.result.passedTests.length + 1)} test.
                     </p>
                 </div>;
             case "Errored":
@@ -218,19 +218,14 @@ function Header({ report, onTestSelect }: { report: Report<Result>, onTestSelect
         }
     }
 
-    function annotateTest(result: TestResult): (test: Test) => TestWithResult {
-        return (test => ({ ...test, result }));
-    }
-
-    function testsInResult(result: Result): TestWithResult[] {
+    function testsInResult(result: Result): Test[] {
         switch (result.tag) {
             case "Failed":
-                return result.passedTests.map(annotateTest("Passed"))
-                    .concat([annotateTest("Failed")(result.failedTest)]);
+                return result.passedTests.concat([result.failedTest]);
             case "Errored":
                 return [];
             case "Passed":
-                return result.passedTests.map(annotateTest("Passed"));
+                return result.passedTests;
         }
     }
 
@@ -252,7 +247,7 @@ function Header({ report, onTestSelect }: { report: Report<Result>, onTestSelect
                     <select onChange={e => onTestSelect(tests[(e.target as HTMLSelectElement).selectedIndex])}>
                         {tests.map((test, i) => (
                             <option value={i} selected={test === initial}>
-                                Test {i + 1} ({test.result})
+                                Test {i + 1} ({test.validity.certainty})
                             </option>
                         ))}
                     </select>
@@ -281,23 +276,23 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
             <button disabled={state.index === (state.test.transitions.length - 1)} onClick={() => dispatch({ tag: "next" })}>Next →</button>
         </section>
         <section class="content">
-            <ActionSequence actionSequence={transition.actionSequence} setSelectedElement={setSelectedElement} />
+            <ActionSequence actions={transition.actions} setSelectedElement={setSelectedElement} />
             <section class="states">
                 <State number={state.index + 1} extraClass="from" label="From" />
                 <State number={state.index + 2} extraClass="to" label="To" />
             </section>
             <section class="screenshots">
-                <Screenshot actionSubjects={transition.actionSequence?.flatMap(getActionSubject) || []} state={transition.states.from} extraClass="from" selectedElement={selectedElement}
+                <Screenshot actionSubjects={transition.actions.flatMap(getActionSubject) || []} state={transition.fromState} extraClass="from" selectedElement={selectedElement}
                     setSelectedElement={setSelectedElement} />
-                <Screenshot actionSubjects={[]} state={transition.states.to} extraClass="to" selectedElement={selectedElement}
+                <Screenshot actionSubjects={[]} state={transition.toState} extraClass="to" selectedElement={selectedElement}
                     setSelectedElement={setSelectedElement} />
             </section>
             <section class="details">
                 <div class="state-queries from">
-                    <QueriesDetails queries={transition.states.from.queries} />
+                    <QueriesDetails queries={transition.fromState.queries} />
                 </div>
                 <div class="state-queries to">
-                    <QueriesDetails queries={transition.states.to.queries} />
+                    <QueriesDetails queries={transition.toState.queries} />
                 </div>
             </section>
         </section>
@@ -305,7 +300,7 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
         ;
 }
 
-const ActionSequence: FunctionComponent<{ actionSequence?: NonEmptyArray<Action>, setSelectedElement: StateUpdater<Element | null> }> = ({ actionSequence, setSelectedElement }) => {
+const Actions: FunctionComponent<{ actions: NonEmptyArray<Action>, setSelectedElement: StateUpdater<Element | null> }> = ({ actions, setSelectedElement }) => {
     function renderKey(key: string) {
         switch (key) {
             case "\ue006": return <span>⏎</span>;
@@ -316,8 +311,8 @@ const ActionSequence: FunctionComponent<{ actionSequence?: NonEmptyArray<Action>
         function renderActionSubject(subject: ActionSubject) {
             return (
                 <div
-                  onMouseEnter={(() => setSelectedElement(subject.element))}
-                  onMouseLeave={(() => setSelectedElement(null))}
+                    onMouseEnter={(() => setSelectedElement(subject.element))}
+                    onMouseLeave={(() => setSelectedElement(null))}
                 >
                     <p class="selector">{subject.selected[0]}</p>
                     <p class="selected-index">[{subject.selected[1]}]</p>
@@ -391,18 +386,14 @@ const ActionSequence: FunctionComponent<{ actionSequence?: NonEmptyArray<Action>
         }
     }
 
-    if (actionSequence) {
-        return (
-            <div class="action-sequence">
-                <div class="action-sequence-inner">
-                    <div class="label">Action Sequence</div>
-                    {actionSequence.map(renderDetails)}
-                </div>
+    return (
+        <div class="actions">
+            <div class="actions-inner">
+                <div class="label">Actions & Events</div>
+                {actions.map(renderDetails)}
             </div>
-        );
-    } {
-        return null;
-    }
+        </div>
+    );
 }
 
 const State: FunctionComponent<{ number: number, extraClass: string, label: string }> = ({ number, extraClass, label }) => {
@@ -439,11 +430,11 @@ const Screenshot: FunctionComponent<{ actionSubjects: ActionSubject[], state: St
         function isActive(element: Element) {
             return selectedElement && selectedElement.id === element.id;
         }
-        const activeElement = 
+        const activeElement =
             state.queries.flatMap(q => q.elements as Element[])
                 .concat(actionSubjects.map(a => a.element))
-                .find(isActive) 
-                || null;
+                .find(isActive)
+            || null;
 
         function renderDim(element: Element | null) {
             return (
@@ -534,7 +525,8 @@ function excludeStutters(report: Report<Failed>): Report<Failed> {
         result: {
             ...report.result,
             failedTest: {
-                transitions: report.result.failedTest.transitions.filter(t => !t.stutter || !!t.actionSequence)
+                ...report.result.failedTest,
+                transitions: report.result.failedTest.transitions.filter(t => !t.stutter),
             },
         },
     };
