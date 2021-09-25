@@ -127,11 +127,6 @@ def encode_file(report: Report, output_path: Path):
 
 class _ReporterEncoder(json.JSONEncoder):
     def default(self, obj):
-        def tagged(o: Any, tag: str) -> Dict[str, Any]:
-            d = dataclasses.asdict(o)
-            d['tag'] = tag
-            return d
-
         if isinstance(obj, Report):
             return {
                 'result': self.default(obj.result),
@@ -145,7 +140,11 @@ class _ReporterEncoder(json.JSONEncoder):
                 [self.default(test) for test in obj.passedTests],
             }
         elif isinstance(obj, Errored):
-            return tagged(obj, 'Errored')
+            return {
+                'tag': 'Errored',
+                'error': obj.error,
+                'tests': obj.tests,
+            }
         elif isinstance(obj, Failed):
             return {
                 'tag': 'Failed',
