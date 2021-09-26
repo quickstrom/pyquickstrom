@@ -8,6 +8,7 @@ from pathlib import Path
 
 import quickstrom.executor as executor
 import quickstrom.reporter.json as json_reporter
+import quickstrom.reporter.html as html_reporter
 import quickstrom.reporter.console as console_reporter
 
 
@@ -49,14 +50,17 @@ def root(log_level, include):
               multiple=True,
               default=['console'],
               help='enable a reporter by name')
-@click.option('--json-report-filepath', default='report.json')
+@click.option('--json-report-file', default='report.json')
+@click.option('--html-report-directory', default='html-report')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], json_report_filepath: Path):
+          reporter: List[str], json_report_file: Path,
+          html_report_directory: Path):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
-            'json': json_reporter.JsonReporter(json_report_filepath),
+            'json': json_reporter.JsonReporter(json_report_file),
+            'html': html_reporter.HtmlReporter(html_report_directory),
             'console':
             console_reporter.ConsoleReporter(console_report_on_success)
         }

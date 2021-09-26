@@ -1,7 +1,7 @@
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass
 import dataclasses
 import json
-from typing import Any, Dict, List, Type, TypeVar, Union
+from typing import IO, List, Type, TypeVar, Union
 
 import quickstrom.protocol as protocol
 from quickstrom.reporter import Reporter
@@ -119,10 +119,12 @@ class JsonReporter(Reporter):
 def encode_str(report: Report) -> str:
     return json.dumps(report, cls=_ReporterEncoder)
 
+def encode_to(report: Report, fp: IO[str]):
+    json.dump(report, fp, cls=_ReporterEncoder)
 
 def encode_file(report: Report, output_path: Path):
     with open(output_path, 'w') as f:
-        json.dump(report, f, cls=_ReporterEncoder)
+        encode_to(report, f)
 
 
 class _ReporterEncoder(json.JSONEncoder):
