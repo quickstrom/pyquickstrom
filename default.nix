@@ -11,7 +11,7 @@ let
       [ specstrom geckodriver firefox chromedriver chromium ];
     checkInputs = [pkgs.nodePackages.pyright];
     checkPhase = ''
-      pyright quickstrom
+      pyright quickstrom tests
     '';
 
   };

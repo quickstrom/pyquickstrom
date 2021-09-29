@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from quickstrom.reporter import Reporter
 import sys
-from typing import IO, Text
+from typing import Any, IO, Text
 from quickstrom.protocol import *
 import quickstrom.printer as printer
 from deepdiff import DeepDiff
@@ -49,15 +49,16 @@ class Unmodified(Diff):
 def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
                      file: Optional[IO[Text]]):
     diffs_by_path: 'Dict[str, Diff]' = {}
-    for key, diffs in state_diff.items():
-        for path, diff in diffs.items():
-            if key == 'values_changed':
-                diffs_by_path[path] = Modified(diff['old_value'],
-                                               diff['new_value'])
-            if key == 'iterable_item_added':
-                diffs_by_path[path] = Added(diff)
-            if key == 'iterable_item_removed':
-                diffs_by_path[path] = Removed(diff)
+
+    for path, diff in state_diff['values_changed'].items():
+        diffs_by_path[path] = Modified(diff['old_value'],
+                                       diff['new_value'])
+        
+    for path, diff in state_diff['iterable_item_added'].items():
+        diffs_by_path[path] = Added(diff)
+
+    for path, diff in state_diff['iterable_item_removed'].items():
+        diffs_by_path[path] = Removed(diff)
 
     def value_diff(diff_path: str, value: object) -> Diff:
         return diffs_by_path[
@@ -91,17 +92,17 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
                               indent_level + 1),
                        file=file)
 
-            def print_value_diff(obj, diff_key: str, indent_level: int):
+            def print_value_diff(obj: Any, diff_key: str, indent_level: int):
                 if isinstance(obj, dict):
-                    for key, value in [(key, value)
-                                       for key, value in obj.items()
+                    for key, value in [(key, value) # type: ignore
+                                       for key, value in obj.items() # type: ignore
                                        if key not in ['ref', 'position']]:
                         click.echo(indent(f"{key}:", indent_level), file=file)
                         print_value_diff(value,
                                          f"{diff_key}['{key}']",
                                          indent_level=indent_level + 2)
                 elif isinstance(obj, list):
-                    for i, value in enumerate(obj):
+                    for i, value in enumerate(obj): # type: ignore
                         click.echo(indent("*", indent_level), file=file)
                         print_value_diff(value,
                                          f"{diff_key}[{i}]",
@@ -116,27 +117,27 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
                              indent_level=indent_level + 2)
 
 
-def element_heading(s):
+def element_heading(s: str):
     return click.style(s, bold=True, underline=True)
 
 
-def selector(s):
+def selector(s: str):
     return click.style(s, bold=True)
 
 
-def added(s):
+def added(s: str):
     return click.style(s, fg='green')
 
 
-def removed(s):
+def removed(s: str):
     return click.style(s, fg='red')
 
 
-def modified(s):
+def modified(s: str):
     return click.style(s, fg='blue')
 
 
-def unmodified(s):
+def unmodified(s: str):
     return click.style(s, dim=True)
 
 
@@ -166,11 +167,13 @@ class ConsoleReporter(Reporter):
                                     f"{heading} {printer.pretty_print_action(action)}"
                                 ), 1),
                                        file=self.file)
-                    elif isinstance(element, TraceState):
+                    else:
                         click.echo(indent(element_heading(f"{i}. State"), 1),
                                    file=self.file)
                         state: State = element.state
-                        diff = DeepDiff(last_state, state)
+                        # DeepDiff is both a dict and a class we can init in a special
+                        # way, so pyright must be silenced.
+                        diff = DeepDiff(last_state, state) # type: ignore
                         print_state_diff(diff,
                                          state,
                                          indent_level=2,

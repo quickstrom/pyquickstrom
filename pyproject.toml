@@ -33,5 +33,5 @@ spaces_before_comment = 4
 split_before_logical_operator = true
 
 [tool.pyright]
-include = ["quickstrom"]
-strict = true
+strict = ["quickstrom/reporter/console.py"]
+stubPath = "typings"

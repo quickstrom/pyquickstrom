@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import dataclasses
 import json
-from typing import IO, List, Type, TypeVar, Union
+from typing import IO, Any, Dict, List, Type, TypeVar, Union
 
 import quickstrom.protocol as protocol
 from quickstrom.reporter import Reporter
@@ -41,7 +41,7 @@ def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
         else:
             raise TypeError(f"Expected a {cls} in trace but got {type(first)}")
 
-    transitions = []
+    transitions: List[Transition] = []
     last_state: protocol.TraceState = pop(protocol.TraceState)
 
     while len(trace) > 0:
@@ -98,11 +98,8 @@ def report_from_result(result: protocol.Result) -> Report:
                 return Failed([],
                               Test(result.valid, initial,
                                    transitions_from_trace(result.trace)))
-        elif isinstance(result, protocol.ErrorResult):
-            return Errored(result.error, 1)
         else:
-            raise TypeError(
-                f"cannot convert the given value to a JSON report: {result}")
+            return Errored(result.error, 1)
 
     return Report(to_result(), datetime.utcnow())
 
@@ -128,58 +125,58 @@ def encode_file(report: Report, output_path: Path):
 
 
 class _ReporterEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Report):
+    def default(self, o: Any) -> Dict[str, Any]:
+        if isinstance(o, Report):
             return {
-                'result': self.default(obj.result),
-                'generatedAt': str(obj.generated_at),
+                'result': self.default(o.result),
+                'generatedAt': str(o.generated_at),
                 'tag': 'Report'
             }
-        elif isinstance(obj, Passed):
+        elif isinstance(o, Passed):
             return {
                 'tag': 'Passed',
                 'passedTests':
-                [self.default(test) for test in obj.passedTests],
+                [self.default(test) for test in o.passedTests],
             }
-        elif isinstance(obj, Errored):
+        elif isinstance(o, Errored):
             return {
                 'tag': 'Errored',
-                'error': obj.error,
-                'tests': obj.tests,
+                'error': o.error,
+                'tests': o.tests,
             }
-        elif isinstance(obj, Failed):
+        elif isinstance(o, Failed):
             return {
                 'tag': 'Failed',
                 'passedTests':
-                [self.default(test) for test in obj.passedTests],
-                'failedTest': self.default(obj.failedTest)
+                [self.default(test) for test in o.passedTests],
+                'failedTest': self.default(o.failedTest)
             }
-        elif isinstance(obj, Test):
+        elif isinstance(o, Test):
             return {
-                'validity': self.default(obj.validity),
-                'initial': obj.initial,
-                'transitions': [self.default(t) for t in obj.transitions],
+                'validity': self.default(o.validity),
+                'initial': o.initial,
+                'transitions': [self.default(t) for t in o.transitions],
             }
-        elif isinstance(obj, Initial):
+        elif isinstance(o, Initial):
             return {
-                'events': [self.default(t) for t in obj.events],
-                'state': obj.state,
+                'events': [self.default(t) for t in o.events],
+                'state': o.state,
             }
-        elif isinstance(obj, Transition):
+        elif isinstance(o, Transition):
             return {
-                'fromState': obj.fromState,
-                'toState': obj.toState,
-                'stutter': obj.stutter,
-                'actions': [self.default(t) for t in obj.actions],
+                'fromState': o.fromState,
+                'toState': o.toState,
+                'stutter': o.stutter,
+                'actions': [self.default(t) for t in o.actions],
             }
-        elif isinstance(obj, protocol.Action):
+        elif isinstance(o, protocol.Action):
             return {
-                'id': obj.id,
-                'args': obj.args,
-                'isEvent': obj.isEvent,
-                'timeout': obj.timeout
+                'id': o.id,
+                'args': o.args,
+                'isEvent': o.isEvent,
+                'timeout': o.timeout
             }
-        elif isinstance(obj, protocol.Validity):
-            return dataclasses.asdict(obj)
+        elif isinstance(o, protocol.Validity):
+            return dataclasses.asdict(o)
         else:
-            return json.JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, o)
