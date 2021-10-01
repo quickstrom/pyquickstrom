@@ -1,6 +1,7 @@
+from _typeshed import SupportsWrite
 import json
 import jsonlines
-from typing import List, Dict, Optional, Literal, Union
+from typing import Any, Callable, List, Dict, Optional, Literal, Union
 from dataclasses import dataclass
 
 Selector = str
@@ -83,39 +84,40 @@ class Event():
     state: State
 
 
-def message_writer(fp):
+def message_writer(fp: SupportsWrite[str]):
+    dumps: Callable[[Any], str] = lambda obj: json.dumps(obj, cls=_ProtocolEncoder)
     return jsonlines.Writer(
         fp,
-        dumps=lambda obj: json.dumps(obj, cls=_ProtocolEncoder),
+        dumps=dumps,
         flush=True)
 
 
-def message_reader(fp):
-    def loads(s):
+def message_reader(fp: SupportsWrite[str]):
+    def loads(s: str):
         return json.loads(s, object_hook=_decode_hook)
 
     return jsonlines.Reader(fp, loads=loads)
 
 
 class _ProtocolEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Performed):
-            return {'tag': 'Performed', 'contents': obj.state}
-        elif isinstance(obj, Event):
-            event = self.default(obj.event)
-            return {'tag': 'Event', 'contents': [event, obj.state]}
-        elif isinstance(obj, Action):
+    def default(self, o: Any):
+        if isinstance(o, Performed):
+            return {'tag': 'Performed', 'contents': o.state}
+        elif isinstance(o, Event):
+            event: Any = self.default(o.event)
+            return {'tag': 'Event', 'contents': [event, o.state]}
+        elif isinstance(o, Action):
             return {
-                'id': obj.id,
-                'args': obj.args,
-                'isEvent': obj.isEvent,
-                'timeout': obj.timeout
+                'id': o.id,
+                'args': o.args,
+                'isEvent': o.isEvent,
+                'timeout': o.timeout
             }
         else:
-            return json.JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, o)
 
 
-def _decode_hook(d):
+def _decode_hook(d: Any) -> Any:
     if 'tag' not in d:
         if 'valid' in d and 'trace' in d:
             return RunResult(d['valid'], d['trace'])

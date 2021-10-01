@@ -43,6 +43,8 @@ class Check():
     def execute(self) -> List[Result]:
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
+                assert p.stdout is not None
+                assert p.stdin is not None
                 input_messages = message_reader(p.stdout)
                 output_messages = message_writer(p.stdin)
 
@@ -182,7 +184,7 @@ class Check():
         if self.browser == 'chrome':
             options = chrome_options.Options()
             options.headless = True
-            options.binary_location = which("chrome") or which("chromium")
+            options.binary_location = which("chrome") or which("chromium") # type: ignore
             chromedriver_path = which('chromedriver')
             if not chromedriver_path:
                 raise Exception("chromedriver not found in PATH")
@@ -190,7 +192,7 @@ class Check():
         elif self.browser == 'firefox':
             options = firefox_options.Options()
             options.headless = True
-            options.binary = which("firefox")
+            options.binary = which("firefox") # type: ignore
             geckodriver_path = which('geckodriver')
             if not geckodriver_path:
                 raise Exception("geckodriver not found in PATH")
