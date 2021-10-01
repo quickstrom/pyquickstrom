@@ -50,15 +50,18 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
                      file: Optional[IO[Text]]):
     diffs_by_path: 'Dict[str, Diff]' = {}
 
-    for path, diff in state_diff['values_changed'].items():
-        diffs_by_path[path] = Modified(diff['old_value'],
-                                       diff['new_value'])
+    if 'values_changed' in state_diff:
+        for path, diff in state_diff['values_changed'].items():
+            diffs_by_path[path] = Modified(diff['old_value'],
+                                        diff['new_value'])
         
-    for path, diff in state_diff['iterable_item_added'].items():
-        diffs_by_path[path] = Added(diff)
+    if 'iterable_item_added' in state_diff:
+        for path, diff in state_diff['iterable_item_added'].items():
+            diffs_by_path[path] = Added(diff)
 
-    for path, diff in state_diff['iterable_item_removed'].items():
-        diffs_by_path[path] = Removed(diff)
+    if 'iterable_item_removed' in state_diff:
+        for path, diff in state_diff['iterable_item_removed'].items():
+            diffs_by_path[path] = Removed(diff)
 
     def value_diff(diff_path: str, value: object) -> Diff:
         return diffs_by_path[
