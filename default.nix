@@ -11,12 +11,14 @@ let
       [ specstrom geckodriver firefox chromedriver chromium ];
     checkInputs = [pkgs.nodePackages.pyright];
     checkPhase = ''
-      pyright quickstrom
+      pyright -p . quickstrom tests
+      pytest
     '';
 
   };
 
   client-side = import ./client-side { inherit pkgs; };
+  html-report = import ./html-report { inherit pkgs; };
 
   quickstrom-wrapped = pkgs.symlinkJoin {
     name = "quickstrom";
@@ -27,6 +29,7 @@ let
       cp -r ${./ulib} $out/share/ulib
       wrapProgram $out/bin/quickstrom \
         --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
+        --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
         --add-flags "-I$out/share/ulib"
 
     '';

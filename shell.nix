@@ -24,4 +24,5 @@ in pkgs.mkShell {
   ] ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ];
   TODOMVC_DIR = todomvc;
   QUICKSTROM_CLIENT_SIDE_DIRECTORY = import ./client-side { inherit pkgs; };
+  QUICKSTROM_HTML_REPORT_DIRECTORY = import ./html-report { inherit pkgs; };
 }

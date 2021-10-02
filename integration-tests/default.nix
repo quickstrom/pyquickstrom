@@ -14,7 +14,7 @@ let
         # TODO: add ./failing and /passing includes later when required.
         quickstrom --log-level=INFO -I${
           ../case-studies
-        } check ${module} ${origin} ${options} --browser=${browser} | tee $out/test-report.log
+        } check ${module} ${origin} ${options} --browser=${browser} --reporter=console --reporter=html --html-report-directory=$out/html-report | tee $out/test-report.log
         exit_code=$?
 
         if [ $exit_code == "${toString expectedExitCode}" ]; then

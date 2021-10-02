@@ -1,12 +1,11 @@
 import json
 import jsonlines
-from typing import List, Dict, Optional, Literal, Union
+from typing import Any, Callable, IO, List, Dict, Optional, Literal, Union
 from dataclasses import dataclass
 
 Selector = str
 
-# mypy doesn't support recursive types :(
-Schema = Dict[str, object]
+Schema = Dict[str, 'Schema']
 
 ElementState = Dict[str, object]
 
@@ -35,18 +34,23 @@ TraceElement = Union[TraceActions, TraceState]
 
 Trace = List[TraceElement]
 
+Certainty = Union[Literal['Definitely'], Literal['Probably']]
 
 @dataclass
 class Validity():
-    certainty: Union[Literal['Definitely'], Literal['Probably']]
+    certainty: Certainty
     value: bool
 
-
 @dataclass
-class Result():
+class RunResult():
     valid: Validity
     trace: Trace
 
+@dataclass
+class ErrorResult():
+    error: str
+
+Result = Union[RunResult, ErrorResult]
 
 @dataclass
 class Start():
@@ -79,42 +83,43 @@ class Event():
     state: State
 
 
-def message_writer(fp):
+def message_writer(fp: IO[str]):
+    dumps: Callable[[Any], str] = lambda obj: json.dumps(obj, cls=_ProtocolEncoder)
     return jsonlines.Writer(
         fp,
-        dumps=lambda obj: json.dumps(obj, cls=_ProtocolEncoder),
+        dumps=dumps,
         flush=True)
 
 
-def message_reader(fp):
-    def loads(s):
+def message_reader(fp: IO[str]):
+    def loads(s: str):
         return json.loads(s, object_hook=_decode_hook)
 
     return jsonlines.Reader(fp, loads=loads)
 
 
 class _ProtocolEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Performed):
-            return {'tag': 'Performed', 'contents': obj.state}
-        elif isinstance(obj, Event):
-            event = self.default(obj.event)
-            return {'tag': 'Event', 'contents': [event, obj.state]}
-        elif isinstance(obj, Action):
+    def default(self, o: Any):
+        if isinstance(o, Performed):
+            return {'tag': 'Performed', 'contents': o.state}
+        elif isinstance(o, Event):
+            event: Any = self.default(o.event)
+            return {'tag': 'Event', 'contents': [event, o.state]}
+        elif isinstance(o, Action):
             return {
-                'id': obj.id,
-                'args': obj.args,
-                'isEvent': obj.isEvent,
-                'timeout': obj.timeout
+                'id': o.id,
+                'args': o.args,
+                'isEvent': o.isEvent,
+                'timeout': o.timeout
             }
         else:
-            return json.JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, o)
 
 
-def _decode_hook(d):
+def _decode_hook(d: Any) -> Any:
     if 'tag' not in d:
         if 'valid' in d and 'trace' in d:
-            return Result(d['valid'], d['trace'])
+            return RunResult(d['valid'], d['trace'])
         if 'id' in d and 'args' in d and 'isEvent' in d and 'timeout' in d:
             return Action(d['id'], d['args'], d['isEvent'], d['timeout'])
         else:
