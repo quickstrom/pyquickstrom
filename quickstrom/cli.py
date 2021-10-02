@@ -91,13 +91,14 @@ def check(module: str, origin: str, browser: executor.Browser,
             elif isinstance(result, ErrorResult):
                 click.echo(f"Error: {result.error}")
 
-        if any([(isinstance(r, ErrorResult) or not r.valid.value)
-                for r in results]):
+        if any([(isinstance(r, ErrorResult)) for r in results]):
+            exit(1)
+        elif any([(isinstance(r, RunResult) and not r.valid.value) for r in results]):
             exit(3)
     except executor.SpecstromError as err:
         print(err)
         print(f"See interpreter log file for details: {err.log_file}")
-        exit(1)
+        exit(2)
 
 
 root.add_command(check)
