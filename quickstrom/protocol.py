@@ -1,7 +1,6 @@
-from _typeshed import SupportsWrite
 import json
 import jsonlines
-from typing import Any, Callable, List, Dict, Optional, Literal, Union
+from typing import Any, Callable, IO, List, Dict, Optional, Literal, Union
 from dataclasses import dataclass
 
 Selector = str
@@ -84,7 +83,7 @@ class Event():
     state: State
 
 
-def message_writer(fp: SupportsWrite[str]):
+def message_writer(fp: IO[str]):
     dumps: Callable[[Any], str] = lambda obj: json.dumps(obj, cls=_ProtocolEncoder)
     return jsonlines.Writer(
         fp,
@@ -92,7 +91,7 @@ def message_writer(fp: SupportsWrite[str]):
         flush=True)
 
 
-def message_reader(fp: SupportsWrite[str]):
+def message_reader(fp: IO[str]):
     def loads(s: str):
         return json.loads(s, object_hook=_decode_hook)
 
