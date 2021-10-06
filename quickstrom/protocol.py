@@ -36,21 +36,26 @@ Trace = List[TraceElement]
 
 Certainty = Union[Literal['Definitely'], Literal['Probably']]
 
+
 @dataclass
 class Validity():
     certainty: Certainty
     value: bool
+
 
 @dataclass
 class RunResult():
     valid: Validity
     trace: Trace
 
+
 @dataclass
 class ErrorResult():
     error: str
 
+
 Result = Union[RunResult, ErrorResult]
+
 
 @dataclass
 class Start():
@@ -79,17 +84,20 @@ class Performed():
 
 
 @dataclass
+class Stale():
+    pass
+
+
+@dataclass
 class Event():
     event: Action
     state: State
 
 
 def message_writer(fp: IO[str]):
-    dumps: Callable[[Any], str] = lambda obj: json.dumps(obj, cls=_ProtocolEncoder)
-    return jsonlines.Writer(
-        fp,
-        dumps=dumps,
-        flush=True)
+    dumps: Callable[[Any],
+                    str] = lambda obj: json.dumps(obj, cls=_ProtocolEncoder)
+    return jsonlines.Writer(fp, dumps=dumps, flush=True)
 
 
 def message_reader(fp: IO[str]):
@@ -103,6 +111,8 @@ class _ProtocolEncoder(json.JSONEncoder):
     def default(self, o: Any):
         if isinstance(o, Performed):
             return {'tag': 'Performed', 'contents': o.state}
+        elif isinstance(o, Stale):
+            return {'tag': 'Stale'}
         elif isinstance(o, Event):
             event: Any = self.default(o.event)
             return {'tag': 'Event', 'contents': [event, o.state]}
