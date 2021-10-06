@@ -156,7 +156,7 @@ class ConsoleReporter(Reporter):
     def report(self, result: Result):
         last_state = None
         if isinstance(result, RunResult):
-            if result.valid.value or self.report_on_success:
+            if not result.valid.value or self.report_on_success:
                 click.echo("Trace:", file=self.file)
                 for i, element in zip(range(1,
                                             len(result.trace) + 1),
