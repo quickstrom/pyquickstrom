@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import dataclasses
 import json
-from typing import IO, Any, Dict, List, Type, TypeVar, Union
+from typing import IO, Any, Dict, List, Optional, Type, TypeVar, Union
 
 import quickstrom.protocol as protocol
 from quickstrom.reporter import Reporter
@@ -9,14 +9,33 @@ from pathlib import Path
 from datetime import datetime
 
 @dataclass(frozen=True)
+class Screenshot():
+    url: Path
+    width: int
+    height: int
+
+QueriedElement = Dict[str, Any]
+
+@dataclass(frozen=True)
+class Query():
+    selector: protocol.Selector
+    elements: List[QueriedElement]
+
+@dataclass(frozen=True)
+class State():
+    queries: List[Query]
+    screenshot: Optional[Screenshot]
+
+@dataclass(frozen=True)
 class Initial():
     events: List[protocol.Action]
-    state: protocol.State
+    state: State
+
 
 @dataclass(frozen=True)
 class Transition():
-    fromState: protocol.State
-    toState: protocol.State
+    fromState: State
+    toState: State
     stutter: bool
     actions: List[protocol.Action]
 
@@ -27,6 +46,34 @@ class Test():
     initial: Initial
     transitions: List[Transition]
 
+
+@dataclass(frozen=True)
+class Errored():
+    error: str
+    tests: int
+
+
+@dataclass(frozen=True)
+class Failed():
+    passed_tests: List[Test]
+    failed_test: Test
+
+
+@dataclass(frozen=True)
+class Passed():
+    passed_tests: List[Test]
+
+
+Result = Union[Failed, Passed, Errored]
+
+
+@dataclass(frozen=True)
+class Report():
+    result: Result
+    generated_at: datetime
+
+def to_state(state: protocol.State) -> State:
+    return State([Query(s, es) for (s, es) in state.items()], None)
 
 def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
     A = TypeVar('A')
@@ -49,8 +96,8 @@ def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
         new_state = pop(protocol.TraceState)
         transitions.append(
             Transition(
-                fromState=last_state.state,
-                toState=new_state.state,
+                fromState=to_state(last_state.state),
+                toState=to_state(new_state.state),
                 actions=actions.actions,
                 stutter=False,
             ))
@@ -59,36 +106,13 @@ def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
     return transitions
 
 
-@dataclass(frozen=True)
-class Errored():
-    error: str
-    tests: int
-
-
-@dataclass(frozen=True)
-class Failed():
-    passedTests: List[Test]
-    failedTest: Test
-
-
-@dataclass(frozen=True)
-class Passed():
-    passedTests: List[Test]
-
-
-Result = Union[Failed, Passed, Errored]
-
-
-@dataclass(frozen=True)
-class Report():
-    result: Result
-    generated_at: datetime
-
-
 def report_from_result(result: protocol.Result) -> Report:
     def to_result() -> Result:
         if isinstance(result, protocol.RunResult):
-            initial = Initial(result.trace[0].actions, result.trace[1].state)    # type: ignore
+            assert isinstance(result.trace[0], protocol.TraceActions)
+            assert isinstance(result.trace[1], protocol.TraceState)
+
+            initial = Initial(result.trace[0].actions, to_state(result.trace[1].state))
             if result.valid.value:
                 return Passed([
                     Test(result.valid, initial,
@@ -116,8 +140,10 @@ class JsonReporter(Reporter):
 def encode_str(report: Report) -> str:
     return json.dumps(report, cls=_ReporterEncoder)
 
+
 def encode_to(report: Report, fp: IO[str]):
     json.dump(report, fp, cls=_ReporterEncoder)
+
 
 def encode_file(report: Report, output_path: Path):
     with open(output_path, 'w') as f:
@@ -135,8 +161,7 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, Passed):
             return {
                 'tag': 'Passed',
-                'passedTests':
-                [self.default(test) for test in o.passedTests],
+                'passedTests': [self.default(test) for test in o.passed_tests],
             }
         elif isinstance(o, Errored):
             return {
@@ -147,9 +172,8 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, Failed):
             return {
                 'tag': 'Failed',
-                'passedTests':
-                [self.default(test) for test in o.passedTests],
-                'failedTest': self.default(o.failedTest)
+                'passedTests': [self.default(test) for test in o.passed_tests],
+                'failedTest': self.default(o.failed_test)
             }
         elif isinstance(o, Test):
             return {
@@ -168,6 +192,22 @@ class _ReporterEncoder(json.JSONEncoder):
                 'toState': o.toState,
                 'stutter': o.stutter,
                 'actions': [self.default(t) for t in o.actions],
+            }
+        elif isinstance(o, State):
+            return {
+                'queries': o.queries,
+                'screenshot': self.default(o.screenshot) if o.screenshot is not None else None
+            }
+        elif isinstance(o, Query):
+            return {
+                'selector': o.selector,
+                'elements': o.elements
+            }
+        elif isinstance(o, Screenshot):
+            return {
+                'url': o.url,
+                'width': o.width,
+                'height': o.height,
             }
         elif isinstance(o, protocol.Action):
             return {

@@ -103,7 +103,7 @@ def result_from_report(report: json_reporter.Report):
         return protocol.RunResult(test.validity, to_trace(test))
     elif isinstance(report.result, json_reporter.Failed):
         # TODO: we need to support multiple tests later on
-        test = report.result.failedTest
+        test = report.result.failed_test
         return protocol.RunResult(test.validity, to_trace(test))
     elif isinstance(report.result, json_reporter.Errored):
         return protocol.ErrorResult(report.result.error)

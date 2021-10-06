@@ -3,6 +3,7 @@ import Preact from 'preact';
 import { useReducer, useState, StateUpdater, useEffect } from "preact/hooks";
 
 export type Report<R> = {
+    tag: "Report";
     generatedAt: string;
     result: R;
 };
@@ -28,9 +29,14 @@ export type Errored = {
 
 type Test = {
     validity: Validity;
-    initialState: State;
+    initial: Initial;
     transitions: Transition[];
-}
+};
+
+type Initial = {
+    events: Action[];
+    state: State;
+};
 
 type Certainty = "Definitely" | "Probably";
 
@@ -68,13 +74,7 @@ type Element = {
 };
 
 type ActionElement = Element;
-type QueriedElement = Element & { state: ElementStateValue[]; };
-
-type ElementStateValue = {
-    elementState: ElementState;
-    value: any;
-    diff: Diff;
-};
+type QueriedElement = Element;
 
 type ElementState
     = { tag: "Attribute", name: string }
@@ -247,7 +247,7 @@ function Header({ report, onTestSelect }: { report: Report<Result>, onTestSelect
                     <select onChange={e => onTestSelect(tests[(e.target as HTMLSelectElement).selectedIndex])}>
                         {tests.map((test, i) => (
                             <option value={i} selected={test === initial}>
-                                Test {i + 1} ({test.validity.certainty})
+                                Test {i + 1} ({test.validity.certainty} {test.validity.value.toString()})
                             </option>
                         ))}
                     </select>
@@ -276,17 +276,19 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
             <button disabled={state.index === (state.test.transitions.length - 1)} onClick={() => dispatch({ tag: "next" })}>Next →</button>
         </section>
         <section class="content">
-            <ActionSequence actions={transition.actions} setSelectedElement={setSelectedElement} />
+            <Actions actions={transition.actions} setSelectedElement={setSelectedElement} />
             <section class="states">
                 <State number={state.index + 1} extraClass="from" label="From" />
                 <State number={state.index + 2} extraClass="to" label="To" />
             </section>
+            {/*
             <section class="screenshots">
                 <Screenshot actionSubjects={transition.actions.flatMap(getActionSubject) || []} state={transition.fromState} extraClass="from" selectedElement={selectedElement}
                     setSelectedElement={setSelectedElement} />
                 <Screenshot actionSubjects={[]} state={transition.toState} extraClass="to" selectedElement={selectedElement}
                     setSelectedElement={setSelectedElement} />
             </section>
+             */}
             <section class="details">
                 <div class="state-queries from">
                     <QueriesDetails queries={transition.fromState.queries} />
@@ -501,19 +503,11 @@ const QueryDetails: FunctionComponent<{ elements: QueriedElement[] }> = ({ eleme
     </ul>;
 };
 const ElementStateTable: FunctionComponent<{ element: QueriedElement }> = ({ element }) => {
-    function elementStateName(s: ElementState): string {
-        switch (s.tag) {
-            case "Text":
-                return "Text";
-            default:
-                return s.name;
-        }
-    }
     return <table class="element-state">
-        {element.state.map(e => (
-            <tr class={e.diff.toLowerCase()}>
-                <td>{elementStateName(e.elementState)}</td>
-                <td>{e.value}</td>
+        {Object.entries(element).map(([key, value]) => (
+            <tr class={ /* e.diff.toLowerCase() */ ""}>
+                <td>{key}</td>
+                <td>{value}</td>
             </tr>
         ))}
     </table>;
