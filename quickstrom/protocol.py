@@ -70,6 +70,7 @@ class Done():
 @dataclass
 class RequestAction():
     action: Action
+    version: int
 
 
 @dataclass
@@ -127,7 +128,7 @@ def _decode_hook(d: Any) -> Any:
     if d['tag'] == 'Start':
         return Start(dependencies=d['dependencies'])
     if d['tag'] == 'RequestAction':
-        return RequestAction(action=d['action'])
+        return RequestAction(action=d['action'], version=d['version'])
     elif d['tag'] == 'End':
         return End()
     elif d['tag'] == 'Done':
