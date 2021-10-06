@@ -135,14 +135,14 @@ class Check():
 
                 def screenshot(driver: WebDriver, n: int):
                     if self.capture_screenshots:
-                        self.log.debug("Capturing screenshot at state {n}")
+                        self.log.debug(f"Capturing screenshot at state {n}")
                         driver.get_screenshot_as_file(
                             f"/tmp/quickstrom-{n:02d}.png")
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
-                        actionCount = 0
-                        screenshot(driver, actionCount)
+                        state_version = 1
+                        screenshot(driver, state_version)
                         while True:
                             msg = receive()
                             if not msg:
@@ -150,14 +150,17 @@ class Check():
                                     "No more messages from Specstrom, expected RequestAction or End."
                                 )
                             elif isinstance(msg, RequestAction):
-                                actionCount += 1
-                                self.log.info(
-                                    f"Performing action #{actionCount}: {printer.pretty_print_action(msg.action)}"
-                                )
-                                perform_action(driver, msg.action)
-                                state = query_state(driver, deps)
-                                screenshot(driver, actionCount)
-                                send(Performed(state=state))
+                                if msg.version == state_version:
+                                    self.log.info(
+                                        f"Performing action in state {state_version}: {printer.pretty_print_action(msg.action)}"
+                                    )
+                                    perform_action(driver, msg.action)
+                                    state = query_state(driver, deps)
+                                    state_version += 1
+                                    screenshot(driver, state_version)
+                                    send(Performed(state=state))
+                                else:
+                                    send(Stale())
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
