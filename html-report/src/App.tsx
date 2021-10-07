@@ -29,13 +29,7 @@ export type Errored = {
 
 type Test = {
     validity: Validity;
-    initial: Initial;
     transitions: Transition[];
-};
-
-type Initial = {
-    events: Action[];
-    state: State;
 };
 
 type Certainty = "Definitely" | "Probably";
@@ -46,9 +40,8 @@ type Validity = {
 };
 
 type Transition = {
-    fromState: State;
-    toState: State;
     actions: NonEmptyArray<Action>;
+    toState: State;
     stutter: boolean;
 };
 
@@ -125,6 +118,7 @@ type NonEmptyArray<T> = [T, ...T[]];
 type TestViewerState = {
     test: Test,
     index: number;
+    lastState?: State;
     current: Transition;
 };
 
@@ -141,8 +135,9 @@ function testViewerReducer(state: TestViewerState, action: TestViewerAction) {
             return (() => {
                 const newIndex = state.index - 1;
                 const newCurrent = state.test.transitions[newIndex];
+                const lastState = state.test.transitions[newIndex - 1]?.toState;
                 if (newCurrent) {
-                    return { ...state, index: newIndex, current: newCurrent };
+                    return { ...state, index: newIndex, current: newCurrent, lastState };
                 } else {
                     return state;
                 }
@@ -151,8 +146,9 @@ function testViewerReducer(state: TestViewerState, action: TestViewerAction) {
             return (() => {
                 const newIndex = state.index + 1;
                 const newCurrent = state.test.transitions[newIndex];
+                const lastState = state.test.transitions[newIndex - 1]?.toState;
                 if (newCurrent) {
-                    return { ...state, index: newIndex, current: newCurrent };
+                    return { ...state, index: newIndex, current: newCurrent, lastState };
                 } else {
                     return state;
                 }
@@ -291,7 +287,7 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
              */}
             <section class="details">
                 <div class="state-queries from">
-                    <QueriesDetails queries={transition.fromState.queries} />
+                    {state.lastState && <QueriesDetails queries={state.lastState.queries} />}
                 </div>
                 <div class="state-queries to">
                     <QueriesDetails queries={transition.toState.queries} />
