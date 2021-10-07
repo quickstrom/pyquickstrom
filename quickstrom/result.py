@@ -157,22 +157,20 @@ DiffedResult = Union[Failed[DiffedValue], Passed[DiffedValue], Errored]
 
 def diff_state(state_diff: DeepDiff,
                state: State[protocol.JsonLike]) -> State[DiffedValue]:
-    return State({}, state.screenshot)
 
-    # diffs_by_path: 'Dict[str, Diff]' = {}
+    diffs_by_path: Dict[str, Diff[protocol.JsonLike]] = {}
 
-    # if 'values_changed' in state_diff:
-    #     for path, diff in state_diff['values_changed'].items():
-    #         diffs_by_path[path] = Modified(diff['old_value'],
-    #                                     diff['new_value'])
+    if 'values_changed' in state_diff:
+        for path, diff in state_diff['values_changed'].items():
+            diffs_by_path[path] = Modified(diff['old_value'], diff['new_value'])    # type: ignore
 
-    # if 'iterable_item_added' in state_diff:
-    #     for path, diff in state_diff['iterable_item_added'].items():
-    #         diffs_by_path[path] = Added(diff)
+    if 'iterable_item_added' in state_diff:
+        for path, diff in state_diff['iterable_item_added'].items():
+            diffs_by_path[path] = Added(diff)    # type: ignore
 
-    # if 'iterable_item_removed' in state_diff:
-    #     for path, diff in state_diff['iterable_item_removed'].items():
-    #         diffs_by_path[path] = Removed(diff)
+    if 'iterable_item_removed' in state_diff:
+        for path, diff in state_diff['iterable_item_removed'].items():
+            diffs_by_path[path] = Removed(diff)    # type: ignore
 
     # def value_diff(diff_path: str, value: object) -> Diff:
     #     return diffs_by_path[
@@ -230,12 +228,14 @@ def diff_state(state_diff: DeepDiff,
     #                          diff_key=element_diff_key,
     #                          indent_level=indent_level + 2)
 
+    return State({}, state.screenshot)
+
 
 def diff_transitions(
         ts: List[Transition[protocol.JsonLike]]
 ) -> List[Transition[DiffedValue]]:
     results: List[Transition[DiffedValue]] = []
-    last_state = None
+    last_state = {}
     for t in ts:
         # DeepDiff is both a dict and a class we can init in a special
         # way, so pyright must be silenced.
@@ -244,6 +244,7 @@ def diff_transitions(
             Transition(to_state=diff_state(diff, t.to_state),
                        stutter=bool(diff),
                        actions=t.actions))
+        last_state = t.to_state
     return results
 
 
