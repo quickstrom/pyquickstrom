@@ -24,24 +24,39 @@ class Added(Generic[T]):
 
 @dataclass
 class Removed(Generic[T]):
-    value: object
+    value: T
 
 
 @dataclass
 class Modified(Generic[T]):
-    old: object
-    new: object
+    old: T
+    new: T
 
 
 @dataclass
 class Unmodified(Generic[T]):
-    value: object
+    value: T
 
 
 Diff = Union[Added[T], Removed[T], Modified[T], Unmodified[T]]
 
 DiffedValue = Diff[Union[str, int, float, List['DiffedValue[T]'],
                          Dict[str, 'DiffedValue[T]'], None]]
+
+
+def new_value(
+    diff: DiffedValue
+) -> Union[str, int, float, List['DiffedValue'], Dict[str, 'DiffedValue'],
+           None]:
+    if isinstance(diff, Added):
+        return diff.value
+    elif isinstance(diff, Removed):
+        return diff.value
+    elif isinstance(diff, Modified):
+        return diff.new
+    elif isinstance(diff, Unmodified):
+        return diff.value
+
 
 E = TypeVar('E')
 
@@ -143,6 +158,77 @@ DiffedResult = Union[Failed[DiffedValue], Passed[DiffedValue], Errored]
 def diff_state(state_diff: DeepDiff,
                state: State[protocol.JsonLike]) -> State[DiffedValue]:
     return State({}, state.screenshot)
+
+    # diffs_by_path: 'Dict[str, Diff]' = {}
+
+    # if 'values_changed' in state_diff:
+    #     for path, diff in state_diff['values_changed'].items():
+    #         diffs_by_path[path] = Modified(diff['old_value'],
+    #                                     diff['new_value'])
+
+    # if 'iterable_item_added' in state_diff:
+    #     for path, diff in state_diff['iterable_item_added'].items():
+    #         diffs_by_path[path] = Added(diff)
+
+    # if 'iterable_item_removed' in state_diff:
+    #     for path, diff in state_diff['iterable_item_removed'].items():
+    #         diffs_by_path[path] = Removed(diff)
+
+    # def value_diff(diff_path: str, value: object) -> Diff:
+    #     return diffs_by_path[
+    #         diff_path] if diff_path in diffs_by_path else Unmodified(value)
+
+    # for sel, elements in state.queries.items():
+    #     click.echo(indent(selector(f"`{sel}`"), indent_level), file=file)
+    #     for i, state_element in enumerate(elements):
+    #         element_diff_key = f"root['{sel}'][{i}]"
+
+    #         def element_prefix() -> str:
+    #             element_diff = value_diff(element_diff_key, state_element)
+    #             if isinstance(element_diff, Added):
+    #                 return added("+ Element")
+    #             elif isinstance(element_diff, Removed):
+    #                 return removed("- Element")
+    #             elif isinstance(element_diff, Modified):
+    #                 return modified("~ Element")
+    #             else:
+    #                 return "* Element"
+
+    #         def element_suffix() -> str:
+    #             if isinstance(state_element, Dict) and 'ref' in state_element:
+    #                 diff = value_diff(element_diff_key + "['ref']",
+    #                                   state_element['ref'])
+    #                 return " (" + diff.formatted() + ")"
+    #             else:
+    #                 return ""
+
+    #         click.echo(indent(f"{element_prefix()}{element_suffix()}",
+    #                           indent_level + 1),
+    #                    file=file)
+
+    #         def print_value_diff(obj: Any, diff_key: str, indent_level: int):
+    #             if isinstance(obj, dict):
+    #                 for key, value in [(key, value) # type: ignore
+    #                                    for key, value in obj.items() # type: ignore
+    #                                    if key not in ['ref', 'position']]:
+    #                     click.echo(indent(f"{key}:", indent_level), file=file)
+    #                     print_value_diff(value,
+    #                                      f"{diff_key}['{key}']",
+    #                                      indent_level=indent_level + 2)
+    #             elif isinstance(obj, list):
+    #                 for i, value in enumerate(obj): # type: ignore
+    #                     click.echo(indent("*", indent_level), file=file)
+    #                     print_value_diff(value,
+    #                                      f"{diff_key}[{i}]",
+    #                                      indent_level=indent_level + 2)
+    #             else:
+    #                 diff = value_diff(diff_key, obj)
+    #                 click.echo(indent(f"{diff.formatted()}", indent_level),
+    #                            file=file)
+
+    #         print_value_diff(state_element,
+    #                          diff_key=element_diff_key,
+    #                          indent_level=indent_level + 2)
 
 
 def diff_transitions(
