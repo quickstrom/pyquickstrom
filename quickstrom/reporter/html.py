@@ -1,18 +1,19 @@
 from dataclasses import dataclass
+from datetime import datetime
 import os
 from pathlib import Path
 import shutil
 from quickstrom.reporter import Reporter
 import quickstrom.reporter.json as json_reporter
-import quickstrom.protocol as protocol
+import quickstrom.result as result
 
 
 @dataclass
 class HtmlReporter(Reporter):
     path: Path
 
-    def report(self, result: protocol.Result):
-        report = json_reporter.report_from_result(result)
+    def report(self, result: result.Result):
+        report = json_reporter.Report(result, datetime.utcnow())
         report_assets_dir = os.getenv('QUICKSTROM_HTML_REPORT_DIRECTORY')
         if report_assets_dir is None:
             raise RuntimeError('HTML report assets directory is not configured')

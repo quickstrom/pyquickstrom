@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from quickstrom.protocol import JsonLike
 from quickstrom.reporter import Reporter
 import sys
 from typing import Any, IO, Text
-from quickstrom.protocol import *
+from quickstrom.result import *
 import quickstrom.printer as printer
 from deepdiff import DeepDiff
 import click
@@ -46,7 +47,7 @@ class Unmodified(Diff):
         return unmodified(repr(self.value))
 
 
-def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
+def print_state_diff(state_diff: DeepDiff, state: State[JsonLike], indent_level: int,
                      file: Optional[IO[Text]]):
     diffs_by_path: 'Dict[str, Diff]' = {}
 
@@ -67,10 +68,10 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
         return diffs_by_path[
             diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
-    for sel, elements in state.items():
-        click.echo(indent(selector(f"`{sel}`"), indent_level), file=file)
-        for i, state_element in enumerate(elements):
-            element_diff_key = f"root['{sel}'][{i}]"
+    for query in state.queries:
+        click.echo(indent(selector(f"`{query.selector}`"), indent_level), file=file)
+        for i, state_element in enumerate(query.elements):
+            element_diff_key = f"root['{query.selector}'][{i}]"
 
             def element_prefix() -> str:
                 element_diff = value_diff(element_diff_key, state_element)
@@ -84,7 +85,7 @@ def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
                     return "* Element"
 
             def element_suffix() -> str:
-                if 'ref' in state_element:
+                if isinstance(state_element, Dict) and 'ref' in state_element:
                     diff = value_diff(element_diff_key + "['ref']",
                                       state_element['ref'])
                     return " (" + diff.formatted() + ")"
@@ -155,30 +156,28 @@ class ConsoleReporter(Reporter):
 
     def report(self, result: Result):
         last_state = None
-        if isinstance(result, RunResult):
-            if not result.valid.value or self.report_on_success:
-                click.echo("Trace:", file=self.file)
-                for i, element in zip(range(1,
-                                            len(result.trace) + 1),
-                                      result.trace):
-                    if isinstance(element, TraceActions):
-                        for action in element.actions:
-                            label = "Event" if action.isEvent else "Action"
-                            heading = f"{i}. {label}:"
-                            click.echo(indent(
-                                element_heading(
-                                    f"{heading} {printer.pretty_print_action(action)}"
-                                ), 1),
-                                       file=self.file)
-                    else:
-                        click.echo(indent(element_heading(f"{i}. State"), 1),
-                                   file=self.file)
-                        state: State = element.state
-                        # DeepDiff is both a dict and a class we can init in a special
-                        # way, so pyright must be silenced.
-                        diff = DeepDiff(last_state, state) # type: ignore
-                        print_state_diff(diff,
-                                         state,
-                                         indent_level=2,
-                                         file=self.file)
-                        last_state = state
+        if isinstance(result, Failed):
+            click.echo("Trace:", file=self.file)
+            i = 1
+            for transition in result.failed_test.transitions:
+                for action in transition.actions:
+                    label = "Event" if action.isEvent else "Action"
+                    heading = f"{i}. {label}:"
+                    click.echo(indent(
+                        element_heading(
+                            f"{heading} {printer.pretty_print_action(action)}"
+                        ), 1),
+                                file=self.file)
+                    i += 1
+                
+                click.echo(indent(element_heading(f"{i}. State"), 1),
+                            file=self.file)
+                state: State = transition.to_state
+                # DeepDiff is both a dict and a class we can init in a special
+                # way, so pyright must be silenced.
+                diff = DeepDiff(last_state, state) # type: ignore
+                print_state_diff(diff,
+                                    state,
+                                    indent_level=2,
+                                    file=self.file)
+                last_state = state

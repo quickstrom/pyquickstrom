@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from quickstrom.protocol import Result
+import quickstrom.result as result
 
 @dataclass
 class Reporter():
     @abstractmethod
-    def report(self, result: Result) -> None:
+    def report(self, result: result.Result) -> None:
         pass

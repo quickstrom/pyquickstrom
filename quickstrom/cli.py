@@ -55,7 +55,7 @@ def root(log_level, include):
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
           reporter: List[str], json_report_file: Path,
-           html_report_directory: Path):
+          html_report_directory: Path):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {

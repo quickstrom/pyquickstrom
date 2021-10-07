@@ -12,6 +12,7 @@ import selenium.webdriver.chrome.options as chrome_options
 import selenium.webdriver.firefox.options as firefox_options
 
 from quickstrom.protocol import *
+import quickstrom.result as result
 import quickstrom.printer as printer
 import os
 
@@ -40,7 +41,7 @@ class Check():
     capture_screenshots: bool
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
-    def execute(self) -> List[Result]:
+    def execute(self) -> List[result.Result]:
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
                 assert p.stdout is not None
@@ -131,7 +132,7 @@ class Check():
                             send(Event(event=event, state=state))
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
-                            return msg.results
+                            return [result.from_protocol_result(r) for r in msg.results]
 
                 def screenshot(driver: WebDriver, n: int):
                     if self.capture_screenshots:
