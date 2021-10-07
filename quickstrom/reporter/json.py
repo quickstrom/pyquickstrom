@@ -83,11 +83,6 @@ class _ReporterEncoder(json.JSONEncoder):
                 'queries': o.queries,
                 'screenshot': self.default(o.screenshot) if o.screenshot is not None else None
             }
-        elif isinstance(o, result.Query):
-            return {
-                'selector': o.selector,
-                'elements': o.elements
-            }
         elif isinstance(o, result.Screenshot):
             return {
                 'url': o.url,

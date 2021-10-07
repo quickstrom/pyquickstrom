@@ -1,3 +1,4 @@
+from deepdiff import DeepDiff
 import quickstrom.protocol as protocol
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,14 +47,8 @@ E = TypeVar('E')
 
 
 @dataclass(frozen=True)
-class Query(Generic[E]):
-    selector: protocol.Selector
-    elements: List[E]
-
-
-@dataclass(frozen=True)
 class State(Generic[E]):
-    queries: List[Query[E]]
+    queries: Dict[protocol.Selector, List[E]]
     screenshot: Optional[Screenshot]
 
 
@@ -97,7 +92,7 @@ Result = Union[Failed[protocol.JsonLike], Passed[protocol.JsonLike], Errored]
 
 
 def from_state(state: protocol.State) -> State:
-    return State([Query(s, es) for (s, es) in state.items()], None)
+    return State(state, None)
 
 
 def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
@@ -130,12 +125,12 @@ def from_protocol_result(result: protocol.Result) -> Result:
     def to_result() -> Result:
         if isinstance(result, protocol.RunResult):
             if result.valid.value:
-                return Passed([
-                    Test(result.valid, transitions_from_trace(result.trace))
-                ])
+                return Passed(
+                    [Test(result.valid, transitions_from_trace(result.trace))])
             else:
                 return Failed([],
-                              Test(result.valid, transitions_from_trace(result.trace)))
+                              Test(result.valid,
+                                   transitions_from_trace(result.trace)))
         else:
             return Errored(result.error, 1)
 
@@ -143,3 +138,38 @@ def from_protocol_result(result: protocol.Result) -> Result:
 
 
 DiffedResult = Union[Failed[DiffedValue], Passed[DiffedValue], Errored]
+
+
+def diff_state(state_diff: DeepDiff,
+               state: State[protocol.JsonLike]) -> State[DiffedValue]:
+    return State({}, state.screenshot)
+
+
+def diff_transitions(
+        ts: List[Transition[protocol.JsonLike]]
+) -> List[Transition[DiffedValue]]:
+    results: List[Transition[DiffedValue]] = []
+    last_state = None
+    for t in ts:
+        # DeepDiff is both a dict and a class we can init in a special
+        # way, so pyright must be silenced.
+        diff = DeepDiff(last_state, t.to_state)    # type: ignore
+        results.append(
+            Transition(to_state=diff_state(diff, t.to_state),
+                       stutter=bool(diff),
+                       actions=t.actions))
+    return results
+
+
+def diff_test(test: Test[protocol.JsonLike]) -> Test[DiffedValue]:
+    return Test(test.validity, diff_transitions(test.transitions))
+
+
+def diff_result(result: Result) -> DiffedResult:
+    if isinstance(result, Errored):
+        return result
+    elif isinstance(result, Failed):
+        return Failed([diff_test(test) for test in result.passed_tests],
+                      diff_test(result.failed_test))
+    elif isinstance(result, Passed):
+        return Passed([diff_test(test) for test in result.passed_tests])

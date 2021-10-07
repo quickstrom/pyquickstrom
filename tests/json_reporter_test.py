@@ -11,7 +11,7 @@ from hypothesis import given
 def protocol_result_from_result(r: result.Result) -> protocol.Result:
     def to_trace(test: result.Test[protocol.JsonLike]) -> protocol.Trace:
         def to_state(state: result.State[protocol.JsonLike]) -> protocol.State:
-            return {query.selector: query.elements for query in state.queries}
+            return state.queries
 
         def to_trace_elements(
                 transition: result.Transition) -> List[protocol.TraceElement]:

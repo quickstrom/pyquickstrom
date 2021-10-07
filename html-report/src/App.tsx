@@ -47,13 +47,10 @@ type Transition = {
 
 type State = {
     screenshot: Screenshot;
-    queries: Query[];
+    queries: Queries;
 };
 
-type Query = {
-    selector: string;
-    elements: QueriedElement[];
-}
+type Queries = { [selector: string]: QueriedElement[] };
 
 type Screenshot = {
     url: string;
@@ -429,7 +426,7 @@ const Screenshot: FunctionComponent<{ actionSubjects: ActionSubject[], state: St
             return selectedElement && selectedElement.id === element.id;
         }
         const activeElement =
-            state.queries.flatMap(q => q.elements as Element[])
+            Object.values(state.queries).flatMap(q => q as Element[])
                 .concat(actionSubjects.map(a => a.element))
                 .find(isActive)
             || null;
@@ -442,8 +439,8 @@ const Screenshot: FunctionComponent<{ actionSubjects: ActionSubject[], state: St
         function percentageOf(x: number, total: number): string {
             return `${(x / total) * 100}%`;
         }
-        function renderQueryMarkers(query: Query) {
-            return query.elements.map(element => {
+        function renderQueryMarkers(elements: QueriedElement[]) {
+            return elements.map(element => {
                 if (element.position) {
                     return (
                         <div key={element.id}
@@ -468,7 +465,7 @@ const Screenshot: FunctionComponent<{ actionSubjects: ActionSubject[], state: St
         return (
             <div class={`state-screenshot ${extraClass}`}>
                 <div class=" state-screenshot-inner">
-                    {state.queries.map(renderQueryMarkers)}
+                    {Object.values(state.queries).map(renderQueryMarkers)}
                     <img src={state.screenshot.url} />
                     {dim}
                 </div>
@@ -477,12 +474,12 @@ const Screenshot: FunctionComponent<{ actionSubjects: ActionSubject[], state: St
     }
 
 
-const QueriesDetails: FunctionComponent<{ queries: Query[] }> = ({ queries }) => {
+const QueriesDetails: FunctionComponent<{ queries: Queries }> = ({ queries }) => {
     return <ul class="queries-details">
-        {queries.map(query =>
+        {Object.entries(queries).map(([selector, elements]) =>
             <li>
-                <h2 class="selector">{query.selector}</h2>
-                <QueryDetails elements={query.elements} />
+                <h2 class="selector">{selector}</h2>
+                <QueryDetails elements={elements} />
             </li>
         )}
     </ul>;

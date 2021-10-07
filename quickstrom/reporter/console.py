@@ -68,10 +68,10 @@ def print_state_diff(state_diff: DeepDiff, state: State[JsonLike], indent_level:
         return diffs_by_path[
             diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
-    for query in state.queries:
-        click.echo(indent(selector(f"`{query.selector}`"), indent_level), file=file)
-        for i, state_element in enumerate(query.elements):
-            element_diff_key = f"root['{query.selector}'][{i}]"
+    for sel, elements in state.queries.items():
+        click.echo(indent(selector(f"`{sel}`"), indent_level), file=file)
+        for i, state_element in enumerate(elements):
+            element_diff_key = f"root['{sel}'][{i}]"
 
             def element_prefix() -> str:
                 element_diff = value_diff(element_diff_key, state_element)
