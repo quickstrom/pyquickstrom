@@ -37,7 +37,7 @@ def indent(s: str, level: int) -> str:
     return f"{' ' * level * 2}{s}"
 
 
-def formatted(diff: DiffedValue) -> str:
+def formatted(diff: Diff[Any]) -> str:
     if isinstance(diff, Added):
         return added(repr(diff.value))
     elif isinstance(diff, Removed):
@@ -70,53 +70,22 @@ def print_state_diff(state: State[DiffedValue], indent_level: int,
             def without_internal_props(d: dict) -> dict:
                 return {
                     key: value
-                    for key, value in d if key not in ['ref', 'position']
+                    for key, value in d.items()
+                    if key not in ['ref', 'position']
                 }
 
-            def print_recursively_with_color(diff: DiffedValue,
-                                             color: Callable[[str], str],
-                                             indent_level: int):
-                val = new_value(diff)
-                if isinstance(val, dict):
-                    for key, value in without_internal_props(val):
-                        click.echo(indent(color(f"{key}:"), indent_level),
-                                   file=file)
-                        print_recursively_with_color(
-                            value, color, indent_level=indent_level + 2)
-                elif isinstance(val, list):
-                    for value in val:
-                        click.echo(indent(color("*"), indent_level), file=file)
-                        print_recursively_with_color(
-                            value, color, indent_level=indent_level + 2)
-                else:
-                    click.echo(indent(color(repr(val)), indent_level),
-                               file=file)
-
             def print_value_diff(diff: DiffedValue, indent_level: int):
-                if isinstance(diff, Modified):
-                    if isinstance(diff.new, dict):
-                        for key, value in without_internal_props(diff.new):
-                            click.echo(indent(f"{key}:", indent_level),
-                                       file=file)
-                            print_value_diff(value,
-                                             indent_level=indent_level + 2)
-                    elif isinstance(diff.new, list):
-                        for value in diff.new:
-                            click.echo(indent("*", indent_level), file=file)
-                            print_value_diff(value,
-                                             indent_level=indent_level + 2)
-                    else:
-                        click.echo(indent(
-                            modified(f"{repr(diff.old)}-> {repr(diff.new)}"),
-                            indent_level),
-                                   file=file)
-                elif isinstance(diff, Unmodified):
-                    print_recursively_with_color(diff, unmodified,
-                                                 indent_level)
-                elif isinstance(diff, Added):
-                    print_recursively_with_color(diff, added, indent_level)
-                elif isinstance(diff, Removed):
-                    print_recursively_with_color(diff, removed, indent_level)
+                if isinstance(diff, dict):
+                    for key, value in without_internal_props(diff).items():
+                        click.echo(indent(f"{key}:", indent_level), file=file)
+                        print_value_diff(value, indent_level=indent_level + 1)
+                elif isinstance(diff, list):
+                    for value in diff:
+                        click.echo(indent("*", indent_level), file=file)
+                        print_value_diff(value, indent_level=indent_level + 1)
+                else:
+                    click.echo(indent(formatted(diff), indent_level),
+                               file=file)
 
             print_value_diff(element, indent_level=indent_level + 2)
 
