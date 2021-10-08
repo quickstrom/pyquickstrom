@@ -21,14 +21,26 @@ global_options: Dict[str, object] = {'includes': []}
 
 
 @click.group()
+@click.option('--color',
+              default='auto',
+              help='use colored output (no|auto|always)')
 @click.option('--log-level',
               default='WARN',
-              help='log level (DEBUG|INFO|WARN|ERROR)')
+              help='log level (debug|info|warn|error)')
 @click.option('-I',
               '--include',
               multiple=True,
               help='include a path in the Specstrom module search paths')
-def root(log_level, include):
+@click.pass_context
+def root(ctx, color, log_level, include):
+    if color.lower() == 'auto':
+        ctx.color = None
+    elif color.lower() == 'always':
+        ctx.color = True
+    elif color.lower() == 'no':
+        ctx.color = False
+    else:
+        raise click.UsageError(f"Invalid color option: `{color}`")
     global_options['includes'] = include
     logging.basicConfig(level=getattr(logging, log_level.upper()))
     logging.getLogger("urllib3").setLevel(logging.INFO)

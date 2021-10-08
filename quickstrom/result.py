@@ -2,12 +2,12 @@ from deepdiff import DeepDiff
 import quickstrom.protocol as protocol
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 Selector = str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Screenshot():
     url: Path
     width: int
@@ -17,23 +17,23 @@ class Screenshot():
 T = TypeVar('T', contravariant=True)
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Added(Generic[T]):
     value: T
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Removed(Generic[T]):
     value: T
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Modified(Generic[T]):
     old: T
     new: T
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Unmodified(Generic[T]):
     value: T
 
@@ -41,13 +41,25 @@ class Unmodified(Generic[T]):
 Diff = Union[Added[T], Removed[T], Modified[T], Unmodified[T]]
 
 DiffedValue = Union[Diff[Union[str, int, float, None]], List['DiffedValue'],
-                    Dict[str, 'DiffedValue']]
+                    Dict[Diff[str], 'DiffedValue']]
 
+T2 = TypeVar('T2')
+def map_diff(
+        f: Callable[[T], T2],
+        diff: Diff[T]
+) -> Diff[T2]:
+    if isinstance(diff, Added):
+        return Added(f(diff.value))
+    elif isinstance(diff, Removed):
+        return Removed(f(diff.value))
+    elif isinstance(diff, Modified):
+        return Modified(f(diff.old), f(diff.new))
+    elif isinstance(diff, Unmodified):
+        return Unmodified(f(diff.value))
 
 def new_value(
-    diff: DiffedValue
-) -> Union[str, int, float, List['DiffedValue'], Dict[str, 'DiffedValue'],
-           None]:
+    diff: Diff[T]
+) -> Union[T]:
     if isinstance(diff, Added):
         return diff.value
     elif isinstance(diff, Removed):
@@ -58,32 +70,33 @@ def new_value(
         return diff.value
 
 
+S = TypeVar('S')
 E = TypeVar('E')
 
 
 @dataclass(frozen=True)
-class State(Generic[E]):
-    queries: Dict[protocol.Selector, List[E]]
+class State(Generic[S, E]):
+    queries: Dict[S, List[E]]
     screenshot: Optional[Screenshot]
 
 
 @dataclass(frozen=True)
-class Initial(Generic[E]):
+class Initial(Generic[S, E]):
     events: List[protocol.Action]
-    state: State[E]
+    state: State[S, E]
 
 
 @dataclass(frozen=True)
-class Transition(Generic[E]):
-    to_state: State[E]
+class Transition(Generic[S, E]):
+    to_state: State[S, E]
     stutter: bool
     actions: List[protocol.Action]
 
 
 @dataclass(frozen=True)
-class Test(Generic[E]):
+class Test(Generic[S, E]):
     validity: protocol.Validity
-    transitions: List[Transition[E]]
+    transitions: List[Transition[S, E]]
 
 
 @dataclass(frozen=True)
@@ -93,17 +106,18 @@ class Errored():
 
 
 @dataclass(frozen=True)
-class Failed(Generic[E]):
-    passed_tests: List[Test[E]]
-    failed_test: Test[E]
+class Failed(Generic[S, E]):
+    passed_tests: List[Test[S, E]]
+    failed_test: Test[S, E]
 
 
 @dataclass(frozen=True)
-class Passed(Generic[E]):
-    passed_tests: List[Test[E]]
+class Passed(Generic[S, E]):
+    passed_tests: List[Test[S, E]]
 
 
-Result = Union[Failed[protocol.JsonLike], Passed[protocol.JsonLike], Errored]
+Result = Union[Failed[protocol.Selector, protocol.JsonLike],
+               Passed[protocol.Selector, protocol.JsonLike], Errored]
 
 
 def from_state(state: protocol.State) -> State:
@@ -152,16 +166,23 @@ def from_protocol_result(result: protocol.Result) -> Result:
     return to_result()
 
 
-DiffedResult = Union[Failed[DiffedValue], Passed[DiffedValue], Errored]
+DiffedResult = Union[Failed[Diff[Selector], DiffedValue],
+                     Passed[Diff[Selector], DiffedValue], Errored]
 
 
-def diff_state(state_diff: DeepDiff,
-               state: State[protocol.JsonLike]) -> State[DiffedValue]:
+def diff_state(
+        state_diff: DeepDiff,
+        state: State[str, protocol.JsonLike]) -> State[Diff[str], DiffedValue]:
 
     diffs_by_path: Dict[str, Diff[protocol.JsonLike]] = {}
+    key_diffs_by_path: Dict[str, Callable[[str], Diff[str]]] = {}
 
     if 'values_changed' in state_diff:
         for path, diff in state_diff['values_changed'].items():
+            diffs_by_path[path] = Modified(diff['old_value'],
+                                           diff['new_value'])    # type: ignore
+    if 'type_changes' in state_diff:
+        for path, diff in state_diff['type_changes'].items():
             diffs_by_path[path] = Modified(diff['old_value'],
                                            diff['new_value'])    # type: ignore
 
@@ -173,11 +194,24 @@ def diff_state(state_diff: DeepDiff,
         for path, diff in state_diff['iterable_item_removed'].items():
             diffs_by_path[path] = Removed(diff)    # type: ignore
 
+    if 'dictionary_item_added' in state_diff:
+        for path in state_diff['dictionary_item_added']:
+            key_diffs_by_path[path] = lambda x: Added(x)
+
+    if 'dictionary_item_removed' in state_diff:
+        for path in state_diff['dictionary_item_removed']:
+            key_diffs_by_path[path] = lambda x: Removed(x)
+
+    def key_diff(nested_path: str) -> Callable[[str], Diff[str]]:
+        return key_diffs_by_path.get(nested_path, lambda x: Unmodified(x))
+
     def value_diff(diff_path: str, value: protocol.JsonLike) -> DiffedValue:
         if isinstance(value, dict):
+
             return {
-                key: value_diff(f"{diff_path}['{key}']", nested)
+                key_diff(nested_path)(key): value_diff(nested_path, nested)
                 for key, nested in value.items()
+                for nested_path in [f"{diff_path}['{key}']"]
             }
         elif isinstance(value, list):
             return [
@@ -188,8 +222,9 @@ def diff_state(state_diff: DeepDiff,
             return diffs_by_path[
                 diff_path] if diff_path in diffs_by_path else Unmodified(value)
 
-    diffed_state: Dict[Selector, List[DiffedValue]] = {
-        sel: [value_diff(f"root['{sel}'][{i}]", e) for i, e in enumerate(elements)]   
+    diffed_state: Dict[Diff[Selector], List[DiffedValue]] = {
+        key_diff(f"root['{sel}']")(sel):
+        [value_diff(f"root['{sel}'][{i}]", e) for i, e in enumerate(elements)]
         for sel, elements in state.queries.items()
     }
 
@@ -197,9 +232,9 @@ def diff_state(state_diff: DeepDiff,
 
 
 def diff_transitions(
-        ts: List[Transition[protocol.JsonLike]]
-) -> List[Transition[DiffedValue]]:
-    results: List[Transition[DiffedValue]] = []
+    ts: List[Transition[Selector, protocol.JsonLike]]
+) -> List[Transition[Diff[Selector], DiffedValue]]:
+    results: List[Transition[Diff[Selector], DiffedValue]] = []
     last_state = State({}, None)
     for t in ts:
         # DeepDiff is both a dict and a class we can init in a special
@@ -213,7 +248,9 @@ def diff_transitions(
     return results
 
 
-def diff_test(test: Test[protocol.JsonLike]) -> Test[DiffedValue]:
+def diff_test(
+    test: Test[Selector,
+               protocol.JsonLike]) -> Test[Diff[Selector], DiffedValue]:
     return Test(test.validity, diff_transitions(test.transitions))
 
 
