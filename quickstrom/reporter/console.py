@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from quickstrom.protocol import JsonLike
 from quickstrom.reporter import Reporter
 import sys
-from typing import Any, Callable, IO, Text
+from typing import Any, Callable, IO, Text, Tuple
 from quickstrom.result import *
 import quickstrom.printer as printer
 from deepdiff import DeepDiff
@@ -14,7 +14,7 @@ def element_heading(s: str) -> str:
 
 
 def selector(s: str) -> str:
-    return click.style(f"`{s}`", bold=True, fg='cyan')
+    return click.style(f"`{s}`", bold=True)
 
 
 def added(s: str) -> str:
@@ -50,49 +50,50 @@ def formatted(diff: Diff[str]) -> str:
         raise TypeError(f"{diff} is not a Diff[str]")
 
 
-def print_state_diff(state: State[Selector, DiffedValue], indent_level: int,
+def print_state_diff(state: State[Diff[JsonLike]], indent_level: int,
                      file: Optional[IO[Text]]):
     for sel, elements in state.queries.items():
         click.echo(indent(selector(sel), indent_level), file=file)
-        for element in elements:
+        for element_diff in elements:
 
-            def element_prefix() -> str:
-                if isinstance(element, Added):
-                    return added("+ Element")
-                elif isinstance(element, Removed):
-                    return removed("- Element")
-                elif isinstance(element, Modified):
-                    return modified("~ Element")
-                else:
-                    return "* Element"
-
-            click.echo(indent(f"{element_prefix()}", indent_level + 1),
-                       file=file, nl=False)
-
-            def without_internal_props(d: Dict[Selector, DiffedValue]) -> Dict[Selector, DiffedValue]:
+            def without_internal_props(d: Dict[Selector, JsonLike]) -> Dict[Selector, JsonLike]:
                 return {
                     key: value
                     for key, value in d.items()
                     if key not in ['ref', 'position']
                 }
 
-            def print_value_diff(diff: DiffedValue, indent_level: int):
-                value = new_value(diff)
-                print(diff)
+            def print_value_with_color(value: JsonLike, color: Callable[[str], str], indent_level: int):
                 if isinstance(value, dict):
                     click.echo('', file=file, nl=True)
                     for key, item in without_internal_props(value).items():
-                        click.echo(indent(f"{key}:", indent_level), file=file, nl=False)
-                        print_value_diff(item, indent_level=indent_level + 1)
+                        click.echo(indent(color(f"{key}:"), indent_level), file=file, nl=False)
+                        print_value_with_color(item, color, indent_level=indent_level + 1)
                 elif isinstance(value, list):
                     click.echo('', file=file, nl=True)
                     for item in value:
-                        click.echo(indent("*", indent_level), file=file, nl=False)
-                        print_value_diff(item, indent_level=indent_level + 1)
+                        click.echo(indent(color("-"), indent_level), file=file, nl=False)
+                        print_value_with_color(item, color, indent_level=indent_level + 1)
                 else:
-                    click.echo(' ' + formatted(map_diff(repr, diff)), file=file)
+                    click.echo(' ' + color(repr(value)), file=file)
 
-            print_value_diff(element, indent_level=indent_level + 2)
+            def element_style() -> Tuple[str, Callable[[str], str]]:
+                if isinstance(element_diff, Added):
+                    return ("+", added)
+                elif isinstance(element_diff, Removed):
+                    return ("-", removed)
+                elif isinstance(element_diff, Modified):
+                    return ("~", modified)
+                else:
+                    return ("*", unmodified)
+
+            element = new_value(element_diff)
+            assert isinstance(element, dict)
+            prefix, color = element_style()
+            click.echo(indent(color(f"{prefix} Element ({element['ref']})"), indent_level + 1),
+                       file=file, nl=False)
+
+            print_value_with_color(element, color, indent_level=indent_level + 2)
 
 
 @dataclass

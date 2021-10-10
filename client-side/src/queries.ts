@@ -42,9 +42,6 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
         var m: ElementState = {};
         Object.entries(schema).forEach(([key, subSchema]) => {
             switch (key) {
-                case "ref":
-                    m.ref = element;
-                    break;
                 case "enabled":
                     // @ts-ignore
                     m[key] = !element.disabled;
@@ -68,6 +65,7 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
                     break;
             }
         });
+        m.ref = element;
         m.position = getPosition(element);
         return m;
     });
