@@ -14,7 +14,7 @@ def element_heading(s: str) -> str:
 
 
 def selector(s: str) -> str:
-    return click.style(f"`{s}`", bold=True)
+    return click.style(f"`{s}`", bold=True, fg='cyan')
 
 
 def added(s: str) -> str:
@@ -46,12 +46,14 @@ def formatted(diff: Diff[str]) -> str:
         return modified(diff.old + " -> " + diff.new)
     elif isinstance(diff, Unmodified):
         return unmodified(diff.value)
+    else:
+        raise TypeError(f"{diff} is not a Diff[str]")
 
 
-def print_state_diff(state: State[Diff[Selector], DiffedValue], indent_level: int,
+def print_state_diff(state: State[Selector, DiffedValue], indent_level: int,
                      file: Optional[IO[Text]]):
     for sel, elements in state.queries.items():
-        click.echo(indent(selector(new_value(sel)), indent_level), file=file)
+        click.echo(indent(selector(sel), indent_level), file=file)
         for element in elements:
 
             def element_prefix() -> str:
@@ -67,24 +69,26 @@ def print_state_diff(state: State[Diff[Selector], DiffedValue], indent_level: in
             click.echo(indent(f"{element_prefix()}", indent_level + 1),
                        file=file, nl=False)
 
-            def without_internal_props(d: Dict[Diff[Selector], DiffedValue]) -> Dict[Diff[Selector], DiffedValue]:
+            def without_internal_props(d: Dict[Selector, DiffedValue]) -> Dict[Selector, DiffedValue]:
                 return {
                     key: value
                     for key, value in d.items()
-                    if new_value(key) not in ['ref', 'position']
+                    if key not in ['ref', 'position']
                 }
 
             def print_value_diff(diff: DiffedValue, indent_level: int):
-                if isinstance(diff, dict):
+                value = new_value(diff)
+                print(diff)
+                if isinstance(value, dict):
                     click.echo('', file=file, nl=True)
-                    for key, value in without_internal_props(diff).items():
-                        click.echo(indent(f"{formatted(key)}:", indent_level), file=file, nl=False)
-                        print_value_diff(value, indent_level=indent_level + 1)
-                elif isinstance(diff, list):
+                    for key, item in without_internal_props(value).items():
+                        click.echo(indent(f"{key}:", indent_level), file=file, nl=False)
+                        print_value_diff(item, indent_level=indent_level + 1)
+                elif isinstance(value, list):
                     click.echo('', file=file, nl=True)
-                    for value in diff:
+                    for item in value:
                         click.echo(indent("*", indent_level), file=file, nl=False)
-                        print_value_diff(value, indent_level=indent_level + 1)
+                        print_value_diff(item, indent_level=indent_level + 1)
                 else:
                     click.echo(' ' + formatted(map_diff(repr, diff)), file=file)
 
