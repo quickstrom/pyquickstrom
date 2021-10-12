@@ -3,7 +3,7 @@ import dataclasses
 import json
 from typing import IO, Any, Dict
 import quickstrom.protocol as protocol
-import quickstrom.result as result
+from quickstrom.result import *
 from quickstrom.reporter import Reporter
 from pathlib import Path
 from datetime import datetime
@@ -11,7 +11,7 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class Report():
-    result: result.Result
+    result: DiffedResult
     generated_at: datetime
 
 
@@ -19,8 +19,9 @@ class Report():
 class JsonReporter(Reporter):
     path: Path
 
-    def report(self, result: result.Result):
-        report = Report(result, datetime.utcnow())
+    def report(self, result: Result):
+        report = Report(diff_result(result), datetime.utcnow())
+        
         encode_file(report, self.path)
 
 
@@ -45,45 +46,45 @@ class _ReporterEncoder(json.JSONEncoder):
                 'generatedAt': str(o.generated_at),
                 'tag': 'Report'
             }
-        elif isinstance(o, result.Passed):
+        elif isinstance(o, Passed):
             return {
                 'tag': 'Passed',
                 'passedTests': [self.default(test) for test in o.passed_tests],
             }
-        elif isinstance(o, result.Errored):
+        elif isinstance(o, Errored):
             return {
                 'tag': 'Errored',
                 'error': o.error,
                 'tests': o.tests,
             }
-        elif isinstance(o, result.Failed):
+        elif isinstance(o, Failed):
             return {
                 'tag': 'Failed',
                 'passedTests': [self.default(test) for test in o.passed_tests],
                 'failedTest': self.default(o.failed_test)
             }
-        elif isinstance(o, result.Test):
+        elif isinstance(o, Test):
             return {
                 'validity': self.default(o.validity),
                 'transitions': [self.default(t) for t in o.transitions],
             }
-        elif isinstance(o, result.Initial):
+        elif isinstance(o, Initial):
             return {
                 'events': [self.default(t) for t in o.events],
                 'state': o.state,
             }
-        elif isinstance(o, result.Transition):
+        elif isinstance(o, Transition):
             return {
                 'toState': o.to_state,
                 'stutter': o.stutter,
                 'actions': [self.default(t) for t in o.actions],
             }
-        elif isinstance(o, result.State):
+        elif isinstance(o, State):
             return {
                 'queries': o.queries,
                 'screenshot': self.default(o.screenshot) if o.screenshot is not None else None
             }
-        elif isinstance(o, result.Screenshot):
+        elif isinstance(o, Screenshot):
             return {
                 'url': o.url,
                 'width': o.width,
@@ -98,5 +99,21 @@ class _ReporterEncoder(json.JSONEncoder):
             }
         elif isinstance(o, protocol.Validity):
             return dataclasses.asdict(o)
+        elif isinstance(o, Added):
+            assert(isinstance(o.value, dict))
+            o.value['diff'] = 'Added'
+            return o.value
+        elif isinstance(o, Removed):
+            assert(isinstance(o.value, dict))
+            o.value['diff'] = 'Removed'
+            return o.value
+        elif isinstance(o, Modified):
+            assert(isinstance(o.new, dict))
+            o.new['diff'] = 'Modified'
+            return o.new
+        elif isinstance(o, Unmodified):
+            assert(isinstance(o.value, dict))
+            o.value['diff'] = 'Unmodified'
+            return o.value
         else:
             return json.JSONEncoder.default(self, o)

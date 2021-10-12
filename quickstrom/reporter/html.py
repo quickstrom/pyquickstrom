@@ -5,18 +5,19 @@ from pathlib import Path
 import shutil
 from quickstrom.reporter import Reporter
 import quickstrom.reporter.json as json_reporter
-import quickstrom.result as result
+from quickstrom.result import Result, diff_result
 
 
 @dataclass
 class HtmlReporter(Reporter):
     path: Path
 
-    def report(self, result: result.Result):
-        report = json_reporter.Report(result, datetime.utcnow())
+    def report(self, result: Result):
+        report = json_reporter.Report(diff_result(result), datetime.utcnow())
         report_assets_dir = os.getenv('QUICKSTROM_HTML_REPORT_DIRECTORY')
         if report_assets_dir is None:
-            raise RuntimeError('HTML report assets directory is not configured')
+            raise RuntimeError(
+                'HTML report assets directory is not configured')
         os.makedirs(self.path)
         for f in os.listdir(report_assets_dir):
             shutil.copy(Path(report_assets_dir) / f, Path(self.path) / f)

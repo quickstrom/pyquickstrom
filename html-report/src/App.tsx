@@ -61,23 +61,17 @@ type Screenshot = {
 type Element = {
     id: string;
     position?: Position;
+    diff: Diff;
 };
 
 type ActionElement = Element;
 type QueriedElement = Element;
 
-type ElementState
-    = { tag: "Attribute", name: string }
-    | { tag: "Property", name: string }
-    | { tag: "CssValue", name: string }
-    | { tag: "Text" }
-    ;
-
 type Diff
     = "Added"
     | "Removed"
     | "Modified"
-    | "Identical"
+    | "Unmodified"
     ;
 
 type Position = {
@@ -498,12 +492,12 @@ const QueryDetails: FunctionComponent<{ elements: QueriedElement[] }> = ({ eleme
 const ElementStateTable: FunctionComponent<{ element: QueriedElement }> = ({ element }) => {
     return <table class="element-state">
         {Object.entries(element).map(([key, value]) => (
-            <tr class={ /* e.diff.toLowerCase() */ ""}>
+            <tr class={element.diff.toLowerCase()}>
                 <td>{key}</td>
                 <td>{value}</td>
             </tr>
         ))}
-    </table>;
+    </table >;
 };
 
 function excludeStutters(report: Report<Failed>): Report<Failed> {
