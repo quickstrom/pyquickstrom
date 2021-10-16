@@ -129,6 +129,9 @@ main .controls button:active {
 
     color: #fff;
 }
+.actions.initial {
+    border-left: none;
+}
 
 .actions .label {
     margin: -2rem 0 0;
@@ -145,34 +148,13 @@ main .controls button:active {
     text-align: center;
     margin-top: 1.5rem;
 }
-.action-details h2 {
-    font-size: 150%;
+.action-details code {
+    display: block;
     margin: 1em 0 0 0;
-}
-.action-details .name {
-    display: inline-block;
-    background: #222;
-    padding: 0 1rem;
-}
-.action-details .name.none {
-    color: #666;
+    font-family: monospace;
 }
 .action-details > * {
     margin: .5em 0;
-}
-.action-details .selected-index {
-    font-weight: bold;
-    margin-top: .25em;
-}
-.action-details .key {
-    display: inline-block;
-    padding: .5em .8em;
-    background: #666;
-    color: #fff;
-    box-shadow: 2px 2px 0 #111;
-    border-radius: 4px;
-    font-size: 125%;
-    font-weight: 600;
 }
 
 .states {
@@ -207,6 +189,9 @@ main .controls button:active {
     flex: 0 0 49%;
     border: 2px solid #111;
     display: flex;
+}
+.state-screenshot.missing {
+    border: none;
 }
 .state-screenshot-inner {
     width: 100%;

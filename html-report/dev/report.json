@@ -1,1 +1,1035 @@
-{"result": {"tag": "Failed", "passedTests": [], "failedTest": {"validity": {"certainty": "Definitely", "value": false}, "transitions": [{"toState": {"queries": {".todoapp .todo-count strong": [{"textContent": "0", "position": null, "ref": "d883171b-7f19-47f8-bc73-9a9cccbe7f9a", "diff": "Added"}], ".todo-list li input[type=checkbox]": [], ".todoapp .todo-list li label": [], ".todoapp .destroy": [], ".todo-list li": [], ".todoapp .filters a.selected": [{"enabled": true, "visible": false, "textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Added"}], ".todoapp label[for=toggle-all]": [{"enabled": true, "visible": false, "position": null, "ref": "59275939-4819-4fc3-9309-f0c93216e0d5", "diff": "Added"}], ".todoapp #toggle-all": [{"checked": true, "position": null, "ref": "7c1c908b-0bec-45a7-9f57-fa34314463da", "diff": "Added"}], ".todoapp .filters a:not(.selected)": [{"enabled": true, "visible": false, "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Added"}, {"enabled": true, "visible": false, "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Added"}], ".todo-list li label": [], ".todoapp .new-todo": [{"value": "", "active": true, "position": {"height": 65, "width": 550, "x": 325, "y": 130}, "ref": "707d0a6a-2069-4689-acf4-872de3a87f1c", "diff": "Added"}], ".todoapp .filters a": [{"textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Added"}, {"textContent": "Active", "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Added"}, {"textContent": "Completed", "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Added"}], ".todo-list li .edit": []}, "screenshot": null}, "stutter": false, "actions": [{"id": "loaded", "args": [], "isEvent": true, "timeout": null}]}, {"toState": {"queries": {".todoapp .todo-count strong": [{"textContent": "0", "position": null, "ref": "d883171b-7f19-47f8-bc73-9a9cccbe7f9a", "diff": "Unmodified"}], ".todo-list li input[type=checkbox]": [], ".todoapp .todo-list li label": [], ".todoapp .destroy": [], ".todo-list li": [], ".todoapp .filters a.selected": [{"enabled": true, "visible": false, "textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Unmodified"}], ".todoapp label[for=toggle-all]": [{"enabled": true, "visible": false, "position": null, "ref": "59275939-4819-4fc3-9309-f0c93216e0d5", "diff": "Unmodified"}], ".todoapp #toggle-all": [{"checked": true, "position": null, "ref": "7c1c908b-0bec-45a7-9f57-fa34314463da", "diff": "Unmodified"}], ".todoapp .filters a:not(.selected)": [{"enabled": true, "visible": false, "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Unmodified"}, {"enabled": true, "visible": false, "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Unmodified"}], ".todo-list li label": [], ".todoapp .new-todo": [{"value": "", "active": true, "position": {"height": 65, "width": 550, "x": 325, "y": 130}, "ref": "707d0a6a-2069-4689-acf4-872de3a87f1c", "diff": "Unmodified"}], ".todoapp .filters a": [{"textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Unmodified"}, {"textContent": "Active", "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Unmodified"}, {"textContent": "Completed", "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Unmodified"}], ".todo-list li .edit": []}, "screenshot": null}, "stutter": true, "actions": [{"id": "keyPress", "args": ["\ue003"], "isEvent": false, "timeout": null}]}, {"toState": {"queries": {".todoapp .todo-count strong": [{"textContent": "0", "position": null, "ref": "d883171b-7f19-47f8-bc73-9a9cccbe7f9a", "diff": "Unmodified"}], ".todo-list li input[type=checkbox]": [], ".todoapp .todo-list li label": [], ".todoapp .destroy": [], ".todo-list li": [], ".todoapp .filters a.selected": [{"enabled": true, "visible": false, "textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Unmodified"}], ".todoapp label[for=toggle-all]": [{"enabled": true, "visible": false, "position": null, "ref": "59275939-4819-4fc3-9309-f0c93216e0d5", "diff": "Unmodified"}], ".todoapp #toggle-all": [{"checked": true, "position": null, "ref": "7c1c908b-0bec-45a7-9f57-fa34314463da", "diff": "Unmodified"}], ".todoapp .filters a:not(.selected)": [{"enabled": true, "visible": false, "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Unmodified"}, {"enabled": true, "visible": false, "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Unmodified"}], ".todo-list li label": [], ".todoapp .new-todo": [{"value": "b", "active": true, "position": {"height": 65, "width": 550, "x": 325, "y": 130}, "ref": "707d0a6a-2069-4689-acf4-872de3a87f1c", "diff": "Modified"}], ".todoapp .filters a": [{"textContent": "All", "position": null, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Unmodified"}, {"textContent": "Active", "position": null, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Unmodified"}, {"textContent": "Completed", "position": null, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Unmodified"}], ".todo-list li .edit": []}, "screenshot": null}, "stutter": false, "actions": [{"id": "keyPress", "args": ["b"], "isEvent": false, "timeout": null}]}, {"toState": {"queries": {".todoapp .todo-count strong": [{"textContent": "0", "position": null, "ref": "d883171b-7f19-47f8-bc73-9a9cccbe7f9a", "diff": "Removed"}, {"textContent": "1", "position": {"height": 17, "width": 8, "x": 340, "y": 266}, "ref": "a1767fc4-1726-4559-af3b-5f2fda5c59c1", "diff": "Added"}], ".todo-list li input[type=checkbox]": [{"checked": false, "position": null, "ref": "61cd601b-8eab-4a4d-af0e-89e8ed3b15cd", "diff": "Added"}], ".todoapp .todo-list li label": [{"enabled": true, "visible": true, "position": {"height": 58, "width": 550, "x": 325, "y": 196}, "ref": "a09e8445-8dd2-4729-b324-2afe8b02661d", "diff": "Added"}], ".todoapp .destroy": [{"enabled": true, "visible": false, "position": null, "ref": "30d76141-23f5-4cde-a8ae-612d93472008", "diff": "Added"}], ".todo-list li": [{"classList": [], "css": {"display": "list-item"}, "position": {"height": 58, "width": 550, "x": 325, "y": 196}, "ref": "2b0f7342-44cc-4d80-a80f-843126455fb6", "diff": "Added"}], ".todoapp .filters a.selected": [{"enabled": true, "visible": true, "textContent": "All", "position": {"height": 25, "width": 29, "x": 510, "y": 262}, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Modified"}], ".todoapp label[for=toggle-all]": [{"enabled": true, "visible": true, "position": {"height": 60, "width": 34, "x": 325, "y": 131}, "ref": "59275939-4819-4fc3-9309-f0c93216e0d5", "diff": "Modified"}], ".todoapp #toggle-all": [{"checked": false, "position": null, "ref": "7c1c908b-0bec-45a7-9f57-fa34314463da", "diff": "Modified"}], ".todoapp .filters a:not(.selected)": [{"enabled": true, "visible": true, "position": {"height": 25, "width": 51, "x": 549, "y": 262}, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Modified"}, {"enabled": true, "visible": true, "position": {"height": 25, "width": 80, "x": 610, "y": 262}, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Modified"}], ".todo-list li label": [{"textContent": "b", "position": {"height": 58, "width": 550, "x": 325, "y": 196}, "ref": "a09e8445-8dd2-4729-b324-2afe8b02661d", "diff": "Added"}], ".todoapp .new-todo": [{"value": "", "active": true, "position": {"height": 65, "width": 550, "x": 325, "y": 130}, "ref": "707d0a6a-2069-4689-acf4-872de3a87f1c", "diff": "Modified"}], ".todoapp .filters a": [{"textContent": "All", "position": {"height": 25, "width": 29, "x": 510, "y": 262}, "ref": "28311a8f-1379-4929-9ab4-152c154e392d", "diff": "Modified"}, {"textContent": "Active", "position": {"height": 25, "width": 51, "x": 549, "y": 262}, "ref": "b121fa22-0e21-4287-8e0d-2e0fa8ac8292", "diff": "Modified"}, {"textContent": "Completed", "position": {"height": 25, "width": 80, "x": 610, "y": 262}, "ref": "a766a2e8-39df-4d48-ae5f-209f913e83a8", "diff": "Modified"}], ".todo-list li .edit": []}, "screenshot": null}, "stutter": false, "actions": [{"id": "keyPress", "args": ["\ue006"], "isEvent": false, "timeout": null}]}]}}, "generatedAt": "2021-10-12 17:52:22.115308", "tag": "Report"}
+{
+  "result": {
+    "tag": "Failed",
+    "passedTests": [],
+    "failedTest": {
+      "validity": {
+        "certainty": "Definitely",
+        "value": false
+      },
+      "transitions": [
+        {
+          "toState": {
+            "hash": "3f3c9496e7a554b1d564260c23ecdc23",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Added"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Added"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Added"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Added"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Added"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Added"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/3f3c9496e7a554b1d564260c23ecdc23.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "loaded",
+              "args": [],
+              "isEvent": true,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "02cd315f055e6641fbf44e219695307b",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/02cd315f055e6641fbf44e219695307b.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                "a"
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "e611917af5b9f436058deb488a34f09f",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a ",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/e611917af5b9f436058deb488a34f09f.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                " "
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "f5e9336e5a321b368604e1750c6a1c90",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a b",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/f5e9336e5a321b368604e1750c6a1c90.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                "b"
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "3fa0336a07ce820c04523eddb135e030",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a b ",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/3fa0336a07ce820c04523eddb135e030.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                " "
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "fe15e0b85aa7ef9f74aba3d9b641171e",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a b a",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/fe15e0b85aa7ef9f74aba3d9b641171e.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                "a"
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "ff517f8ffd1bfd83a9f1497d92b0e192",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [],
+              ".todoapp .todo-list li label": [],
+              ".todoapp .destroy": [],
+              ".todo-list li": [],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": true,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li label": [],
+              ".todoapp .new-todo": [
+                {
+                  "value": "a b aa",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": null,
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": null,
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Unmodified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": null,
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Unmodified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/ff517f8ffd1bfd83a9f1497d92b0e192.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                "a"
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        },
+        {
+          "toState": {
+            "hash": "7e67f4ccbb122e1c6ee317aebdce5686",
+            "queries": {
+              ".todoapp .todo-count strong": [
+                {
+                  "textContent": "0",
+                  "position": null,
+                  "ref": "12fb694e-d60c-4ed8-b88e-787a5d7eaadb",
+                  "diff": "Removed"
+                },
+                {
+                  "textContent": "1",
+                  "position": {
+                    "height": 17,
+                    "width": 8,
+                    "x": 340,
+                    "y": 266
+                  },
+                  "ref": "d209f96f-fcba-48e8-9f00-b4113061d152",
+                  "diff": "Added"
+                }
+              ],
+              ".todo-list li input[type=checkbox]": [
+                {
+                  "checked": false,
+                  "position": null,
+                  "ref": "1e931287-0487-47b5-a830-63e285bcdd1a",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .todo-list li label": [
+                {
+                  "enabled": true,
+                  "visible": true,
+                  "position": {
+                    "height": 58,
+                    "width": 550,
+                    "x": 325,
+                    "y": 196
+                  },
+                  "ref": "0db74a3c-3502-472d-8879-f43d481e982f",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .destroy": [
+                {
+                  "enabled": true,
+                  "visible": false,
+                  "position": null,
+                  "ref": "d1e7df86-a324-425c-b18a-1d70d17fb816",
+                  "diff": "Added"
+                }
+              ],
+              ".todo-list li": [
+                {
+                  "classList": [],
+                  "css": {
+                    "display": "list-item"
+                  },
+                  "position": {
+                    "height": 58,
+                    "width": 550,
+                    "x": 325,
+                    "y": 196
+                  },
+                  "ref": "07a0fea4-a414-4d35-8d0e-75917f6419a7",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .filters a.selected": [
+                {
+                  "enabled": true,
+                  "visible": true,
+                  "textContent": "All",
+                  "position": {
+                    "height": 25,
+                    "width": 29,
+                    "x": 510,
+                    "y": 262
+                  },
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp label[for=toggle-all]": [
+                {
+                  "enabled": true,
+                  "visible": true,
+                  "position": {
+                    "height": 60,
+                    "width": 34,
+                    "x": 325,
+                    "y": 131
+                  },
+                  "ref": "fa6a99d6-cc91-4dd5-bdd6-ff60951a7f7f",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp #toggle-all": [
+                {
+                  "checked": false,
+                  "position": null,
+                  "ref": "23a2bee7-add1-4a82-8a9e-d5b7907370c9",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a:not(.selected)": [
+                {
+                  "enabled": true,
+                  "visible": true,
+                  "position": {
+                    "height": 25,
+                    "width": 51,
+                    "x": 549,
+                    "y": 262
+                  },
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Modified"
+                },
+                {
+                  "enabled": true,
+                  "visible": true,
+                  "position": {
+                    "height": 25,
+                    "width": 80,
+                    "x": 610,
+                    "y": 262
+                  },
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Modified"
+                }
+              ],
+              ".todo-list li label": [
+                {
+                  "textContent": "a b aa",
+                  "position": {
+                    "height": 58,
+                    "width": 550,
+                    "x": 325,
+                    "y": 196
+                  },
+                  "ref": "0db74a3c-3502-472d-8879-f43d481e982f",
+                  "diff": "Added"
+                }
+              ],
+              ".todoapp .new-todo": [
+                {
+                  "value": "",
+                  "active": true,
+                  "position": {
+                    "height": 65,
+                    "width": 550,
+                    "x": 325,
+                    "y": 130
+                  },
+                  "ref": "e14fd08e-30ef-4659-82a2-38a9bc0e6a12",
+                  "diff": "Modified"
+                }
+              ],
+              ".todoapp .filters a": [
+                {
+                  "textContent": "All",
+                  "position": {
+                    "height": 25,
+                    "width": 29,
+                    "x": 510,
+                    "y": 262
+                  },
+                  "ref": "3b872a32-4b9e-447e-91a5-09cbcb879f46",
+                  "diff": "Modified"
+                },
+                {
+                  "textContent": "Active",
+                  "position": {
+                    "height": 25,
+                    "width": 51,
+                    "x": 549,
+                    "y": 262
+                  },
+                  "ref": "42d4b5a5-75ca-4b4f-bd20-8f67378f24f4",
+                  "diff": "Modified"
+                },
+                {
+                  "textContent": "Completed",
+                  "position": {
+                    "height": 25,
+                    "width": 80,
+                    "x": 610,
+                    "y": 262
+                  },
+                  "ref": "ad92499b-7421-4ce0-a540-a256e3eefca7",
+                  "diff": "Modified"
+                }
+              ],
+              ".todo-list li .edit": []
+            },
+            "screenshot": {
+              "url": "screenshots/7e67f4ccbb122e1c6ee317aebdce5686.png",
+              "width": 2400,
+              "height": 1200,
+              "scale": 2
+            }
+          },
+          "stutter": false,
+          "actions": [
+            {
+              "id": "keyPress",
+              "args": [
+                ""
+              ],
+              "isEvent": false,
+              "timeout": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "generatedAt": "2021-10-16 04:38:43.462694",
+  "tag": "Report"
+}

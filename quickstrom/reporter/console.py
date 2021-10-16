@@ -50,7 +50,7 @@ def formatted(diff: Diff[str]) -> str:
         raise TypeError(f"{diff} is not a Diff[str]")
 
 
-def print_state_diff(state: State[Diff[JsonLike]], indent_level: int,
+def print_state_diff(state: State[Diff[JsonLike], bytes], indent_level: int,
                      file: Optional[IO[Text]]):
     for sel, elements in state.queries.items():
         click.echo(indent(selector(sel), indent_level), file=file)

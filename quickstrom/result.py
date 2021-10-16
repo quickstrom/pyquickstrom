@@ -1,17 +1,21 @@
-from deepdiff import DeepDiff
 import quickstrom.protocol as protocol
+from quickstrom.hash import dict_hash
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 Selector = str
 
+I = TypeVar('I')
+O = TypeVar('O')
+
 
 @dataclass(frozen=True, eq=True)
-class Screenshot():
-    url: Path
+class Screenshot(Generic[I]):
+    image: I
     width: int
     height: int
+    scale: int
 
 
 T = TypeVar('T', contravariant=True)
@@ -56,7 +60,7 @@ def map_diff(f: Callable[[T], T2], diff: Diff[T]) -> Diff[T2]:
         raise TypeError(f"{diff} is not a Diff")
 
 
-def new_value(diff: Diff[T]) -> Union[T]:
+def new_value(diff: Diff[T2]) -> T2:
     if isinstance(diff, Added):
         return diff.value
     elif isinstance(diff, Removed):
@@ -70,29 +74,30 @@ def new_value(diff: Diff[T]) -> Union[T]:
 E = TypeVar('E')
 
 
-@dataclass(frozen=True)
-class State(Generic[E]):
+@dataclass(frozen=False)
+class State(Generic[E, I]):
+    hash: str
     queries: Dict[Selector, List[E]]
-    screenshot: Optional[Screenshot]
+    screenshot: Optional[Screenshot[I]]
 
 
 @dataclass(frozen=True)
-class Initial(Generic[E]):
+class Initial(Generic[E, I]):
     events: List[protocol.Action]
-    state: State[E]
+    state: State[E, I]
 
 
 @dataclass(frozen=True)
-class Transition(Generic[E]):
-    to_state: State[E]
+class Transition(Generic[E, I]):
+    to_state: State[E, I]
     stutter: bool
     actions: List[protocol.Action]
 
 
 @dataclass(frozen=True)
-class Test(Generic[E]):
+class Test(Generic[E, I]):
     validity: protocol.Validity
-    transitions: List[Transition[E]]
+    transitions: List[Transition[E, I]]
 
 
 @dataclass(frozen=True)
@@ -102,21 +107,43 @@ class Errored():
 
 
 @dataclass(frozen=True)
-class Failed(Generic[E]):
-    passed_tests: List[Test[E]]
-    failed_test: Test[E]
+class Failed(Generic[E, I]):
+    passed_tests: List[Test[E, I]]
+    failed_test: Test[E, I]
 
 
 @dataclass(frozen=True)
-class Passed(Generic[E]):
-    passed_tests: List[Test[E]]
+class Passed(Generic[E, I]):
+    passed_tests: List[Test[E, I]]
 
 
-Result = Union[Failed[protocol.JsonLike], Passed[protocol.JsonLike], Errored]
+ResultWithScreenshots = Union[Failed[protocol.JsonLike, I],
+                              Passed[protocol.JsonLike, I], Errored]
+
+Result = ResultWithScreenshots[bytes]
+
+
+def map_states(
+    r: ResultWithScreenshots[I], f: Callable[[State[protocol.JsonLike, I]],
+                                             State[protocol.JsonLike, O]]
+) -> ResultWithScreenshots[O]:
+    def on_test(test: Test):
+        return Test(test.validity, [
+            Transition(f(t.to_state), t.stutter, t.actions)
+            for t in test.transitions
+        ])
+
+    if isinstance(r, Passed):
+        return Passed([on_test(test) for test in r.passed_tests])
+    elif isinstance(r, Failed):
+        return Failed([on_test(test) for test in r.passed_tests],
+                      on_test(r.failed_test))
+    elif isinstance(r, Errored):
+        return Errored(r.error, r.tests)
 
 
 def from_state(state: protocol.State) -> State:
-    return State(state, None)
+    return State(dict_hash(state), state, None)
 
 
 def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
@@ -161,19 +188,21 @@ def from_protocol_result(result: protocol.Result) -> Result:
     return to_result()
 
 
-DiffedResult = Union[Failed[Diff[protocol.JsonLike]],
-                     Passed[Diff[protocol.JsonLike]], Errored]
+DiffedResult = Union[Failed[Diff[protocol.JsonLike], I],
+                     Passed[Diff[protocol.JsonLike], I], Errored]
 
 
 def diff_states(
-        old: State[protocol.JsonLike],
-        new: State[protocol.JsonLike]) -> State[Diff[protocol.JsonLike]]:
+        old: State[protocol.JsonLike, I],
+        new: State[protocol.JsonLike, I]) -> State[Diff[protocol.JsonLike], I]:
     result_queries = {}
 
     for sel in new.queries.keys():
-        old_elements: List[Dict[str, protocol.JsonLike]] = old.queries.get(sel, [])    # type: ignore
-        new_elements: List[Dict[str, protocol.JsonLike]] = new.queries.get(sel, [])    # type: ignore
-                
+        old_elements: List[Dict[str, protocol.JsonLike]] = old.queries.get(
+            sel, [])    # type: ignore
+        new_elements: List[Dict[str, protocol.JsonLike]] = new.queries.get(
+            sel, [])    # type: ignore
+
         old_by_ref = {el['ref']: el for el in old_elements}
         new_by_ref = {el['ref']: el for el in new_elements}
         removed_refs = old_by_ref.keys() - new_by_ref.keys()
@@ -193,16 +222,16 @@ def diff_states(
 
         result_queries[sel] = query_elements
 
-    return State(result_queries, new.screenshot)
+    return State(new.hash, result_queries, new.screenshot)
 
 
 def diff_transitions(
-    ts: List[Transition[protocol.JsonLike]]
-) -> List[Transition[Diff[protocol.JsonLike]]]:
-    results: List[Transition[Diff[protocol.JsonLike]]] = []
-    last_state = State({}, None)
+    ts: List[Transition[protocol.JsonLike, I]]
+) -> List[Transition[Diff[protocol.JsonLike], I]]:
+    results: List[Transition[Diff[protocol.JsonLike], I]] = []
+    last_state = State("", {}, None)
     for t in ts:
-        stutter = last_state == t.to_state
+        stutter = last_state.hash == t.to_state.hash
         # TODO: no diff if stutter, just mark everything unmodified
         diffed = diff_states(last_state, t.to_state)
         results.append(
@@ -211,11 +240,12 @@ def diff_transitions(
     return results
 
 
-def diff_test(test: Test[protocol.JsonLike]) -> Test[Diff[protocol.JsonLike]]:
+def diff_test(
+        test: Test[protocol.JsonLike, I]) -> Test[Diff[protocol.JsonLike], I]:
     return Test(test.validity, diff_transitions(test.transitions))
 
 
-def diff_result(result: Result) -> DiffedResult:
+def diff_result(result: ResultWithScreenshots[I]) -> DiffedResult[I]:
     if isinstance(result, Errored):
         return result
     elif isinstance(result, Failed):

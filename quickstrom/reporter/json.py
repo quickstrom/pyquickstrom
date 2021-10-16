@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import dataclasses
 import json
+import os
 from typing import IO, Any, Dict
 import quickstrom.protocol as protocol
 from quickstrom.result import *
@@ -10,19 +11,38 @@ from datetime import datetime
 
 
 @dataclass(frozen=True)
-class Report():
-    result: DiffedResult
+class Report(Generic[I]):
+    result: DiffedResult[I]
     generated_at: datetime
 
 
 @dataclass
 class JsonReporter(Reporter):
     path: Path
+    files_dir: Path
 
     def report(self, result: Result):
-        report = Report(diff_result(result), datetime.utcnow())
-        
+        result_with_paths = write_screenshots(result, self.path.parent, self.files_dir)
+        report = Report(diff_result(result_with_paths), datetime.utcnow())
         encode_file(report, self.path)
+
+
+def write_screenshots(result: Result,
+                      base: Path,
+                      dir: Path) -> ResultWithScreenshots[Path]:
+    os.makedirs(dir)
+    def on_state(
+        state: State[protocol.JsonLike,
+                     bytes]) -> State[protocol.JsonLike, Path]:
+        
+        if state.screenshot:
+            p = dir / Path(f"{state.hash}.png")
+            p.write_bytes(state.screenshot.image)
+            return State(state.hash, state.queries, Screenshot(p.relative_to(base), state.screenshot.width, state.screenshot.height, state.screenshot.scale))
+        else:
+            return State(state.hash, state.queries, None)
+
+    return map_states(result, on_state)
 
 
 def encode_str(report: Report) -> str:
@@ -39,7 +59,7 @@ def encode_file(report: Report, output_path: Path):
 
 
 class _ReporterEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Dict[str, Any]:
+    def default(self, o: Any):
         if isinstance(o, Report):
             return {
                 'result': self.default(o.result),
@@ -81,14 +101,20 @@ class _ReporterEncoder(json.JSONEncoder):
             }
         elif isinstance(o, State):
             return {
-                'queries': o.queries,
-                'screenshot': self.default(o.screenshot) if o.screenshot is not None else None
+                'hash':
+                o.hash,
+                'queries':
+                o.queries,
+                'screenshot':
+                self.default(o.screenshot)
+                if o.screenshot is not None else None
             }
         elif isinstance(o, Screenshot):
             return {
-                'url': o.url,
+                'url': o.image,
                 'width': o.width,
                 'height': o.height,
+                'scale': o.scale,
             }
         elif isinstance(o, protocol.Action):
             return {
@@ -100,20 +126,22 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, protocol.Validity):
             return dataclasses.asdict(o)
         elif isinstance(o, Added):
-            assert(isinstance(o.value, dict))
+            assert (isinstance(o.value, dict))
             o.value['diff'] = 'Added'
             return o.value
         elif isinstance(o, Removed):
-            assert(isinstance(o.value, dict))
+            assert (isinstance(o.value, dict))
             o.value['diff'] = 'Removed'
             return o.value
         elif isinstance(o, Modified):
-            assert(isinstance(o.new, dict))
+            assert (isinstance(o.new, dict))
             o.new['diff'] = 'Modified'
             return o.new
         elif isinstance(o, Unmodified):
-            assert(isinstance(o.value, dict))
+            assert (isinstance(o.value, dict))
             o.value['diff'] = 'Unmodified'
             return o.value
+        elif isinstance(o, Path):
+            return str(o)
         else:
             return json.JSONEncoder.default(self, o)

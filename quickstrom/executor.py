@@ -1,8 +1,10 @@
+import io
 import subprocess
 import logging
 import time
 from shutil import which
 from dataclasses import dataclass
+from PIL import Image
 from typing import List, Union, Literal, Any
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -12,6 +14,7 @@ import selenium.webdriver.chrome.options as chrome_options
 import selenium.webdriver.firefox.options as firefox_options
 
 from quickstrom.protocol import *
+from quickstrom.hash import dict_hash
 import quickstrom.result as result
 import quickstrom.printer as printer
 import os
@@ -48,6 +51,7 @@ class Check():
                 assert p.stdin is not None
                 input_messages = message_reader(p.stdout)
                 output_messages = message_writer(p.stdin)
+                screenshots: Dict[str, result.Screenshot[bytes]] = {}
 
                 def receive():
                     msg = input_messages.read()
@@ -106,13 +110,37 @@ class Check():
                     key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
                     client_side_dir = os.getenv(key)
                     if not client_side_dir:
-                        raise Exception(f'Environment variable {key} must be set')
+                        raise Exception(
+                            f'Environment variable {key} must be set')
                     file = open(f'{client_side_dir}/queryState.js')
                     script = file.read()
                     return elements_to_ids(
                         driver.execute_async_script(script, deps))
 
-                def run_sessions():
+                def screenshot(driver: WebDriver, hash: str):
+                    if self.capture_screenshots:
+                        bs = driver.get_screenshot_as_png()
+                        image = Image.open(io.BytesIO(bs))
+                        (width, height) = image.size
+                        window_size = driver.get_window_size()
+                        scale = round(width / window_size['width'])
+                        if scale != round(width / window_size['height']):
+                            self.log.warn("Width and height scales do not match for screenshot")
+                        screenshots[hash] = result.Screenshot(image=bs,
+                                                              width=width,
+                                                              height=height,
+                                                              scale=scale)
+
+                def attach_screenshots(r: result.Result) -> result.Result:
+                    def on_state(state):
+                        return result.State(screenshot=screenshots.get(
+                            state.hash, None),
+                                            queries=state.queries,
+                                            hash=state.hash)
+
+                    return result.map_states(r, on_state)
+
+                def run_sessions() -> List[result.Result]:
                     while True:
                         msg = receive()
                         assert msg is not None
@@ -123,8 +151,10 @@ class Check():
                             driver.get(self.origin)
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
-                            self.log.debug("Deps: %s", json.dumps(msg.dependencies))
+                            self.log.debug("Deps: %s",
+                                           json.dumps(msg.dependencies))
                             state = query_state(driver, msg.dependencies)
+                            screenshot(driver, dict_hash(state))
                             event = Action(id='loaded',
                                            isEvent=True,
                                            args=[],
@@ -132,18 +162,16 @@ class Check():
                             send(Event(event=event, state=state))
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
-                            return [result.from_protocol_result(r) for r in msg.results]
-
-                def screenshot(driver: WebDriver, n: int):
-                    if self.capture_screenshots:
-                        self.log.debug(f"Capturing screenshot at state {n}")
-                        driver.get_screenshot_as_file(
-                            f"/tmp/quickstrom-{n:02d}.png")
+                            return [
+                                attach_screenshots(
+                                    result.from_protocol_result(r))
+                                for r in msg.results
+                            ]
 
                 def await_session_commands(driver: WebDriver, deps):
+
                     try:
                         state_version = 1
-                        screenshot(driver, state_version)
                         while True:
                             msg = receive()
                             if not msg:
@@ -157,8 +185,8 @@ class Check():
                                     )
                                     perform_action(driver, msg.action)
                                     state = query_state(driver, deps)
+                                    screenshot(driver, dict_hash(state))
                                     state_version += 1
-                                    screenshot(driver, state_version)
                                     send(Performed(state=state))
                                 else:
                                     send(Stale())
@@ -188,18 +216,21 @@ class Check():
         if self.browser == 'chrome':
             options = chrome_options.Options()
             options.headless = True
-            options.binary_location = which("chrome") or which("chromium") # type: ignore
+            browser_path = which("chrome") or which("chromium")
+            options.binary_location = browser_path    # type: ignore
             chromedriver_path = which('chromedriver')
             if not chromedriver_path:
                 raise Exception("chromedriver not found in PATH")
-            return webdriver.Chrome(options=options, executable_path=chromedriver_path)
+            return webdriver.Chrome(options=options,
+                                    executable_path=chromedriver_path)
         elif self.browser == 'firefox':
             options = firefox_options.Options()
             options.headless = True
-            options.binary = which("firefox") # type: ignore
+            options.binary = which("firefox")    # type: ignore
             geckodriver_path = which('geckodriver')
             if not geckodriver_path:
                 raise Exception("geckodriver not found in PATH")
-            return webdriver.Firefox(options=options, executable_path=geckodriver_path)
+            return webdriver.Firefox(options=options,
+                                     executable_path=geckodriver_path)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")

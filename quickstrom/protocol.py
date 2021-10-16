@@ -7,7 +7,8 @@ Selector = str
 
 Schema = Dict[str, 'Schema']
 
-JsonLike = Union[str, int, float, List['JsonLike'], Dict[str, 'JsonLike'], None]
+JsonLike = Union[str, int, float, List['JsonLike'], Dict[str, 'JsonLike'],
+                 None]
 
 State = Dict[Selector, List[JsonLike]]
 

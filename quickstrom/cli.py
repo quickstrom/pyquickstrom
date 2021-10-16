@@ -44,6 +44,7 @@ def root(ctx, color, log_level, include):
     global_options['includes'] = include
     logging.basicConfig(level=getattr(logging, log_level.upper()))
     logging.getLogger("urllib3").setLevel(logging.INFO)
+    logging.getLogger("PIL").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
 
 
@@ -63,16 +64,17 @@ def root(ctx, color, log_level, include):
               default=['console'],
               help='enable a reporter by name')
 @click.option('--json-report-file', default='report.json')
+@click.option('--json-report-files-directory', default='json-report-files', help='directory for report assets, e.g. screenshots')
 @click.option('--html-report-directory', default='html-report')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], json_report_file: Path,
-          html_report_directory: Path):
+          reporter: List[str], json_report_file: str, json_report_files_directory: str,
+          html_report_directory: str):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
-            'json': json_reporter.JsonReporter(json_report_file),
-            'html': html_reporter.HtmlReporter(html_report_directory),
+            'json': json_reporter.JsonReporter(Path(json_report_file), Path(json_report_files_directory)),
+            'html': html_reporter.HtmlReporter(Path(html_report_directory)),
             'console':
             console_reporter.ConsoleReporter(console_report_on_success)
         }
