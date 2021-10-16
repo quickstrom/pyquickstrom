@@ -109,7 +109,6 @@ main .controls button:active {
 .selector {
     white-space: break-spaces;
     font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
-    font-weight: normal;
 }
 
 .actions, .action, .states, .screenshots, .details {
@@ -151,7 +150,7 @@ main .controls button:active {
 .action-details code {
     display: block;
     margin: 1em 0 0 0;
-    font-family: monospace;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
 .action-details > * {
     margin: .5em 0;
@@ -241,7 +240,7 @@ main .controls button:active {
     border: 1px solid #333;
     min-width: 10rem;
     z-index: 2;
-    font-family: 'Inconsolata', monospace;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
 .state-screenshot-inner .marker.active .marker-details {
     display: block;
@@ -256,6 +255,9 @@ main .controls button:active {
 }
 .details ul {
     margin: 1rem;
+}
+.details h3 {
+    font-weight: normal;
 }
 .details ul ul {
     list-style: initial;
@@ -279,6 +281,7 @@ main .controls button:active {
 }
 .element-state td:last-child {
     text-align: right;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
 
 .element-state .added td {

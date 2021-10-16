@@ -52,6 +52,18 @@ type State = {
 
 type Queries = { [selector: string]: QueriedElement[] };
 
+function uniqueElementsInState(state: State): {
+  [ref: string]: QueriedElement;
+} {
+  const out: { [ref: string]: QueriedElement } = {};
+  Object.values(state.queries)
+    .flatMap((elements) => elements)
+    .forEach((element) => {
+      out[element.ref] = element;
+    });
+  return out;
+}
+
 type Screenshot = {
   url: string;
   width: number;
@@ -340,10 +352,10 @@ const Actions: FunctionComponent<{
   setSelectedElement: StateUpdater<Element | null>;
 }> = ({ initial, actions, setSelectedElement }) => {
   function renderArg(arg: any): string {
-    if (arg ===  "\ue006") {
-        return "keys.return";
+    if (arg === "\ue006") {
+      return "keys.return";
     } else {
-      return JSON.stringify(arg)
+      return JSON.stringify(arg);
     }
   }
   function renderDetails(action: Action) {
@@ -362,7 +374,10 @@ const Actions: FunctionComponent<{
     }
     return (
       <div class="action-details">
-        <code><span class="id">{action.id}</span>({action.args.map(renderArg).join(', ')})</code>
+        <code>
+          <span class="id">{action.id}</span>(
+          {action.args.map(renderArg).join(", ")})
+        </code>
       </div>
     );
   }
@@ -401,18 +416,9 @@ const MarkerDim: FunctionComponent<{
   const s = scaled(screenshot);
   if (element && element.position) {
     return (
-      <svg
-        class="marker-dim active"
-        viewBox={`0 0 ${s.width} ${s.height}`}
-      >
+      <svg class="marker-dim active" viewBox={`0 0 ${s.width} ${s.height}`}>
         <mask id={`${element.ref}-mask`}>
-          <rect
-            x="0"
-            y="0"
-            width={s.width}
-            height={s.height}
-            fill="white"
-          />
+          <rect x="0" y="0" width={s.width} height={s.height} fill="white" />
           <rect
             x={element.position.x}
             y={element.position.y}
@@ -469,42 +475,34 @@ const Screenshot: FunctionComponent<{
   function percentageOf(x: number, total: number): string {
     return `${(x / total) * 100}%`;
   }
-  function renderQueryMarkers(elements: QueriedElement[]) {
-    return elements.map((element) => {
-      if (element.position) {
-        const s = scaled(state.screenshot);
-        return (
-          <div
-            key={element.ref}
-            className={`marker ${isActive(element) ? " active" : "inactive"}`}
-            onMouseEnter={() => setSelectedElement(element)}
-            onMouseLeave={() => setSelectedElement(null)}
-            style={{
-              top: percentageOf(element.position.y, s.height),
-              left: percentageOf(element.position.x, s.width),
-              width: percentageOf(
-                element.position.width,
-                s.width
-              ),
-              height: percentageOf(
-                element.position.height,
-                s.height
-              ),
-            }}
-          >
-            <div class="marker-details">
-              <ElementStateTable element={element} />
-            </div>
+  function renderQueryMarkers(element: QueriedElement) {
+    if (element.position) {
+      const s = scaled(state.screenshot);
+      return (
+        <div
+          key={element.ref}
+          className={`marker ${isActive(element) ? " active" : "inactive"}`}
+          onMouseEnter={() => setSelectedElement(element)}
+          onMouseLeave={() => setSelectedElement(null)}
+          style={{
+            top: percentageOf(element.position.y, s.height),
+            left: percentageOf(element.position.x, s.width),
+            width: percentageOf(element.position.width, s.width),
+            height: percentageOf(element.position.height, s.height),
+          }}
+        >
+          <div class="marker-details">
+            <ElementStateTable element={element} />
           </div>
-        );
-      }
-    });
+        </div>
+      );
+    }
   }
   const dim = renderDim(activeElement);
   return (
     <div class={`state-screenshot ${extraClass}`}>
       <div class=" state-screenshot-inner">
-        {Object.values(state.queries).map(renderQueryMarkers)}
+        {Object.values(uniqueElementsInState(state)).map(renderQueryMarkers)}
         <img src={state.screenshot.url} />
         {dim}
       </div>
@@ -534,7 +532,7 @@ const QueryDetails: FunctionComponent<{ elements: QueriedElement[] }> = ({
     <ul>
       {elements.map((element) => (
         <li>
-          <h3>{element.ref}</h3>
+          <h3>Element ({element.ref})</h3>
           <ElementStateTable element={element} />
         </li>
       ))}
@@ -547,12 +545,14 @@ const ElementStateTable: FunctionComponent<{ element: QueriedElement }> = ({
   const ignoredKeys = ["ref", "diff", "position"];
   return (
     <table class="element-state">
-      {Object.entries(element).filter(([k, _]) => ignoredKeys.indexOf(k) < 0).map(([key, value]) => (
-        <tr class={element.diff.toLowerCase()}>
-          <td>{key}</td>
-          <td>{JSON.stringify(value)}</td>
-        </tr>
-      ))}
+      {Object.entries(element)
+        .filter(([k, _]) => ignoredKeys.indexOf(k) < 0)
+        .map(([key, value]) => (
+          <tr class={element.diff.toLowerCase()}>
+            <td>{key}</td>
+            <td>{JSON.stringify(value)}</td>
+          </tr>
+        ))}
     </table>
   );
 };
