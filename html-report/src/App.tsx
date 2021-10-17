@@ -331,20 +331,24 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
           />
         </section>
         <section class="details">
-          {Object.keys(transition.toState.queries).map(selector => {
+          {Object.keys(transition.toState.queries).map((selector) => {
             return (
               <div class="query">
-                <h2 class="selector">{selector}</h2>
+                <h2 class="selector">`{selector}`</h2>
                 <div class="state-queries from">
                   {state.current.fromState && (
-                    <QueryDetails elements={state.current.fromState.queries[selector]} />
+                    <QueryDetails
+                      elements={state.current.fromState.queries[selector]}
+                    />
                   )}
                 </div>
                 <div class="state-queries to">
-                    <QueryDetails elements={transition.toState.queries[selector]} />
+                  <QueryDetails
+                    elements={transition.toState.queries[selector]}
+                  />
                 </div>
               </div>
-            )
+            );
           })}
         </section>
       </section>
@@ -498,7 +502,7 @@ const Screenshot: FunctionComponent<{
           }}
         >
           <div class="marker-details">
-            <ElementStateTable element={element} />
+            <ElementState element={element} />
           </div>
         </div>
       );
@@ -523,28 +527,34 @@ const QueryDetails: FunctionComponent<{ elements: QueriedElement[] }> = ({
     <ul>
       {elements.map((element) => (
         <li>
-          <h3>Element ({element.ref})</h3>
-          <ElementStateTable element={element} />
+          <ElementState element={element} />
         </li>
       ))}
     </ul>
   );
 };
-const ElementStateTable: FunctionComponent<{ element: QueriedElement }> = ({
+const ElementState: FunctionComponent<{ element: QueriedElement }> = ({
   element,
 }) => {
   const ignoredKeys = ["ref", "diff", "position"];
   return (
-    <table class="element-state">
-      {Object.entries(element)
-        .filter(([k, _]) => ignoredKeys.indexOf(k) < 0)
-        .map(([key, value]) => (
-          <tr class={element.diff.toLowerCase()}>
-            <td>{key}</td>
-            <td>{JSON.stringify(value)}</td>
+    <div class={"element-state " + element.diff.toLowerCase()}>
+      <table>
+        <thead>
+          <tr>
+            <th colSpan={2}>{element.ref}</th>
           </tr>
-        ))}
-    </table>
+        </thead>
+        {Object.entries(element)
+          .filter(([k, _]) => ignoredKeys.indexOf(k) < 0)
+          .map(([key, value]) => (
+            <tr>
+              <td>{key}</td>
+              <td>{JSON.stringify(value)}</td>
+            </tr>
+          ))}
+      </table>
+    </div>
   );
 };
 

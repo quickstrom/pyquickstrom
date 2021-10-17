@@ -240,7 +240,6 @@ main .controls button:active {
     border: 1px solid #333;
     min-width: 10rem;
     z-index: 2;
-    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
 .state-screenshot-inner .marker.active .marker-details {
     display: block;
@@ -255,10 +254,10 @@ main .controls button:active {
     display: flex;
     flex-wrap: wrap;
     text-align: center;
-    padding: .5rem;
 }
 .details .selector {
     flex: 1 1 100%;
+    padding: 1rem .5rem;
 }
 .details .state-queries {
     flex: 1 1 50%;
@@ -266,45 +265,51 @@ main .controls button:active {
 .details ul {
     margin: 1rem;
 }
-.details h3 {
-    font-weight: normal;
-}
 .details ul ul {
     list-style: initial;
     padding-left: 1rem;
 }
-.details .element-state {
-    margin: 1rem;
+.details li {
+    margin-bottom: 1rem;
 }
 
 .element-state {
-    width: 100%;
-}
-.element-state td {
-    padding: .5rem;
     background: #333;
     color: #ccc;
 }
-.element-state td:first-child {
-    width: 1%;
-    border-right: 1px solid rgba(255,255,255,.2);
-}
-.element-state td:last-child {
-    text-align: right;
-    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
-}
 
-.element-state .added td {
+.element-state.added {
     background: rgb(54, 80, 54);
     color: rgb(207, 255, 207);
 }
 
-.element-state .modified td {
+.element-state.modified {
     background: rgb(39, 39, 92);
     color: rgb(208, 208, 255);
 }
 
-.element-state .removed td {
+.element-state.removed {
     background: rgb(83, 32, 32);
     color: rgb(255, 206, 206);
+}
+
+.element-state table {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.1);
+}
+.element-state th {
+    text-align: center;
+}
+.element-state th,
+.element-state td {
+    padding: .5rem;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.element-state td:first-child {
+    width: 1%;
+    border-right: 1px solid rgba(255,255,255,.1);
+}
+.element-state td:last-child {
+    text-align: right;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
