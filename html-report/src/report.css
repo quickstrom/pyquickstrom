@@ -248,7 +248,17 @@ main .controls button:active {
 
 .details {
     display: flex;
+    flex-direction: column;
     margin: 2rem 0;
+}
+.details .query {
+    display: flex;
+    flex-wrap: wrap;
+    text-align: center;
+    padding: .5rem;
+}
+.details .selector {
+    flex: 1 1 100%;
 }
 .details .state-queries {
     flex: 1 1 50%;

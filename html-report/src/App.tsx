@@ -331,14 +331,21 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
           />
         </section>
         <section class="details">
-          <div class="state-queries from">
-            {state.current.fromState && (
-              <QueriesDetails queries={state.current.fromState.queries} />
-            )}
-          </div>
-          <div class="state-queries to">
-            <QueriesDetails queries={transition.toState.queries} />
-          </div>
+          {Object.keys(transition.toState.queries).map(selector => {
+            return (
+              <div class="query">
+                <h2 class="selector">{selector}</h2>
+                <div class="state-queries from">
+                  {state.current.fromState && (
+                    <QueryDetails elements={state.current.fromState.queries[selector]} />
+                  )}
+                </div>
+                <div class="state-queries to">
+                    <QueryDetails elements={transition.toState.queries[selector]} />
+                </div>
+              </div>
+            )
+          })}
         </section>
       </section>
     </main>
@@ -506,21 +513,6 @@ const Screenshot: FunctionComponent<{
         {dim}
       </div>
     </div>
-  );
-};
-
-const QueriesDetails: FunctionComponent<{ queries: Queries }> = ({
-  queries,
-}) => {
-  return (
-    <ul class="queries-details">
-      {Object.entries(queries).map(([selector, elements]) => (
-        <li>
-          <h2 class="selector">{selector}</h2>
-          <QueryDetails elements={elements} />
-        </li>
-      ))}
-    </ul>
   );
 };
 
