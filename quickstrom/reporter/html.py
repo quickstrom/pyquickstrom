@@ -5,14 +5,14 @@ from pathlib import Path
 import shutil
 from quickstrom.reporter import Reporter
 import quickstrom.reporter.json as json_reporter
-from quickstrom.result import Result, diff_result
+from quickstrom.result import PlainResult, diff_result
 
 
 @dataclass
 class HtmlReporter(Reporter):
     path: Path
 
-    def report(self, result: Result):
+    def report(self, result: PlainResult):
         report_assets_dir = os.getenv('QUICKSTROM_HTML_REPORT_DIRECTORY')
         if report_assets_dir is None:
             raise RuntimeError(

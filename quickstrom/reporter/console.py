@@ -101,7 +101,7 @@ class ConsoleReporter(Reporter):
     report_on_success: bool
     file: Optional[IO[Text]] = sys.stdout
 
-    def report(self, result: Result):
+    def report(self, result: PlainResult):
         if isinstance(result, Failed):
             diffed_test = diff_test(result.failed_test)
 

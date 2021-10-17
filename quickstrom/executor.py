@@ -44,7 +44,7 @@ class Check():
     capture_screenshots: bool
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
-    def execute(self) -> List[result.Result]:
+    def execute(self) -> List[result.PlainResult]:
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
                 assert p.stdout is not None
@@ -131,7 +131,7 @@ class Check():
                                                               height=height,
                                                               scale=scale)
 
-                def attach_screenshots(r: result.Result) -> result.Result:
+                def attach_screenshots(r: result.PlainResult) -> result.PlainResult:
                     def on_state(state):
                         return result.State(screenshot=screenshots.get(
                             state.hash, None),
@@ -140,7 +140,7 @@ class Check():
 
                     return result.map_states(r, on_state)
 
-                def run_sessions() -> List[result.Result]:
+                def run_sessions() -> List[result.PlainResult]:
                     while True:
                         msg = receive()
                         assert msg is not None
@@ -163,8 +163,7 @@ class Check():
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
                             return [
-                                attach_screenshots(
-                                    result.from_protocol_result(r))
+                                attach_screenshots(result.from_protocol_result(r))
                                 for r in msg.results
                             ]
 

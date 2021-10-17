@@ -21,13 +21,13 @@ class JsonReporter(Reporter):
     path: Path
     files_dir: Path
 
-    def report(self, result: Result):
+    def report(self, result: PlainResult):
         result_with_paths = write_screenshots(result, self.path.parent, self.files_dir)
         report = Report(diff_result(result_with_paths), datetime.utcnow())
         encode_file(report, self.path)
 
 
-def write_screenshots(result: Result,
+def write_screenshots(result: PlainResult,
                       base: Path,
                       dir: Path) -> ResultWithScreenshots[Path]:
     os.makedirs(dir)
@@ -95,6 +95,7 @@ class _ReporterEncoder(json.JSONEncoder):
             }
         elif isinstance(o, Transition):
             return {
+                'fromState': o.from_state,
                 'toState': o.to_state,
                 'stutter': o.stutter,
                 'actions': [self.default(t) for t in o.actions],
@@ -134,9 +135,9 @@ class _ReporterEncoder(json.JSONEncoder):
             o.value['diff'] = 'Removed'
             return o.value
         elif isinstance(o, Modified):
-            assert (isinstance(o.new, dict))
-            o.new['diff'] = 'Modified'
-            return o.new
+            assert (isinstance(o.value, dict))
+            o.value['diff'] = 'Modified'
+            return o.value
         elif isinstance(o, Unmodified):
             assert (isinstance(o.value, dict))
             o.value['diff'] = 'Unmodified'

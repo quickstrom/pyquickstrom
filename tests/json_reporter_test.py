@@ -8,7 +8,7 @@ from tests.strategies import *
 from hypothesis import given
 
 
-def protocol_result_from_result(r: result.Result) -> protocol.Result:
+def protocol_result_from_result(r: result.PlainResult) -> protocol.Result:
     def to_trace(test: result.Test[protocol.JsonLike]) -> protocol.Trace:
         def to_state(state: result.State[protocol.JsonLike]) -> protocol.State:
             return state.queries

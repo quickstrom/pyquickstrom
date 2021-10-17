@@ -41,6 +41,7 @@ type Validity = {
 
 type Transition = {
   actions: NonEmptyArray<Action>;
+  fromState?: State;
   toState: State;
   stutter: boolean;
 };
@@ -106,7 +107,6 @@ type NonEmptyArray<T> = [T, ...T[]];
 type TestViewerState = {
   test: Test;
   index: number;
-  lastState?: State;
   current: Transition;
 };
 
@@ -121,9 +121,8 @@ function testViewerReducer(state: TestViewerState, action: TestViewerAction) {
       return (() => {
         const newIndex = state.index - 1;
         const newCurrent = state.test.transitions[newIndex];
-        const lastState = state.test.transitions[newIndex - 1]?.toState;
         if (newCurrent) {
-          return { ...state, index: newIndex, current: newCurrent, lastState };
+          return { ...state, index: newIndex, current: newCurrent };
         } else {
           return state;
         }
@@ -314,9 +313,9 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
           <State number={state.index + 1} extraClass="to" label="To" />
         </section>
         <section class="screenshots">
-          {state.lastState ? (
+          {state.current.fromState ? (
             <Screenshot
-              state={state.lastState}
+              state={state.current.fromState}
               extraClass="from"
               selectedElement={selectedElement}
               setSelectedElement={setSelectedElement}
@@ -333,8 +332,8 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
         </section>
         <section class="details">
           <div class="state-queries from">
-            {state.lastState && (
-              <QueriesDetails queries={state.lastState.queries} />
+            {state.current.fromState && (
+              <QueriesDetails queries={state.current.fromState.queries} />
             )}
           </div>
           <div class="state-queries to">

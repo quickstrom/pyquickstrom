@@ -2,7 +2,7 @@ import quickstrom.protocol as protocol
 from quickstrom.hash import dict_hash
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 Selector = str
 
@@ -33,8 +33,7 @@ class Removed(Generic[T]):
 
 @dataclass(frozen=True, eq=True)
 class Modified(Generic[T]):
-    old: T
-    new: T
+    value: T
 
 
 @dataclass(frozen=True, eq=True)
@@ -53,7 +52,7 @@ def map_diff(f: Callable[[T], T2], diff: Diff[T]) -> Diff[T2]:
     elif isinstance(diff, Removed):
         return Removed(f(diff.value))
     elif isinstance(diff, Modified):
-        return Modified(f(diff.old), f(diff.new))
+        return Modified(f(diff.value))
     elif isinstance(diff, Unmodified):
         return Unmodified(f(diff.value))
     else:
@@ -66,12 +65,13 @@ def new_value(diff: Diff[T2]) -> T2:
     elif isinstance(diff, Removed):
         return diff.value
     elif isinstance(diff, Modified):
-        return diff.new
+        return diff.value
     elif isinstance(diff, Unmodified):
         return diff.value
 
 
 E = TypeVar('E')
+E2 = TypeVar('E2')
 
 
 @dataclass(frozen=False)
@@ -89,6 +89,7 @@ class Initial(Generic[E, I]):
 
 @dataclass(frozen=True)
 class Transition(Generic[E, I]):
+    from_state: Optional[State[E, I]]
     to_state: State[E, I]
     stutter: bool
     actions: List[protocol.Action]
@@ -116,21 +117,20 @@ class Failed(Generic[E, I]):
 class Passed(Generic[E, I]):
     passed_tests: List[Test[E, I]]
 
+Result = Union[Failed[E, I], Passed[E, I], Errored]
 
-ResultWithScreenshots = Union[Failed[protocol.JsonLike, I],
-                              Passed[protocol.JsonLike, I], Errored]
+ResultWithScreenshots = Result[protocol.JsonLike, I]
 
-Result = ResultWithScreenshots[bytes]
+PlainResult = ResultWithScreenshots[bytes]
 
 
-def map_states(
-    r: ResultWithScreenshots[I], f: Callable[[State[protocol.JsonLike, I]],
-                                             State[protocol.JsonLike, O]]
-) -> ResultWithScreenshots[O]:
+def map_states( r: Result[E, I], f: Callable[[State[E, I]], State[E2, O]]
+) -> Result[E2, O]:
     def on_test(test: Test):
         return Test(test.validity, [
-            Transition(f(t.to_state), t.stutter, t.actions)
-            for t in test.transitions
+            Transition(
+                f(t.from_state) if t.from_state else None, f(t.to_state),
+                t.stutter, t.actions) for t in test.transitions
         ])
 
     if isinstance(r, Passed):
@@ -142,11 +142,13 @@ def map_states(
         return Errored(r.error, r.tests)
 
 
-def from_state(state: protocol.State) -> State:
+def from_state(state: protocol.State) -> State[protocol.JsonLike, bytes]:
     return State(dict_hash(state), state, None)
 
 
-def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
+def transitions_from_trace(
+        full_trace: protocol.Trace
+) -> List[Transition[protocol.JsonLike, bytes]]:
     A = TypeVar('A')
     trace = list(full_trace.copy())
 
@@ -159,33 +161,34 @@ def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
             raise TypeError(f"Expected a {cls} in trace but got {type(first)}")
 
     transitions: List[Transition] = []
+    last_state: Optional[State] = None
     while len(trace) > 0:
         actions = pop(protocol.TraceActions)
         new_state = pop(protocol.TraceState)
+        to_state = from_state(new_state.state)
         transitions.append(
             Transition(
-                to_state=from_state(new_state.state),
+                from_state=last_state,
+                to_state=to_state,
                 actions=actions.actions,
                 stutter=False,
             ))
+        last_state = to_state
 
     return transitions
 
 
-def from_protocol_result(result: protocol.Result) -> Result:
-    def to_result() -> Result:
-        if isinstance(result, protocol.RunResult):
-            if result.valid.value:
-                return Passed(
-                    [Test(result.valid, transitions_from_trace(result.trace))])
-            else:
-                return Failed([],
-                              Test(result.valid,
-                                   transitions_from_trace(result.trace)))
+def from_protocol_result(result: protocol.Result) -> PlainResult:
+    if isinstance(result, protocol.RunResult):
+        if result.valid.value:
+            return Passed(
+                [Test(result.valid, transitions_from_trace(result.trace))])
         else:
-            return Errored(result.error, 1)
-
-    return to_result()
+            return Failed([],
+                          Test(result.valid,
+                               transitions_from_trace(result.trace)))
+    else:
+        return Errored(result.error, 1)
 
 
 DiffedResult = Union[Failed[Diff[protocol.JsonLike], I],
@@ -193,9 +196,11 @@ DiffedResult = Union[Failed[Diff[protocol.JsonLike], I],
 
 
 def diff_states(
-        old: State[protocol.JsonLike, I],
-        new: State[protocol.JsonLike, I]) -> State[Diff[protocol.JsonLike], I]:
-    result_queries = {}
+    old: State[protocol.JsonLike, I], new: State[protocol.JsonLike, I]
+) -> Tuple[State[Diff[protocol.JsonLike], I], State[Diff[protocol.JsonLike],
+                                                    I]]:
+    old_result_queries = {}
+    new_result_queries = {}
 
     for sel in new.queries.keys():
         old_elements: List[Dict[str, protocol.JsonLike]] = old.queries.get(
@@ -205,38 +210,62 @@ def diff_states(
 
         old_by_ref = {el['ref']: el for el in old_elements}
         new_by_ref = {el['ref']: el for el in new_elements}
-        removed_refs = old_by_ref.keys() - new_by_ref.keys()
 
-        query_elements: List[Diff[protocol.JsonLike]] = []
-        for ref in removed_refs:
-            query_elements.append(Removed(old_by_ref[ref]))
-        for el in new_elements:
-            if el['ref'] in old_by_ref:
-                old_el = old_by_ref[el['ref']]
-                if old_el == el:
-                    query_elements.append(Unmodified(el))
+        def diff_old(
+                el: Dict[str, protocol.JsonLike]) -> Diff[protocol.JsonLike]:
+            ref = el['ref']
+            if ref in new_by_ref:
+                new_el = new_by_ref[ref]
+                if new_el == el:
+                    return Unmodified(el)
                 else:
-                    query_elements.append(Modified(old_el, el))
+                    return Modified(el)
             else:
-                query_elements.append(Added(el))
+                return Removed(el)
 
-        result_queries[sel] = query_elements
+        def diff_new(
+                el: Dict[str, protocol.JsonLike]) -> Diff[protocol.JsonLike]:
+            ref = el['ref']
+            if ref in old_by_ref:
+                old_el = old_by_ref[ref]
+                if old_el == el:
+                    return Unmodified(el)
+                else:
+                    return Modified(el)
+            else:
+                return Added(el)
 
-    return State(new.hash, result_queries, new.screenshot)
+        old_result_queries[sel] = [diff_old(el) for el in old_elements]
+        new_result_queries[sel] = [diff_new(el) for el in new_elements]
+
+    return (State(old.hash, old_result_queries, old.screenshot),
+            State(new.hash, new_result_queries, new.screenshot))
 
 
 def diff_transitions(
     ts: List[Transition[protocol.JsonLike, I]]
 ) -> List[Transition[Diff[protocol.JsonLike], I]]:
     results: List[Transition[Diff[protocol.JsonLike], I]] = []
-    last_state = State("", {}, None)
+    last_state = None
     for t in ts:
-        stutter = last_state.hash == t.to_state.hash
-        # TODO: no diff if stutter, just mark everything unmodified
-        diffed = diff_states(last_state, t.to_state)
+        stutter = last_state is not None and last_state.hash == t.to_state.hash
+
+        def _diff_states():
+            if last_state is None:
+                return (None, mark_unmodified(t.to_state))
+            elif stutter:
+                return (mark_unmodified(last_state), mark_unmodified(t.to_state))
+            else:
+                return diff_states(last_state, t.to_state)
+
+        (diff_old, diff_new) = _diff_states()
         results.append(
-            Transition(to_state=diffed, stutter=stutter, actions=t.actions))
+            Transition(from_state=diff_old,
+                       to_state=diff_new,
+                       stutter=stutter,
+                       actions=t.actions))
         last_state = t.to_state
+
     return results
 
 
@@ -253,3 +282,9 @@ def diff_result(result: ResultWithScreenshots[I]) -> DiffedResult[I]:
                       diff_test(result.failed_test))
     elif isinstance(result, Passed):
         return Passed([diff_test(test) for test in result.passed_tests])
+
+def mark_unmodified(s: State[E, I]) -> State[Diff[E], I]:
+    return State(s.hash, { sel: [Unmodified(e) for e in es] for sel, es in s.queries.items() }, s.screenshot)
+
+def mark_all_unmodified(r: Result[E, I]) -> Result[Diff[E], I]:
+    return map_states(r, mark_unmodified)
