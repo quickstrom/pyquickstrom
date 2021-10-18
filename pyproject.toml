@@ -10,7 +10,8 @@ selenium = { version = "==4.0.0b3", allow-prereleases = true }
 click = "^7.1.2"
 jsonlines = "^2.0.0"
 deepdiff = "^5.2.3"
-Pillow = "^8.3.2"
+tabulate = "^0.8.9"
+pypng = "^0.0.21"
 
 [tool.poetry.dev-dependencies]
 hypothesis = "^6.21.5"

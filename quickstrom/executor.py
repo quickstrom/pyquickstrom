@@ -4,7 +4,7 @@ import logging
 import time
 from shutil import which
 from dataclasses import dataclass
-from PIL import Image
+import png 
 from typing import List, Union, Literal, Any
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -119,9 +119,8 @@ class Check():
 
                 def screenshot(driver: WebDriver, hash: str):
                     if self.capture_screenshots:
-                        bs = driver.get_screenshot_as_png()
-                        image = Image.open(io.BytesIO(bs))
-                        (width, height) = image.size
+                        bs: bytes = driver.get_screenshot_as_png() # type: ignore
+                        (width, height, _, _) = png.Reader(io.BytesIO(bs)).read()
                         window_size = driver.get_window_size()
                         scale = round(width / window_size['width'])
                         if scale != round(width / window_size['height']):

@@ -3,8 +3,9 @@
 , chromium ? pkgs.chromium }:
 let
   specstrom = import ./nix/specstrom.nix;
+  poetry2nix = ./nix/poetry2nix.nix { inherit pkgs; };
 
-  quickstrom = pkgs.poetry2nix.mkPoetryApplication {
+  quickstrom = poetry2nix.mkPoetryApplication {
     projectDir = ./.;
     python = pkgs.python38;
     propagatedBuildInputs =
