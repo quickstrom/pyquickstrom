@@ -67,23 +67,24 @@ def print_state_diff(transition: Transition[Diff[JsonLike], bytes],
         else:
             return repr(value)
 
-    def element_style(
-            element_diff: Diff[JsonLike]) -> Tuple[str, Callable[[str], str]]:
+    def element_color(
+            element_diff: Diff[JsonLike]) -> Callable[[str], str]:
         if isinstance(element_diff, Added):
-            return ("+", added)
+            return added
         elif isinstance(element_diff, Removed):
-            return ("-", removed)
+            return removed
         elif isinstance(element_diff, Modified):
-            return ("~", modified)
+            return modified
         else:
-            return ("*", unmodified)
+            return unmodified
 
     def format_state(element_diff: Diff[JsonLike]) -> str:
         element = element_diff.value
         assert isinstance(element, dict)
-        prefix, color = element_style(element_diff)
-        return color(f"{prefix} Element ({element['ref']})") + "\n" + color(
-            format_value(element))
+        color = element_color(element_diff)
+        attrs = [color(f"{key}: {format_value(value)}")
+            for key, value in without_internal_props(element).items()]
+        return color(click.style(f"{element['ref']}", bold=True)) + "\n" + "\n".join(attrs)
 
     def format_states(elements: List[Diff[JsonLike]]) -> List[str]:
         return [format_state(element) for element in elements]
