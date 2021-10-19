@@ -29,9 +29,13 @@ def selectors():
 
 
 def element_states() -> SearchStrategy[protocol.JsonLike]:
+    def add_ref(e):
+        e['ref'] = 1
+        return e
+
     return dictionaries(keys=text(alphabet=['a', 'b', 'c'], max_size=3),
                         values=integers(min_value=0, max_value=5),
-                        max_size=5)
+                        max_size=5).map(add_ref)
 
 
 def states() -> SearchStrategy[protocol.State]:

@@ -9,8 +9,8 @@ from hypothesis import given
 
 
 def protocol_result_from_result(r: result.PlainResult) -> protocol.Result:
-    def to_trace(test: result.Test[protocol.JsonLike]) -> protocol.Trace:
-        def to_state(state: result.State[protocol.JsonLike]) -> protocol.State:
+    def to_trace(test: result.Test[protocol.JsonLike, bytes]) -> protocol.Trace:
+        def to_state(state: result.State[protocol.JsonLike, bytes]) -> protocol.State:
             return state.queries
 
         def to_trace_elements(
@@ -20,9 +20,7 @@ def protocol_result_from_result(r: result.PlainResult) -> protocol.Result:
                 protocol.TraceState(to_state(transition.to_state)),
             ]
 
-        return [
-            e for t in test.transitions for e in to_trace_elements(t)
-        ]
+        return [e for t in test.transitions for e in to_trace_elements(t)]
 
     if isinstance(r, result.Passed):
         # TODO: we need to support multiple tests later on
@@ -47,6 +45,7 @@ def test_result_roundtrip(protocol_result):
 
 @given(results())
 def test_json_report_is_serializable(protocol_result: protocol.Result):
-    report = json_reporter.Report(result.from_protocol_result(protocol_result),
-                                  datetime.utcnow())
+    report = json_reporter.Report(
+        result.diff_result(result.from_protocol_result(protocol_result)),
+        datetime.utcnow())
     json.loads(json_reporter.encode_str(report))
