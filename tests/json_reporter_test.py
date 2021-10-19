@@ -4,7 +4,7 @@ import json
 import quickstrom.result as result
 import quickstrom.reporter.json as json_reporter
 import quickstrom.protocol as protocol
-from tests.strategies import *
+from .strategies import *
 from hypothesis import given
 
 
