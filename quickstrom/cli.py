@@ -10,6 +10,7 @@ import quickstrom.executor as executor
 import quickstrom.reporter.json as json_reporter
 import quickstrom.reporter.html as html_reporter
 import quickstrom.reporter.console as console_reporter
+from quickstrom.result import Errored, Failed
 
 
 class NoWebdriverFilter(logging.Filter):
@@ -95,19 +96,20 @@ def check(module: str, origin: str, browser: executor.Browser,
                                  cast(List[str], global_options['includes']),
                                  capture_screenshots).execute()
         chosen_reporters = reporters_by_names(reporter)
+        click.echo(f"Results: {results}")
         for result in results:
             for r in chosen_reporters:
                 r.report(result)
 
-            if isinstance(result, RunResult):
+            if isinstance(result, Failed):
                 click.echo(
-                    f"Result: {result.valid.certainty} {result.valid.value}")
-            elif isinstance(result, ErrorResult):
+                    f"Result: {result.failed_test.validity.certainty} {result.failed_test.validity.value}")
+            elif isinstance(result, Errored):
                 click.echo(f"Error: {result.error}")
 
-        if any([(isinstance(r, ErrorResult)) for r in results]):
+        if any([(isinstance(r, Errored)) for r in results]):
             exit(1)
-        elif any([(isinstance(r, RunResult) and not r.valid.value) for r in results]):
+        elif any([(isinstance(r, Failed)) for r in results]):
             exit(3)
     except executor.SpecstromError as err:
         print(err)
