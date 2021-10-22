@@ -67,8 +67,7 @@ def print_state_diff(transition: Transition[Diff[JsonLike], bytes],
         else:
             return repr(value)
 
-    def element_color(
-            element_diff: Diff[JsonLike]) -> Callable[[str], str]:
+    def element_color(element_diff: Diff[JsonLike]) -> Callable[[str], str]:
         if isinstance(element_diff, Added):
             return added
         elif isinstance(element_diff, Removed):

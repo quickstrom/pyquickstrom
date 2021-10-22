@@ -4,7 +4,7 @@ import logging
 import time
 from shutil import which
 from dataclasses import dataclass
-import png 
+import png
 from typing import List, Union, Literal, Any
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
