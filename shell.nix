@@ -1,6 +1,7 @@
 { pkgs ? (import ./nix/nixpkgs.nix), specstrom ? import ./nix/specstrom.nix }:
 let
-  appEnv = pkgs.poetry2nix.mkPoetryEnv {
+  poetry2nix = import ./nix/poetry2nix.nix { inherit pkgs; };
+  appEnv = poetry2nix.mkPoetryEnv {
     projectDir = ./.;
     editablePackageSources = { my-app = ./.; };
   };

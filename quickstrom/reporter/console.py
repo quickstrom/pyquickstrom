@@ -1,142 +1,32 @@
 from dataclasses import dataclass
+from quickstrom.protocol import JsonLike
 from quickstrom.reporter import Reporter
 import sys
-from typing import Any, IO, Text
-from quickstrom.protocol import *
+from typing import Any, Callable, IO, Text, Tuple
+from quickstrom.result import *
 import quickstrom.printer as printer
 from deepdiff import DeepDiff
+from tabulate import tabulate
 import click
 
-@dataclass
-class Diff():
-    def formatted(self) -> str:
-        raise NotImplementedError
 
-
-@dataclass
-class Added(Diff):
-    value: object
-
-    def formatted(self):
-        return added(repr(self.value))
-
-
-@dataclass
-class Removed(Diff):
-    value: object
-
-    def formatted(self):
-        return removed(repr(self.value))
-
-
-@dataclass
-class Modified(Diff):
-    old: object
-    new: object
-
-    def formatted(self):
-        return modified(repr(self.old) + " -> " + repr(self.new))
-
-
-@dataclass
-class Unmodified(Diff):
-    value: object
-
-    def formatted(self):
-        return unmodified(repr(self.value))
-
-
-def print_state_diff(state_diff: DeepDiff, state: State, indent_level: int,
-                     file: Optional[IO[Text]]):
-    diffs_by_path: 'Dict[str, Diff]' = {}
-
-    if 'values_changed' in state_diff:
-        for path, diff in state_diff['values_changed'].items():
-            diffs_by_path[path] = Modified(diff['old_value'],
-                                        diff['new_value'])
-        
-    if 'iterable_item_added' in state_diff:
-        for path, diff in state_diff['iterable_item_added'].items():
-            diffs_by_path[path] = Added(diff)
-
-    if 'iterable_item_removed' in state_diff:
-        for path, diff in state_diff['iterable_item_removed'].items():
-            diffs_by_path[path] = Removed(diff)
-
-    def value_diff(diff_path: str, value: object) -> Diff:
-        return diffs_by_path[
-            diff_path] if diff_path in diffs_by_path else Unmodified(value)
-
-    for sel, elements in state.items():
-        click.echo(indent(selector(f"`{sel}`"), indent_level), file=file)
-        for i, state_element in enumerate(elements):
-            element_diff_key = f"root['{sel}'][{i}]"
-
-            def element_prefix() -> str:
-                element_diff = value_diff(element_diff_key, state_element)
-                if isinstance(element_diff, Added):
-                    return added("+ Element")
-                elif isinstance(element_diff, Removed):
-                    return removed("- Element")
-                elif isinstance(element_diff, Modified):
-                    return modified("~ Element")
-                else:
-                    return "* Element"
-
-            def element_suffix() -> str:
-                if 'ref' in state_element:
-                    diff = value_diff(element_diff_key + "['ref']",
-                                      state_element['ref'])
-                    return " (" + diff.formatted() + ")"
-                else:
-                    return ""
-
-            click.echo(indent(f"{element_prefix()}{element_suffix()}",
-                              indent_level + 1),
-                       file=file)
-
-            def print_value_diff(obj: Any, diff_key: str, indent_level: int):
-                if isinstance(obj, dict):
-                    for key, value in [(key, value) # type: ignore
-                                       for key, value in obj.items() # type: ignore
-                                       if key not in ['ref', 'position']]:
-                        click.echo(indent(f"{key}:", indent_level), file=file)
-                        print_value_diff(value,
-                                         f"{diff_key}['{key}']",
-                                         indent_level=indent_level + 2)
-                elif isinstance(obj, list):
-                    for i, value in enumerate(obj): # type: ignore
-                        click.echo(indent("*", indent_level), file=file)
-                        print_value_diff(value,
-                                         f"{diff_key}[{i}]",
-                                         indent_level=indent_level + 2)
-                else:
-                    diff = value_diff(diff_key, obj)
-                    click.echo(indent(f"{diff.formatted()}", indent_level),
-                               file=file)
-
-            print_value_diff(state_element,
-                             diff_key=element_diff_key,
-                             indent_level=indent_level + 2)
-
-
-def element_heading(s: str):
+def element_heading(s: str) -> str:
     return click.style(s, bold=True, underline=True)
 
 
-def selector(s: str):
-    return click.style(s, bold=True)
+def selector(s: str) -> str:
+    return click.style(f"`{s}`")
 
 
-def added(s: str):
+def added(s: str) -> str:
     return click.style(s, fg='green')
 
 
-def removed(s: str):
+def removed(s: str) -> str:
     return click.style(s, fg='red')
 
 
-def modified(s: str):
+def modified(s: str) -> str:
     return click.style(s, fg='blue')
 
 
@@ -148,37 +38,88 @@ def indent(s: str, level: int) -> str:
     return f"{' ' * level * 2}{s}"
 
 
+def print_state_diff(transition: Transition[Diff[JsonLike], bytes],
+                     file: Optional[IO[Text]]):
+    def without_internal_props(
+            d: Dict[Selector, JsonLike]) -> Dict[Selector, JsonLike]:
+        return {
+            key: value
+            for key, value in d.items() if key not in ['ref', 'position']
+        }
+
+    def format_value(value: JsonLike) -> str:
+        if isinstance(value, dict):
+            kvs = [
+                f"{key}: {format_value(item)}"
+                for key, item in without_internal_props(value).items()
+            ]
+            return "{" + ", ".join(kvs) + "}"
+
+        elif isinstance(value, list):
+            vs = [f"{format_value(item)}" for item in value]
+            return "[" + ", ".join(vs) + "]"
+        elif isinstance(value, str):
+            return '"' + value.replace('"', '\\"') + '"'
+        elif isinstance(value, bool):
+            return "true" if value else "false"
+        elif value is None:
+            return "null"
+        else:
+            return repr(value)
+
+    def element_color(element_diff: Diff[JsonLike]) -> Callable[[str], str]:
+        if isinstance(element_diff, Added):
+            return added
+        elif isinstance(element_diff, Removed):
+            return removed
+        elif isinstance(element_diff, Modified):
+            return modified
+        else:
+            return unmodified
+
+    def format_state(element_diff: Diff[JsonLike]) -> str:
+        element = element_diff.value
+        assert isinstance(element, dict)
+        color = element_color(element_diff)
+        attrs = [color(f"{key}: {format_value(value)}")
+            for key, value in without_internal_props(element).items()]
+        return color(click.style(f"{element['ref']}", bold=True)) + "\n" + "\n".join(attrs)
+
+    def format_states(elements: List[Diff[JsonLike]]) -> List[str]:
+        return [format_state(element) for element in elements]
+
+    from_queries = {} if transition.from_state is None else transition.from_state.queries
+    for sel, to_states in transition.to_state.queries.items():
+        from_states = from_queries.get(sel, [])
+        click.echo("\n" + selector(sel), file=file)
+        rows = [[
+            a, b
+        ] for a, b in zip(format_states(from_states), format_states(to_states))
+                ]
+        if len(rows) > 0:
+            click.echo(tabulate(tabular_data=rows, tablefmt='fancy_grid'),
+                       file=file)
+        else:
+            click.echo(click.style("No elements matched.", dim=True),
+                       file=file)
+
+
 @dataclass
 class ConsoleReporter(Reporter):
     report_on_success: bool
     file: Optional[IO[Text]] = sys.stdout
 
-    def report(self, result: Result):
-        last_state = None
-        if isinstance(result, RunResult):
-            if not result.valid.value or self.report_on_success:
-                click.echo("Trace:", file=self.file)
-                for i, element in zip(range(1,
-                                            len(result.trace) + 1),
-                                      result.trace):
-                    if isinstance(element, TraceActions):
-                        for action in element.actions:
-                            label = "Event" if action.isEvent else "Action"
-                            heading = f"{i}. {label}:"
-                            click.echo(indent(
-                                element_heading(
-                                    f"{heading} {printer.pretty_print_action(action)}"
-                                ), 1),
-                                       file=self.file)
-                    else:
-                        click.echo(indent(element_heading(f"{i}. State"), 1),
-                                   file=self.file)
-                        state: State = element.state
-                        # DeepDiff is both a dict and a class we can init in a special
-                        # way, so pyright must be silenced.
-                        diff = DeepDiff(last_state, state) # type: ignore
-                        print_state_diff(diff,
-                                         state,
-                                         indent_level=2,
-                                         file=self.file)
-                        last_state = state
+    def report(self, result: PlainResult):
+        if isinstance(result, Failed):
+            diffed_test = diff_test(result.failed_test)
+
+            click.echo("Trace:", file=self.file)
+            for i, transition in enumerate(diffed_test.transitions):
+                click.echo(element_heading(f"\nTransition #{i}"),
+                           file=self.file)
+                click.echo(f"\nActions and events:", file=self.file)
+                for action in transition.actions:
+                    click.echo(f"\n- {printer.pretty_print_action(action)}",
+                               file=self.file)
+                click.echo(f"\nState difference:", file=self.file)
+                print_state_diff(transition, file=self.file)

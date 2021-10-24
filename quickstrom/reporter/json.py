@@ -1,123 +1,57 @@
 from dataclasses import dataclass
 import dataclasses
 import json
-from typing import IO, Any, Dict, List, Type, TypeVar, Union
-
+import os
+from typing import IO, Any, Dict
 import quickstrom.protocol as protocol
+from quickstrom.result import *
 from quickstrom.reporter import Reporter
 from pathlib import Path
 from datetime import datetime
 
-@dataclass(frozen=True)
-class Initial():
-    events: List[protocol.Action]
-    state: protocol.State
 
 @dataclass(frozen=True)
-class Transition():
-    fromState: protocol.State
-    toState: protocol.State
-    stutter: bool
-    actions: List[protocol.Action]
-
-
-@dataclass(frozen=True)
-class Test():
-    validity: protocol.Validity
-    initial: Initial
-    transitions: List[Transition]
-
-
-def transitions_from_trace(full_trace: protocol.Trace) -> List[Transition]:
-    A = TypeVar('A')
-    # drop the initial events
-    trace = list(full_trace.copy()[1:])
-
-    def pop(cls: Type[A]) -> A:
-        assert len(trace) > 0
-        first = trace.pop(0)
-        if isinstance(first, cls):
-            return first
-        else:
-            raise TypeError(f"Expected a {cls} in trace but got {type(first)}")
-
-    transitions: List[Transition] = []
-    last_state: protocol.TraceState = pop(protocol.TraceState)
-
-    while len(trace) > 0:
-        actions = pop(protocol.TraceActions)
-        new_state = pop(protocol.TraceState)
-        transitions.append(
-            Transition(
-                fromState=last_state.state,
-                toState=new_state.state,
-                actions=actions.actions,
-                stutter=False,
-            ))
-        last_state = new_state
-
-    return transitions
-
-
-@dataclass(frozen=True)
-class Errored():
-    error: str
-    tests: int
-
-
-@dataclass(frozen=True)
-class Failed():
-    passedTests: List[Test]
-    failedTest: Test
-
-
-@dataclass(frozen=True)
-class Passed():
-    passedTests: List[Test]
-
-
-Result = Union[Failed, Passed, Errored]
-
-
-@dataclass(frozen=True)
-class Report():
-    result: Result
+class Report(Generic[I]):
+    result: DiffedResult[I]
     generated_at: datetime
-
-
-def report_from_result(result: protocol.Result) -> Report:
-    def to_result() -> Result:
-        if isinstance(result, protocol.RunResult):
-            initial = Initial(result.trace[0].actions, result.trace[1].state)    # type: ignore
-            if result.valid.value:
-                return Passed([
-                    Test(result.valid, initial,
-                         transitions_from_trace(result.trace))
-                ])
-            else:
-                return Failed([],
-                              Test(result.valid, initial,
-                                   transitions_from_trace(result.trace)))
-        else:
-            return Errored(result.error, 1)
-
-    return Report(to_result(), datetime.utcnow())
 
 
 @dataclass
 class JsonReporter(Reporter):
     path: Path
+    files_dir: Path
 
-    def report(self, result: protocol.Result):
-        report = report_from_result(result)
+    def report(self, result: PlainResult):
+        result_with_paths = write_screenshots(result, self.path.parent, self.files_dir)
+        report = Report(diff_result(result_with_paths), datetime.utcnow())
         encode_file(report, self.path)
+
+
+def write_screenshots(result: PlainResult,
+                      base: Path,
+                      dir: Path) -> ResultWithScreenshots[Path]:
+    os.makedirs(dir)
+    def on_state(
+        state: State[protocol.JsonLike,
+                     bytes]) -> State[protocol.JsonLike, Path]:
+        
+        if state.screenshot:
+            p = dir / Path(f"{state.hash}.png")
+            p.write_bytes(state.screenshot.image)
+            return State(state.hash, state.queries, Screenshot(p.relative_to(base), state.screenshot.width, state.screenshot.height, state.screenshot.scale))
+        else:
+            return State(state.hash, state.queries, None)
+
+    return map_states(result, on_state)
 
 
 def encode_str(report: Report) -> str:
     return json.dumps(report, cls=_ReporterEncoder)
 
+
 def encode_to(report: Report, fp: IO[str]):
     json.dump(report, fp, cls=_ReporterEncoder)
+
 
 def encode_file(report: Report, output_path: Path):
     with open(output_path, 'w') as f:
@@ -125,7 +59,7 @@ def encode_file(report: Report, output_path: Path):
 
 
 class _ReporterEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Dict[str, Any]:
+    def default(self, o: Any):
         if isinstance(o, Report):
             return {
                 'result': self.default(o.result),
@@ -135,8 +69,7 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, Passed):
             return {
                 'tag': 'Passed',
-                'passedTests':
-                [self.default(test) for test in o.passedTests],
+                'passedTests': [self.default(test) for test in o.passed_tests],
             }
         elif isinstance(o, Errored):
             return {
@@ -147,14 +80,12 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, Failed):
             return {
                 'tag': 'Failed',
-                'passedTests':
-                [self.default(test) for test in o.passedTests],
-                'failedTest': self.default(o.failedTest)
+                'passedTests': [self.default(test) for test in o.passed_tests],
+                'failedTest': self.default(o.failed_test)
             }
         elif isinstance(o, Test):
             return {
                 'validity': self.default(o.validity),
-                'initial': o.initial,
                 'transitions': [self.default(t) for t in o.transitions],
             }
         elif isinstance(o, Initial):
@@ -164,10 +95,27 @@ class _ReporterEncoder(json.JSONEncoder):
             }
         elif isinstance(o, Transition):
             return {
-                'fromState': o.fromState,
-                'toState': o.toState,
+                'fromState': o.from_state,
+                'toState': o.to_state,
                 'stutter': o.stutter,
                 'actions': [self.default(t) for t in o.actions],
+            }
+        elif isinstance(o, State):
+            return {
+                'hash':
+                o.hash,
+                'queries':
+                o.queries,
+                'screenshot':
+                self.default(o.screenshot)
+                if o.screenshot is not None else None
+            }
+        elif isinstance(o, Screenshot):
+            return {
+                'url': o.image,
+                'width': o.width,
+                'height': o.height,
+                'scale': o.scale,
             }
         elif isinstance(o, protocol.Action):
             return {
@@ -178,5 +126,23 @@ class _ReporterEncoder(json.JSONEncoder):
             }
         elif isinstance(o, protocol.Validity):
             return dataclasses.asdict(o)
+        elif isinstance(o, Added):
+            assert (isinstance(o.value, dict))
+            o.value['diff'] = 'Added'
+            return o.value
+        elif isinstance(o, Removed):
+            assert (isinstance(o.value, dict))
+            o.value['diff'] = 'Removed'
+            return o.value
+        elif isinstance(o, Modified):
+            assert (isinstance(o.value, dict))
+            o.value['diff'] = 'Modified'
+            return o.value
+        elif isinstance(o, Unmodified):
+            assert (isinstance(o.value, dict))
+            o.value['diff'] = 'Unmodified'
+            return o.value
+        elif isinstance(o, Path):
+            return str(o)
         else:
             return json.JSONEncoder.default(self, o)

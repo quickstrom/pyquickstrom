@@ -10,6 +10,7 @@ import quickstrom.executor as executor
 import quickstrom.reporter.json as json_reporter
 import quickstrom.reporter.html as html_reporter
 import quickstrom.reporter.console as console_reporter
+from quickstrom.result import Errored, Failed
 
 
 class NoWebdriverFilter(logging.Filter):
@@ -21,17 +22,30 @@ global_options: Dict[str, object] = {'includes': []}
 
 
 @click.group()
+@click.option('--color',
+              default='auto',
+              help='use colored output (no|auto|always)')
 @click.option('--log-level',
               default='WARN',
-              help='log level (DEBUG|INFO|WARN|ERROR)')
+              help='log level (debug|info|warn|error)')
 @click.option('-I',
               '--include',
               multiple=True,
               help='include a path in the Specstrom module search paths')
-def root(log_level, include):
+@click.pass_context
+def root(ctx, color, log_level, include):
+    if color.lower() == 'auto':
+        ctx.color = None
+    elif color.lower() == 'always':
+        ctx.color = True
+    elif color.lower() == 'no':
+        ctx.color = False
+    else:
+        raise click.UsageError(f"Invalid color option: `{color}`")
     global_options['includes'] = include
     logging.basicConfig(level=getattr(logging, log_level.upper()))
     logging.getLogger("urllib3").setLevel(logging.INFO)
+    logging.getLogger("PIL").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
 
 
@@ -51,16 +65,17 @@ def root(log_level, include):
               default=['console'],
               help='enable a reporter by name')
 @click.option('--json-report-file', default='report.json')
+@click.option('--json-report-files-directory', default='json-report-files', help='directory for report assets, e.g. screenshots')
 @click.option('--html-report-directory', default='html-report')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], json_report_file: Path,
-          html_report_directory: Path):
+          reporter: List[str], json_report_file: str, json_report_files_directory: str,
+          html_report_directory: str):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
-            'json': json_reporter.JsonReporter(json_report_file),
-            'html': html_reporter.HtmlReporter(html_report_directory),
+            'json': json_reporter.JsonReporter(Path(json_report_file), Path(json_report_files_directory)),
+            'html': html_reporter.HtmlReporter(Path(html_report_directory)),
             'console':
             console_reporter.ConsoleReporter(console_report_on_success)
         }
@@ -81,19 +96,20 @@ def check(module: str, origin: str, browser: executor.Browser,
                                  cast(List[str], global_options['includes']),
                                  capture_screenshots).execute()
         chosen_reporters = reporters_by_names(reporter)
+        click.echo(f"Results: {results}")
         for result in results:
             for r in chosen_reporters:
                 r.report(result)
 
-            if isinstance(result, RunResult):
+            if isinstance(result, Failed):
                 click.echo(
-                    f"Result: {result.valid.certainty} {result.valid.value}")
-            elif isinstance(result, ErrorResult):
+                    f"Result: {result.failed_test.validity.certainty} {result.failed_test.validity.value}")
+            elif isinstance(result, Errored):
                 click.echo(f"Error: {result.error}")
 
-        if any([(isinstance(r, ErrorResult)) for r in results]):
+        if any([(isinstance(r, Errored)) for r in results]):
             exit(1)
-        elif any([(isinstance(r, RunResult) and not r.valid.value) for r in results]):
+        elif any([(isinstance(r, Failed)) for r in results]):
             exit(3)
     except executor.SpecstromError as err:
         print(err)

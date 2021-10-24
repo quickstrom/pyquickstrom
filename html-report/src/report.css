@@ -109,7 +109,6 @@ main .controls button:active {
 .selector {
     white-space: break-spaces;
     font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
-    font-weight: normal;
 }
 
 .actions, .action, .states, .screenshots, .details {
@@ -129,6 +128,9 @@ main .controls button:active {
 
     color: #fff;
 }
+.actions.initial {
+    border-left: none;
+}
 
 .actions .label {
     margin: -2rem 0 0;
@@ -145,34 +147,13 @@ main .controls button:active {
     text-align: center;
     margin-top: 1.5rem;
 }
-.action-details h2 {
-    font-size: 150%;
+.action-details code {
+    display: block;
     margin: 1em 0 0 0;
-}
-.action-details .name {
-    display: inline-block;
-    background: #222;
-    padding: 0 1rem;
-}
-.action-details .name.none {
-    color: #666;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
 .action-details > * {
     margin: .5em 0;
-}
-.action-details .selected-index {
-    font-weight: bold;
-    margin-top: .25em;
-}
-.action-details .key {
-    display: inline-block;
-    padding: .5em .8em;
-    background: #666;
-    color: #fff;
-    box-shadow: 2px 2px 0 #111;
-    border-radius: 4px;
-    font-size: 125%;
-    font-weight: 600;
 }
 
 .states {
@@ -207,6 +188,9 @@ main .controls button:active {
     flex: 0 0 49%;
     border: 2px solid #111;
     display: flex;
+}
+.state-screenshot.missing {
+    border: none;
 }
 .state-screenshot-inner {
     width: 100%;
@@ -256,7 +240,6 @@ main .controls button:active {
     border: 1px solid #333;
     min-width: 10rem;
     z-index: 2;
-    font-family: 'Inconsolata', monospace;
 }
 .state-screenshot-inner .marker.active .marker-details {
     display: block;
@@ -264,7 +247,17 @@ main .controls button:active {
 
 .details {
     display: flex;
+    flex-direction: column;
     margin: 2rem 0;
+}
+.details .query {
+    display: flex;
+    flex-wrap: wrap;
+    text-align: center;
+}
+.details .selector {
+    flex: 1 1 100%;
+    padding: 1rem .5rem;
 }
 .details .state-queries {
     flex: 1 1 50%;
@@ -276,37 +269,47 @@ main .controls button:active {
     list-style: initial;
     padding-left: 1rem;
 }
-.details .element-state {
-    margin: 1rem;
+.details li {
+    margin-bottom: 1rem;
 }
 
 .element-state {
-    width: 100%;
-}
-.element-state td {
-    padding: .5rem;
     background: #333;
     color: #ccc;
 }
-.element-state td:first-child {
-    width: 1%;
-    border-right: 1px solid rgba(255,255,255,.2);
-}
-.element-state td:last-child {
-    text-align: right;
-}
 
-.element-state .added td {
+.element-state.added {
     background: rgb(54, 80, 54);
     color: rgb(207, 255, 207);
 }
 
-.element-state .modified td {
+.element-state.modified {
     background: rgb(39, 39, 92);
     color: rgb(208, 208, 255);
 }
 
-.element-state .removed td {
+.element-state.removed {
     background: rgb(83, 32, 32);
     color: rgb(255, 206, 206);
+}
+
+.element-state table {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.1);
+}
+.element-state th {
+    text-align: center;
+}
+.element-state th,
+.element-state td {
+    padding: .5rem;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.element-state td:first-child {
+    width: 1%;
+    border-right: 1px solid rgba(255,255,255,.1);
+}
+.element-state td:last-child {
+    text-align: right;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
 }
