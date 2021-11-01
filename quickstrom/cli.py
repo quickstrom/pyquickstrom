@@ -10,7 +10,7 @@ import quickstrom.executor as executor
 import quickstrom.reporter.json as json_reporter
 import quickstrom.reporter.html as html_reporter
 import quickstrom.reporter.console as console_reporter
-from quickstrom.result import Errored, Failed
+from quickstrom.result import Errored, Failed, Passed
 
 
 class NoWebdriverFilter(logging.Filter):
@@ -65,17 +65,22 @@ def root(ctx, color, log_level, include):
               default=['console'],
               help='enable a reporter by name')
 @click.option('--json-report-file', default='report.json')
-@click.option('--json-report-files-directory', default='json-report-files', help='directory for report assets, e.g. screenshots')
+@click.option('--json-report-files-directory',
+              default='json-report-files',
+              help='directory for report assets, e.g. screenshots')
 @click.option('--html-report-directory', default='html-report')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], json_report_file: str, json_report_files_directory: str,
-          html_report_directory: str):
+          reporter: List[str], json_report_file: str,
+          json_report_files_directory: str, html_report_directory: str):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
-            'json': json_reporter.JsonReporter(Path(json_report_file), Path(json_report_files_directory)),
-            'html': html_reporter.HtmlReporter(Path(html_report_directory)),
+            'json':
+            json_reporter.JsonReporter(Path(json_report_file),
+                                       Path(json_report_files_directory)),
+            'html':
+            html_reporter.HtmlReporter(Path(html_report_directory)),
             'console':
             console_reporter.ConsoleReporter(console_report_on_success)
         }
@@ -96,16 +101,20 @@ def check(module: str, origin: str, browser: executor.Browser,
                                  cast(List[str], global_options['includes']),
                                  capture_screenshots).execute()
         chosen_reporters = reporters_by_names(reporter)
-        click.echo(f"Results: {results}")
         for result in results:
             for r in chosen_reporters:
                 r.report(result)
 
+            click.echo("")
+
+            if isinstance(result, Passed):
+                click.echo(click.style("All tests passed.", fg="green"))
             if isinstance(result, Failed):
                 click.echo(
-                    f"Result: {result.failed_test.validity.certainty} {result.failed_test.validity.value}")
+                    click.style(f"Failed: {result.failed_test.validity.certainty} {result.failed_test.validity.value}", fg="red")
+                )
             elif isinstance(result, Errored):
-                click.echo(f"Error: {result.error}")
+                click.echo(click.style(f"Error: {result.error}", fg="red"))
 
         if any([(isinstance(r, Errored)) for r in results]):
             exit(1)
