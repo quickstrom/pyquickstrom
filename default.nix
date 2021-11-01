@@ -8,9 +8,8 @@ let
   quickstrom = poetry2nix.mkPoetryApplication {
     projectDir = ./.;
     python = pkgs.python38;
-    propagatedBuildInputs =
-      [ specstrom geckodriver firefox chromedriver chromium ];
-    checkInputs = [pkgs.nodePackages.pyright];
+    propagatedBuildInputs = [ specstrom ];
+    checkInputs = [ pkgs.nodePackages.pyright ];
     checkPhase = ''
       pyright -p . quickstrom tests
       pytest
