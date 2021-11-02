@@ -2,7 +2,7 @@ import logging
 from quickstrom.protocol import ErrorResult, RunResult
 from quickstrom.reporter import Reporter
 import click
-from typing import cast, Dict, List
+from typing import Tuple, cast, Dict, List
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
@@ -43,7 +43,7 @@ def root(ctx, color, log_level, include):
     else:
         raise click.UsageError(f"Invalid color option: `{color}`")
     global_options['includes'] = include
-    logging.basicConfig(level=getattr(logging, log_level.upper()))
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', level=getattr(logging, log_level.upper()), datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger("urllib3").setLevel(logging.INFO)
     logging.getLogger("PIL").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
@@ -69,10 +69,15 @@ def root(ctx, color, log_level, include):
               default='json-report-files',
               help='directory for report assets, e.g. screenshots')
 @click.option('--html-report-directory', default='html-report')
+@click.option('--cookie',
+              multiple=True,
+              type=(str, str, str),
+              help='set a cookie based on three values, e.g. --cookie domain name value')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
           reporter: List[str], json_report_file: str,
-          json_report_files_directory: str, html_report_directory: str):
+          json_report_files_directory: str, html_report_directory: str,
+          cookie: List[Tuple[str, str, str]]):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
@@ -97,9 +102,10 @@ def check(module: str, origin: str, browser: executor.Browser,
         print(f"File does not exist: {origin}")
         exit(1)
     try:
+        cookies = [ executor.Cookie(domain, name, value) for (domain, name, value) in cookie ]
         results = executor.Check(module, origin_url.geturl(), browser,
                                  cast(List[str], global_options['includes']),
-                                 capture_screenshots).execute()
+                                 capture_screenshots, cookies).execute()
         chosen_reporters = reporters_by_names(reporter)
         for result in results:
             for r in chosen_reporters:

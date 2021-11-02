@@ -109,12 +109,9 @@ class ConsoleReporter(Reporter):
     report_on_success: bool
     file: Optional[IO[Text]] = sys.stdout
 
-    def report(self, result: PlainResult):
-        if isinstance(result, Failed):
-            diffed_test = diff_test(result.failed_test)
-
+    def report_test(self, test: Test[Diff[protocol.JsonLike], bytes]):
             click.echo("Trace:", file=self.file)
-            for i, transition in enumerate(diffed_test.transitions):
+            for i, transition in enumerate(test.transitions):
                 click.echo(element_heading(f"\nTransition #{i}"),
                            file=self.file)
                 click.echo(f"\nActions and events:", file=self.file)
@@ -123,3 +120,13 @@ class ConsoleReporter(Reporter):
                                file=self.file)
                 click.echo(f"\nState difference:", file=self.file)
                 print_state_diff(transition, file=self.file)
+
+    def report(self, result: PlainResult):
+        if isinstance(result, Failed):
+            diffed_test = diff_test(result.failed_test)
+            self.report_test(diffed_test)
+        elif isinstance(result, Passed) and self.report_on_success:
+            for test in result.passed_tests:
+                diffed_test = diff_test(test)
+                self.report_test(diffed_test)
+

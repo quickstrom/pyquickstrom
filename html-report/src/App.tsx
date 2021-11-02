@@ -313,7 +313,7 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
           <State number={state.index + 1} extraClass="to" label="To" />
         </section>
         <section class="screenshots">
-          {state.current.fromState ? (
+          {state.current.fromState?.screenshot ? (
             <Screenshot
               state={state.current.fromState}
               extraClass="from"
@@ -323,12 +323,16 @@ const TestViewer: FunctionComponent<{ test: Test }> = ({ test }) => {
           ) : (
             <MissingScreenshot />
           )}
-          <Screenshot
-            state={transition.toState}
-            extraClass="to"
-            selectedElement={selectedElement}
-            setSelectedElement={setSelectedElement}
-          />
+          {state.current.toState?.screenshot ? (
+            <Screenshot
+              state={transition.toState}
+              extraClass="to"
+              selectedElement={selectedElement}
+              setSelectedElement={setSelectedElement}
+            />
+          ) : (
+            <MissingScreenshot />
+          )}
         </section>
         <section class="details">
           {Object.keys(transition.toState.queries).map((selector) => {
@@ -486,7 +490,7 @@ const Screenshot: FunctionComponent<{
     return `${(x / total) * 100}%`;
   }
   function renderQueryMarkers(element: QueriedElement) {
-    if (element.position) {
+    if (element.position && state.screenshot) {
       const s = scaled(state.screenshot);
       return (
         <div

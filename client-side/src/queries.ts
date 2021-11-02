@@ -1,4 +1,5 @@
 import { toArray } from "./arrays";
+import { isElementInteractable } from "./interactability";
 import { getPosition, Position } from "./position";
 import { isElementVisible } from "./visibility";
 
@@ -23,7 +24,7 @@ export interface QueriedState {
 }
 
 export function runQuery(selector: Selector, schema: Schema): ElementState[] {
-    function queryCssValues(element: Element, subSchema: Schema): any {
+    function queryCssValues(element: HTMLElement, subSchema: Schema): any {
         const css: ElementState = {};
         Object.entries(subSchema).forEach(([name, subSchema]) => {
             if (Object.keys(subSchema).length > 0) {
@@ -36,8 +37,29 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
         });
         return css;
     }
+    function queryAttributeValues(element: HTMLElement, subSchema: Schema): any {
+        const attrs: ElementState = {};
+        Object.entries(subSchema).forEach(([name, _]) => {
+            attrs[name] = element.getAttribute(name);
+        });
+        return attrs;
+    }
+    function queryRecursive(value: any, schema: Schema): any {
+        const entries = Object.entries(schema);
+        if (entries.length === 0) {
+            return value;
+        } else if (typeof value !== 'object') {
+            throw Error(`Can't recursively query ${value} using schema: ${schema}`);
+        } else {
+            const result: ElementState = {};
+            entries.forEach(([name, subSchema]) => {
+                result[name] = queryRecursive(value[name], subSchema);
+            });
+            return result;
+        }
+    }
 
-    const elements = toArray(document.querySelectorAll(selector)) as Element[];
+    const elements: HTMLElement[] = toArray(document.querySelectorAll(selector) as NodeListOf<HTMLElement>);
     return elements.map((element) => {
         var m: ElementState = {};
         Object.entries(schema).forEach(([key, subSchema]) => {
@@ -49,6 +71,9 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
                 case "visible":
                     m[key] = isElementVisible(element as HTMLElement);
                     break;
+                case "interactable":
+                    m[key] = isElementInteractable(element);
+                    break;
                 case "active":
                     m[key] = document.activeElement == element;
                     break;
@@ -59,9 +84,12 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
                 case "css":
                     m[key] = queryCssValues(element, subSchema);
                     break;
+                case "attributes":
+                    m[key] = queryAttributeValues(element, subSchema);
+                    break;
                 default:
                     // @ts-ignore
-                    m[key] = element[key];
+                    m[key] = queryRecursive(element[key], subSchema);
                     break;
             }
         });
