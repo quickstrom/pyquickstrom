@@ -2,7 +2,7 @@
 let
   quickstrom = (import ../. { inherit pkgs; });
 
-  webdriver-deps = if browser == "chrome" then [pkgs.chromedriver pkgs.chrome] else [pkgs.geckodriver pkgs.firefox];
+  webdriver-deps = if browser == "chrome" then [pkgs.chromedriver pkgs.chromium] else [pkgs.geckodriver pkgs.firefox];
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
