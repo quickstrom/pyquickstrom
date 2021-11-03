@@ -3,9 +3,9 @@ import list;
 import ltl;
 import quickstrom/keys;
 
-action click!(x) = for element in x. { id: "click", event: false, args: [element.ref] } when element.enabled && element.visible;
+action click!(x) = for element in x. { id: "click", event: false, args: [element.ref] } when element.enabled && element.visible && element.interactable;
 
-action doubleClick!(x) = for element in x. { id: "doubleClick", event: false, args: [element.ref] } when element.enabled && element.visible;
+action doubleClick!(x) = for element in x. { id: "doubleClick", event: false, args: [element.ref] } when element.enabled && element.visible && element.interactable;
 
 action clear!(x) = for element in x. { id: "clear", event: false, args: [element.ref] } when not element.active;
 

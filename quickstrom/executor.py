@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import subprocess
 import logging
@@ -34,6 +35,11 @@ class SpecstromError(Exception):
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
 
+@dataclass
+class Cookie():
+    domain: str
+    name: str
+    value: str
 
 @dataclass
 class Check():
@@ -42,6 +48,7 @@ class Check():
     browser: Browser
     include_paths: List[str]
     capture_screenshots: bool
+    cookies: List[Cookie]
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
     def execute(self) -> List[result.PlainResult]:
@@ -147,7 +154,15 @@ class Check():
                             self.log.info("Starting session")
                             driver = self.new_driver()
                             driver.set_window_size(1200, 600)
+
+                            # First we need to visit the page in order to set cookies.
                             driver.get(self.origin)
+                            for cookie in self.cookies:
+                                self.log.debug(f"Setting {cookie}")
+                                driver.add_cookie(dataclasses.asdict(cookie))
+                            # Now that cookies are set, we have to visit the origin again.
+                            driver.get(self.origin)
+
                             # horrible hack that should be removed once we have events!
                             time.sleep(3)
                             self.log.debug("Deps: %s",

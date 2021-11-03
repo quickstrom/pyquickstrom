@@ -8,6 +8,8 @@ def pretty_print_action(action: protocol.Action) -> str:
         return key_name_by_code.get(
             arg, repr(arg)) if action.id == 'keyPress' else repr(arg)
 
-    return f"{action.id}({', '.join([format_arg(arg) for arg in action.args])})"
+    timeout_suffix = f" timeout {action.timeout}" if action.timeout is not None else ""
+
+    return f"{action.id}({', '.join([format_arg(arg) for arg in action.args])}){timeout_suffix}"
 
 
