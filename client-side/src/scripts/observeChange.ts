@@ -9,10 +9,10 @@ function matchesAnySelector(node: Node, selectors: string[]): boolean {
     return selectors.find(selector => matchesSelector(node, selector)) !== undefined;
 }
 
-async function observeChange(selectors: string[]): Promise<void> {
+async function observeChange(selectors: string[]): Promise<Element[]> {
   return new Promise((resolve) => {
     new MutationObserver((mutations, observer) => {
-      const anyMatching = mutations
+      const matching = mutations
         .flatMap((mutation) => {
           return [
             [mutation.target],
@@ -20,11 +20,14 @@ async function observeChange(selectors: string[]): Promise<void> {
             toArray(mutation.removedNodes) as Node[],
           ].flat();
         })
-        .some((node) => matchesAnySelector(node, selectors));
+        .filter((node) => matchesAnySelector(node, selectors));
 
-      if (anyMatching) {
+      const unique = new Set()
+      matching.forEach(n => unique.add(n))
+
+      if (unique.size > 0) {
         observer.disconnect();
-        resolve();
+        resolve(Array.from(unique) as Element[]);
       }
     }).observe(document, {
       childList: true,
@@ -38,8 +41,7 @@ async function observeChange(selectors: string[]): Promise<void> {
 const [queries, done] = args;
 
 (function () {
-  (window as any).registeredObserver = observeChange(queries).then((_) =>
-    queryState(queries)
-  );
-  done({ Right: [] });
+  observeChange(Object.keys(queries)).then((elements) => {
+    done({ elements, state: queryState(queries) })
+  });
 })();

@@ -43,9 +43,8 @@ def root(ctx, color, log_level, include):
     else:
         raise click.UsageError(f"Invalid color option: `{color}`")
     global_options['includes'] = include
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s', level=getattr(logging, log_level.upper()), datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(format='%(asctime)s.%(msecs)03d %(name)-24s %(levelname)-8s %(message)s', level=getattr(logging, log_level.upper()), datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger("urllib3").setLevel(logging.INFO)
-    logging.getLogger("PIL").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
 
 

@@ -1,12 +1,16 @@
 import dataclasses
 import io
+import queue
 import subprocess
 import logging
+import multiprocessing
+import threading
 import time
 from shutil import which
 from dataclasses import dataclass
 import png
-from typing import List, Union, Literal, Any
+from typing import List, Tuple, Union, Literal, Any
+from selenium.common.exceptions import TimeoutException
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -34,31 +38,27 @@ class SpecstromError(Exception):
 
 
 @dataclass
+class ElementChange():
+    elements: List[WebElement]
+    state: State
+
+
+@dataclass
 class Scripts():
     query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
-
-
-def elements_to_ids(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return {
-            key: elements_to_ids(value)
-            for (key, value) in obj.items()
-        }
-    elif isinstance(obj, list):
-        return [elements_to_ids(value) for value in obj]
-    elif isinstance(obj, WebElement):
-        return obj.id
-    else:
-        return obj
+    observe_change: Callable[[WebDriver, Dict[Selector, Schema]],
+                             ElementChange]
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
+
 
 @dataclass
 class Cookie():
     domain: str
     name: str
     value: str
+
 
 @dataclass
 class Check():
@@ -123,18 +123,23 @@ class Check():
 
                 def screenshot(driver: WebDriver, hash: str):
                     if self.capture_screenshots:
-                        bs: bytes = driver.get_screenshot_as_png() # type: ignore
-                        (width, height, _, _) = png.Reader(io.BytesIO(bs)).read()
+                        bs: bytes = driver.get_screenshot_as_png(
+                        )    # type: ignore
+                        (width, height, _,
+                         _) = png.Reader(io.BytesIO(bs)).read()
                         window_size = driver.get_window_size()
                         scale = round(width / window_size['width'])
                         if scale != round(width / window_size['height']):
-                            self.log.warn("Width and height scales do not match for screenshot")
+                            self.log.warn(
+                                "Width and height scales do not match for screenshot"
+                            )
                         screenshots[hash] = result.Screenshot(image=bs,
                                                               width=width,
                                                               height=height,
                                                               scale=scale)
 
-                def attach_screenshots(r: result.PlainResult) -> result.PlainResult:
+                def attach_screenshots(
+                        r: result.PlainResult) -> result.PlainResult:
                     def on_state(state):
                         return result.State(screenshot=screenshots.get(
                             state.hash, None),
@@ -164,7 +169,8 @@ class Check():
                             time.sleep(3)
                             self.log.debug("Deps: %s",
                                            json.dumps(msg.dependencies))
-                            state = elements_to_ids(scripts.query_state(driver, msg.dependencies))
+                            state = scripts.query_state(
+                                driver, msg.dependencies)
                             screenshot(driver, dict_hash(state))
                             event = Action(id='loaded',
                                            isEvent=True,
@@ -174,29 +180,54 @@ class Check():
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
                             return [
-                                attach_screenshots(result.from_protocol_result(r))
+                                attach_screenshots(
+                                    result.from_protocol_result(r))
                                 for r in msg.results
                             ]
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
-                        state_version = 1
+                        event_thread: Optional[threading.Thread] = None
+                        state_version = Counter(initial_value=1)
+
+                        def observe_changes():
+                            # TODO: loop this
+                            try:
+                                self.log.info(f"Setting up change event observer")
+                                change = scripts.observe_change(driver, deps)
+                                screenshot(driver, dict_hash(change.state))
+                                state_version.increment()
+                                # TODO: support multiple elements
+                                event = Event(Action(id='changed', args=[change.elements[0]], isEvent=True, timeout=None), change.state)
+                                send(event)
+                            except TimeoutException as exc:
+                                pass
+
                         while True:
                             msg = receive()
+
                             if not msg:
                                 raise Exception(
                                     "No more messages from Specstrom, expected RequestAction or End."
                                 )
                             elif isinstance(msg, RequestAction):
-                                if msg.version == state_version:
+                                if event_thread is not None:
+                                    pass # TODO: stop thread
+
+                                if msg.version == state_version.value:
                                     self.log.info(
-                                        f"Performing action in state {state_version}: {printer.pretty_print_action(msg.action)}"
+                                        f"Performing action in state {state_version.value}: {printer.pretty_print_action(msg.action)}"
                                     )
                                     perform_action(driver, msg.action)
-                                    state = elements_to_ids(scripts.query_state(driver, deps))
+
+                                    state = scripts.query_state(driver, deps)
                                     screenshot(driver, dict_hash(state))
-                                    state_version += 1
+                                    state_version.increment()
+
                                     send(Performed(state=state))
+
+                                    event_thread = threading.Thread(target=observe_changes, daemon=True)
+                                    event_thread.start()
                                 else:
                                     send(Stale())
                             elif isinstance(msg, End):
@@ -244,24 +275,52 @@ class Check():
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
 
+    def load_scripts(self) -> Scripts:
+        def map_element_change(r): 
+            return ElementChange(elements_to_refs(r['elements']), elements_to_refs(r['state']))
 
-    def load_scripts(self) -> Scripts: 
+        result_mappers = {
+            'queryState':
+            lambda r: elements_to_refs(r),
+            'observeChange': map_element_change,
+        }
+
         def load_script(name: str) -> Callable[[WebDriver, Any], Any]:
             key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
             client_side_dir = os.getenv(key)
             if not client_side_dir:
-                raise Exception(
-                    f'Environment variable {key} must be set')
-            file = open(f'{client_side_dir}/queryState.js')
+                raise Exception(f'Environment variable {key} must be set')
+            file = open(f'{client_side_dir}/{name}.js')
             script = file.read()
 
             def f(driver: WebDriver, arg: JsonLike) -> JsonLike:
                 r = driver.execute_async_script(script, arg)
-                self.log.debug(f"Script invocation {name}({arg}) returned {r}")
-                return r
+                return result_mappers[name](r)
 
             return f
 
         return Scripts(
-            query_state=load_script('queryState')
+            query_state=load_script('queryState'),
+            observe_change=load_script('observeChange'),
         )
+
+
+def elements_to_refs(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {key: elements_to_refs(value) for (key, value) in obj.items()}
+    elif isinstance(obj, list):
+        return [elements_to_refs(value) for value in obj]
+    elif isinstance(obj, WebElement):
+        return obj.id
+    else:
+        return obj
+
+
+class Counter(object):
+    def __init__(self, initial_value=0):
+        self.value = initial_value
+        self._lock = threading.Lock()
+        
+    def increment(self):
+        with self._lock:
+            self.value += 1
