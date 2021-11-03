@@ -33,6 +33,25 @@ class SpecstromError(Exception):
         return f"{self.message}, exit code {self.exit_code}"
 
 
+@dataclass
+class Scripts():
+    query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
+
+
+def elements_to_ids(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {
+            key: elements_to_ids(value)
+            for (key, value) in obj.items()
+        }
+    elif isinstance(obj, list):
+        return [elements_to_ids(value) for value in obj]
+    elif isinstance(obj, WebElement):
+        return obj.id
+    else:
+        return obj
+
+
 Browser = Union[Literal['chrome'], Literal['firefox']]
 
 @dataclass
@@ -52,6 +71,8 @@ class Check():
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
     def execute(self) -> List[result.PlainResult]:
+        scripts = self.load_scripts()
+
         with open("interpreter.log", "w+") as ilog:
             with self.launch_specstrom(ilog) as p:
                 assert p.stdout is not None
@@ -100,30 +121,6 @@ class Check():
                     else:
                         raise Exception(f'Unsupported action: {action}')
 
-                def elements_to_ids(obj):
-                    if isinstance(obj, dict):
-                        return {
-                            key: elements_to_ids(value)
-                            for (key, value) in obj.items()
-                        }
-                    elif isinstance(obj, list):
-                        return [elements_to_ids(value) for value in obj]
-                    elif isinstance(obj, WebElement):
-                        return obj.id
-                    else:
-                        return obj
-
-                def query_state(driver, deps) -> Any:
-                    key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
-                    client_side_dir = os.getenv(key)
-                    if not client_side_dir:
-                        raise Exception(
-                            f'Environment variable {key} must be set')
-                    file = open(f'{client_side_dir}/queryState.js')
-                    script = file.read()
-                    return elements_to_ids(
-                        driver.execute_async_script(script, deps))
-
                 def screenshot(driver: WebDriver, hash: str):
                     if self.capture_screenshots:
                         bs: bytes = driver.get_screenshot_as_png() # type: ignore
@@ -167,7 +164,7 @@ class Check():
                             time.sleep(3)
                             self.log.debug("Deps: %s",
                                            json.dumps(msg.dependencies))
-                            state = query_state(driver, msg.dependencies)
+                            state = elements_to_ids(scripts.query_state(driver, msg.dependencies))
                             screenshot(driver, dict_hash(state))
                             event = Action(id='loaded',
                                            isEvent=True,
@@ -182,7 +179,6 @@ class Check():
                             ]
 
                 def await_session_commands(driver: WebDriver, deps):
-
                     try:
                         state_version = 1
                         while True:
@@ -197,7 +193,7 @@ class Check():
                                         f"Performing action in state {state_version}: {printer.pretty_print_action(msg.action)}"
                                     )
                                     perform_action(driver, msg.action)
-                                    state = query_state(driver, deps)
+                                    state = elements_to_ids(scripts.query_state(driver, deps))
                                     screenshot(driver, dict_hash(state))
                                     state_version += 1
                                     send(Performed(state=state))
@@ -247,3 +243,25 @@ class Check():
                                      executable_path=geckodriver_path)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
+
+
+    def load_scripts(self) -> Scripts: 
+        def load_script(name: str) -> Callable[[WebDriver, Any], Any]:
+            key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
+            client_side_dir = os.getenv(key)
+            if not client_side_dir:
+                raise Exception(
+                    f'Environment variable {key} must be set')
+            file = open(f'{client_side_dir}/queryState.js')
+            script = file.read()
+
+            def f(driver: WebDriver, arg: JsonLike) -> JsonLike:
+                r = driver.execute_async_script(script, arg)
+                self.log.debug(f"Script invocation {name}({arg}) returned {r}")
+                return r
+
+            return f
+
+        return Scripts(
+            query_state=load_script('queryState')
+        )
