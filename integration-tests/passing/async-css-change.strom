@@ -1,8 +1,14 @@
 import quickstrom;
 
-action ~reveal! = click!(`#reveal`) timeout 2000;
+// actions and events
+
+action ~reveal! = click!(`#reveal`) timeout 1000;
+
+action ~revealDisabled? = changed?(`#reveal`) timeout 1000;
 
 action ~revealed? = changed?(`#secret`);
+
+// element state
 
 let ~revealEnabled = first(`#reveal`).enabled;
 

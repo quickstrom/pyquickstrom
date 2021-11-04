@@ -46,8 +46,8 @@ class ElementChange():
 @dataclass
 class Scripts():
     query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
-    observe_change: Callable[[WebDriver, Dict[Selector, Schema]],
-                             ElementChange]
+    install_change_observer: Callable[[WebDriver, Dict[Selector, Schema]], None]
+    await_change: Callable[[WebDriver, int], Union[ElementChange, None]]
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
@@ -105,11 +105,11 @@ class Check():
                     if action.id == 'click':
                         id = action.args[0]
                         element = WebElement(driver, id)
-                        element.click()
+                        ActionChains(driver).move_to_element(element).click(element).perform()
                     elif action.id == 'doubleClick':
                         id = action.args[0]
                         element = WebElement(driver, id)
-                        ActionChains(driver).double_click(element).perform()
+                        ActionChains(driver).move_to_element(element).double_click(element).perform()
                     elif action.id == 'focus':
                         id = action.args[0]
                         element = WebElement(driver, id)
@@ -123,13 +123,11 @@ class Check():
 
                 def screenshot(driver: WebDriver, hash: str):
                     if self.capture_screenshots:
-                        bs: bytes = driver.get_screenshot_as_png(
-                        )    # type: ignore
-                        (width, height, _,
-                         _) = png.Reader(io.BytesIO(bs)).read()
+                        bs: bytes = driver.get_screenshot_as_png()    # type: ignore
+                        (width, height, _, _) = png.Reader(io.BytesIO(bs)).read()
                         window_size = driver.get_window_size()
                         scale = round(width / window_size['width'])
-                        if scale != round(width / window_size['height']):
+                        if scale != round(height / window_size['height']):
                             self.log.warn(
                                 "Width and height scales do not match for screenshot"
                             )
@@ -190,18 +188,25 @@ class Check():
                         event_thread: Optional[threading.Thread] = None
                         state_version = Counter(initial_value=1)
 
-                        def observe_changes():
-                            # TODO: loop this
-                            try:
-                                self.log.info(f"Setting up change event observer")
-                                change = scripts.observe_change(driver, deps)
+                        def observe_change(timeout: int):
+                            self.log.debug(f"Awaiting change with timeout {timeout}")
+                            change = scripts.await_change(driver, timeout)
+                            self.log.debug(f"Change: {change}")
+
+                            if change is None:
+                                self.log.info(f"Timed out! Performing regular state query.")
+                                state = scripts.query_state(driver, deps)
+                                screenshot(driver, dict_hash(state))
+                                state_version.increment()
+                                send(Performed(state=state))
+                            else:
                                 screenshot(driver, dict_hash(change.state))
                                 state_version.increment()
                                 # TODO: support multiple elements
+                                if len(change.elements) > 1:
+                                    self.log.warn(f"Changed elements discarded: {change.elements[1:]}")
                                 event = Event(Action(id='changed', args=[change.elements[0]], isEvent=True, timeout=None), change.state)
                                 send(event)
-                            except TimeoutException as exc:
-                                pass
 
                         while True:
                             msg = receive()
@@ -218,16 +223,22 @@ class Check():
                                     self.log.info(
                                         f"Performing action in state {state_version.value}: {printer.pretty_print_action(msg.action)}"
                                     )
+
                                     perform_action(driver, msg.action)
+
+                                    if msg.action.timeout is not None:
+                                        self.log.debug("Installing change observer")
+                                        scripts.install_change_observer(driver, deps)
 
                                     state = scripts.query_state(driver, deps)
                                     screenshot(driver, dict_hash(state))
                                     state_version.increment()
-
-                                    event_thread = threading.Thread(target=observe_changes, daemon=True)
-                                    event_thread.start()
-
                                     send(Performed(state=state))
+
+                                    if msg.action.timeout is not None:
+                                        # event_thread = threading.Thread(target=observe_change, daemon=True, args=(msg.action.timeout,))
+                                        # event_thread.start()
+                                        observe_change(msg.action.timeout)
                                 else:
                                     send(Stale())
                             elif isinstance(msg, End):
@@ -277,12 +288,12 @@ class Check():
 
     def load_scripts(self) -> Scripts:
         def map_element_change(r): 
-            return ElementChange(elements_to_refs(r['elements']), elements_to_refs(r['state']))
+            return ElementChange(elements_to_refs(r['elements']), elements_to_refs(r['state'])) if r is not None else None
 
         result_mappers = {
-            'queryState':
-            lambda r: elements_to_refs(r),
-            'observeChange': map_element_change,
+            'queryState': lambda r: elements_to_refs(r),
+            'installChangeObserver': lambda r: r,
+            'awaitChange': map_element_change,
         }
 
         def load_script(name: str) -> Callable[[WebDriver, Any], Any]:
@@ -301,7 +312,8 @@ class Check():
 
         return Scripts(
             query_state=load_script('queryState'),
-            observe_change=load_script('observeChange'),
+            install_change_observer=load_script('installChangeObserver'),
+            await_change=load_script('awaitChange'),
         )
 
 

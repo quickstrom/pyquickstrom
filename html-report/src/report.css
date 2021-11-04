@@ -201,6 +201,7 @@ main .controls button:active {
 .state-screenshot img {
     display: block;
     width: 100%;
+    height: auto;
 }
 .state-screenshot-inner .marker {
     position: absolute;

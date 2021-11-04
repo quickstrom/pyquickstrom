@@ -20,13 +20,15 @@
       const reveal = document.querySelector("#reveal");
 
       reveal.addEventListener("click", () => {
-        reveal.disabled = true;
         setTimeout(() => {
-          document.head.insertAdjacentHTML("beforeend", `<style>#secret{
-            transition: opacity .4s linear, visibility .4s linear;
-            visibility: visible;
-            opacity: 1;
-          }</style>`)
+          reveal.disabled = true;
+          setTimeout(() => {
+            document.head.insertAdjacentHTML("beforeend", `<style>#secret{
+              transition: opacity .4s linear, visibility .4s linear;
+              visibility: visible;
+              opacity: 1;
+            }</style>`)
+          }, 200);
         }, 200);
       });
     </script>

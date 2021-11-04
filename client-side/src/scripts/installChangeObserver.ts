@@ -86,9 +86,9 @@ const [queries, done] = args;
 
 (function () {
   const selectors = Object.keys(queries);
-  Promise.race([observeChange(selectors), observeStyleChange(queries)]).then(
-    (elements) => {
-      done({ elements, state: queryState(queries) });
-    }
-  );
+  (window as any).quickstromChangeObserver = Promise.race([
+    observeChange(selectors),
+    observeStyleChange(queries),
+  ]).then((elements) => ({ elements, state: queryState(queries) }));
+  done();
 })();
