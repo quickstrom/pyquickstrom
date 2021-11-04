@@ -2,7 +2,13 @@
 let
   quickstrom = (import ../. { inherit pkgs; });
 
-  webdriver-deps = if browser == "chrome" then [pkgs.chromedriver pkgs.chromium] else [pkgs.geckodriver pkgs.firefox];
+  webdriver-deps = if browser == "chrome" then [
+    pkgs.chromedriver
+    pkgs.chromium
+  ] else [
+    pkgs.geckodriver
+    pkgs.firefox
+  ];
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
     pkgs.stdenv.mkDerivation {
@@ -13,9 +19,8 @@ let
         set +e
         mkdir -p $out
 
-        # TODO: add ./failing and /passing includes later when required.
-        quickstrom --log-level=INFO -I${
-          ../case-studies
+        quickstrom --log-level=INFO -I${../case-studies} -I${
+          ./passing
         } check ${module} ${origin} ${options} --browser=${browser} --reporter=console --reporter=html --html-report-directory=$out/html-report | tee $out/test-report.log
         exit_code=$?
 
@@ -39,6 +44,13 @@ let
 
   makeTests =
     pkgs.lib.mapAttrs (name: value: makeTest (value // { inherit name; }));
+
+  passing = name: {
+    module = name;
+    origin = "${./passing}/${name}.html";
+    options = "";
+    expectedExitCode = 0;
+  };
 
   todomvc = builtins.fetchTarball {
     url =
@@ -64,4 +76,7 @@ in makeTests {
     options = "";
     expectedExitCode = 3;
   };
+  liveness = passing("liveness");
+  async-change = passing("async-change");
+  async-css-change = passing("async-css-change");
 }
