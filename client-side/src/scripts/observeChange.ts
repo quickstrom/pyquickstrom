@@ -1,33 +1,77 @@
-import { toArray } from "../arrays";
-import { queryState } from "../queries";
+import { distinct, toArray } from "../arrays";
+import { Dependencies, queryState } from "../queries";
 
 function matchesSelector(node: Node, selector: string): boolean {
   return node instanceof Element && node.matches(selector);
 }
 
 function matchesAnySelector(node: Node, selectors: string[]): boolean {
-    return selectors.find(selector => matchesSelector(node, selector)) !== undefined;
+  return (
+    selectors.find((selector) => matchesSelector(node, selector)) !== undefined
+  );
+}
+
+function matchingAnySelector(nodes: Node[], selectors: string[]): Element[] {
+  const elements = nodes.filter((node) =>
+    matchesAnySelector(node, selectors)
+  ) as Element[];
+  return distinct(elements);
+}
+
+async function observeStyleChange(deps: Dependencies): Promise<Element[]> {
+  const events: Array<keyof DocumentEventMap> = [
+    "transitionend",
+    "transitioncancel",
+    "animationend",
+    "animationcancel",
+  ];
+  return new Promise((resolve) => {
+    function remove() {
+      events.forEach((name) =>
+        document.removeEventListener(name, onEnd as EventListener)
+      );
+    }
+    function onEnd(e: AnimationEvent | TransitionEvent) {
+      if (e.target && e.target instanceof Element) {
+        const anyMatching =
+          Object.entries(deps).find(([selector, schema]) => {
+            if (e instanceof TransitionEvent) {
+              return (
+                schema.css &&
+                schema.css[e.propertyName] &&
+                matchesSelector(e.target as Element, selector)
+              );
+            } else {
+              return matchesSelector(e.target as Element, selector);
+            }
+          }) !== undefined;
+        if (anyMatching) {
+          remove();
+          resolve([e.target]);
+        }
+      }
+    }
+    events.forEach((name) =>
+      document.addEventListener(name, onEnd as EventListener)
+    );
+  });
 }
 
 async function observeChange(selectors: string[]): Promise<Element[]> {
   return new Promise((resolve) => {
     new MutationObserver((mutations, observer) => {
-      const matching = mutations
-        .flatMap((mutation) => {
-          return [
-            [mutation.target],
-            toArray(mutation.addedNodes) as Node[],
-            toArray(mutation.removedNodes) as Node[],
-          ].flat();
-        })
-        .filter((node) => matchesAnySelector(node, selectors));
+      const nodes = mutations.flatMap((mutation) => {
+        return [
+          [mutation.target],
+          toArray(mutation.addedNodes) as Node[],
+          toArray(mutation.removedNodes) as Node[],
+        ].flat();
+      });
 
-      const unique = new Set()
-      matching.forEach(n => unique.add(n))
-
-      if (unique.size > 0) {
+      const matching = matchingAnySelector(nodes, selectors);
+      if (matching.length > 0) {
         observer.disconnect();
-        resolve(Array.from(unique) as Element[]);
+        resolve(matching);
       }
     }).observe(document, {
       childList: true,
@@ -41,7 +85,10 @@ async function observeChange(selectors: string[]): Promise<Element[]> {
 const [queries, done] = args;
 
 (function () {
-  observeChange(Object.keys(queries)).then((elements) => {
-    done({ elements, state: queryState(queries) })
-  });
+  const selectors = Object.keys(queries);
+  Promise.race([observeChange(selectors), observeStyleChange(queries)]).then(
+    (elements) => {
+      done({ elements, state: queryState(queries) });
+    }
+  );
 })();

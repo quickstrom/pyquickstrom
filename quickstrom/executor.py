@@ -224,10 +224,10 @@ class Check():
                                     screenshot(driver, dict_hash(state))
                                     state_version.increment()
 
-                                    send(Performed(state=state))
-
                                     event_thread = threading.Thread(target=observe_changes, daemon=True)
                                     event_thread.start()
+
+                                    send(Performed(state=state))
                                 else:
                                     send(Stale())
                             elif isinstance(msg, End):

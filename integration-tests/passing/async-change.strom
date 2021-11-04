@@ -11,7 +11,7 @@ let ~data = first(`#data`).textContent;
 let ~prop = 
   data == ""
   && not isLoading
-  && (always {4} (contains(dataLoaded?, happened) ==> (always {4} (data != ""))))
+  && (always {10} (contains(dataLoaded?, happened) ==> (always {10} (data != ""))))
   // && nextF (isLoading && data == "" && nextF (not isLoading))
   ;
 
