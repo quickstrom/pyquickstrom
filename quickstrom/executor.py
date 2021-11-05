@@ -185,7 +185,6 @@ class Check():
 
                 def await_session_commands(driver: WebDriver, deps):
                     try:
-                        event_thread: Optional[threading.Thread] = None
                         state_version = Counter(initial_value=1)
 
                         def observe_change(timeout: int):
@@ -194,11 +193,11 @@ class Check():
                             self.log.debug(f"Change: {change}")
 
                             if change is None:
-                                self.log.info(f"Timed out! Performing regular state query.")
+                                self.log.info(f"Timed out!")
                                 state = scripts.query_state(driver, deps)
                                 screenshot(driver, dict_hash(state))
                                 state_version.increment()
-                                send(Performed(state=state))
+                                send(Timeout(state=state))
                             else:
                                 screenshot(driver, dict_hash(change.state))
                                 state_version.increment()
@@ -213,9 +212,6 @@ class Check():
                                     "No more messages from Specstrom, expected RequestAction or End."
                                 )
                             elif isinstance(msg, RequestAction):
-                                if event_thread is not None:
-                                    pass # TODO: stop thread
-
                                 if msg.version == state_version.value:
                                     self.log.info(
                                         f"Performing action in state {state_version.value}: {printer.pretty_print_action(msg.action)}"
@@ -233,11 +229,12 @@ class Check():
                                     send(Performed(state=state))
 
                                     if msg.action.timeout is not None:
-                                        # event_thread = threading.Thread(target=observe_change, daemon=True, args=(msg.action.timeout,))
-                                        # event_thread.start()
                                         observe_change(msg.action.timeout)
                                 else:
                                     send(Stale())
+                            elif isinstance(msg, AwaitEvents):
+                                scripts.install_change_observer(driver, deps)
+                                observe_change(msg.await_timeout)
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
