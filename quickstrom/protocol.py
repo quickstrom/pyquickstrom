@@ -90,8 +90,8 @@ class Stale():
 
 
 @dataclass
-class Event():
-    event: Action
+class Events():
+    events: List[Action]
     state: State
 
 
@@ -114,9 +114,9 @@ class _ProtocolEncoder(json.JSONEncoder):
             return {'tag': 'Performed', 'contents': o.state}
         elif isinstance(o, Stale):
             return {'tag': 'Stale'}
-        elif isinstance(o, Event):
-            event: Any = self.default(o.event)
-            return {'tag': 'Event', 'contents': [event, o.state]}
+        elif isinstance(o, Events):
+            events: Any = [self.default(event) for event in o.events]
+            return {'tag': 'Events', 'contents': [events, o.state]}
         elif isinstance(o, Action):
             return {
                 'id': o.id,

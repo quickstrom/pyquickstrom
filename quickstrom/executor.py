@@ -174,7 +174,7 @@ class Check():
                                            isEvent=True,
                                            args=[],
                                            timeout=None)
-                            send(Event(event=event, state=state))
+                            send(Events(events=[event], state=state))
                             await_session_commands(driver, msg.dependencies)
                         elif isinstance(msg, Done):
                             return [
@@ -202,11 +202,8 @@ class Check():
                             else:
                                 screenshot(driver, dict_hash(change.state))
                                 state_version.increment()
-                                # TODO: support multiple elements
-                                if len(change.elements) > 1:
-                                    self.log.warn(f"Changed elements discarded: {change.elements[1:]}")
-                                event = Event(Action(id='changed', args=[change.elements[0]], isEvent=True, timeout=None), change.state)
-                                send(event)
+                                events = [Action(id='changed', args=[element], isEvent=True, timeout=None) for element in change.elements]
+                                send(Events(events, change.state))
 
                         while True:
                             msg = receive()
