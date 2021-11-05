@@ -64,6 +64,11 @@ class Start():
 
 
 @dataclass
+class AwaitEvents():
+    await_timeout: int
+
+
+@dataclass
 class End():
     pass
 
@@ -85,13 +90,18 @@ class Performed():
 
 
 @dataclass
+class Timeout():
+    state: State
+
+
+@dataclass
 class Stale():
     pass
 
 
 @dataclass
-class Event():
-    event: Action
+class Events():
+    events: List[Action]
     state: State
 
 
@@ -114,9 +124,11 @@ class _ProtocolEncoder(json.JSONEncoder):
             return {'tag': 'Performed', 'contents': o.state}
         elif isinstance(o, Stale):
             return {'tag': 'Stale'}
-        elif isinstance(o, Event):
-            event: Any = self.default(o.event)
-            return {'tag': 'Event', 'contents': [event, o.state]}
+        elif isinstance(o, Timeout):
+            return {'tag': 'Timeout', 'contents': o.state}
+        elif isinstance(o, Events):
+            events: Any = [self.default(event) for event in o.events]
+            return {'tag': 'Events', 'contents': [events, o.state]}
         elif isinstance(o, Action):
             return {
                 'id': o.id,
@@ -140,6 +152,8 @@ def _decode_hook(d: Any) -> Any:
         return Start(dependencies=d['dependencies'])
     if d['tag'] == 'RequestAction':
         return RequestAction(action=d['action'], version=d['version'])
+    if d['tag'] == 'AwaitEvents':
+        return AwaitEvents(await_timeout=d['awaitTimeout'])
     elif d['tag'] == 'End':
         return End()
     elif d['tag'] == 'Done':

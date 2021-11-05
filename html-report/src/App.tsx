@@ -513,11 +513,12 @@ const Screenshot: FunctionComponent<{
     }
   }
   const dim = renderDim(activeElement);
+  const s = scaled(state.screenshot);
   return (
     <div class={`state-screenshot ${extraClass}`}>
       <div class=" state-screenshot-inner">
         {Object.values(uniqueElementsInState(state)).map(renderQueryMarkers)}
-        <img src={state.screenshot.url} />
+        <img src={s.url} width={s.width} height={s.height} />
         {dim}
       </div>
     </div>
