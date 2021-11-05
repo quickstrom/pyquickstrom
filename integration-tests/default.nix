@@ -64,18 +64,6 @@ in makeTests {
     options = "";
     expectedExitCode = 0;
   };
-  todomvc-mithril = {
-    module = "todomvc";
-    origin = "${todomvc}/examples/mithril/index.html";
-    options = "";
-    expectedExitCode = 3;
-  };
-  todomvc-angularjs = {
-    module = "todomvc";
-    origin = "${todomvc}/examples/angularjs/index.html";
-    options = "";
-    expectedExitCode = 3;
-  };
   liveness = passing("liveness");
   async-change = passing("async-change");
   async-css-change = passing("async-css-change");
