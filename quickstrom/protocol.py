@@ -66,6 +66,7 @@ class Start():
 @dataclass
 class AwaitEvents():
     await_timeout: int
+    version: int
 
 
 @dataclass
@@ -153,7 +154,7 @@ def _decode_hook(d: Any) -> Any:
     if d['tag'] == 'RequestAction':
         return RequestAction(action=d['action'], version=d['version'])
     if d['tag'] == 'AwaitEvents':
-        return AwaitEvents(await_timeout=d['awaitTimeout'])
+        return AwaitEvents(await_timeout=d['awaitTimeout'], version=d['version'])
     elif d['tag'] == 'End':
         return End()
     elif d['tag'] == 'Done':

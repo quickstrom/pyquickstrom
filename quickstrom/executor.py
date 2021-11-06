@@ -230,8 +230,11 @@ class Check():
                                 else:
                                     send(Stale())
                             elif isinstance(msg, AwaitEvents):
-                                scripts.install_change_observer(driver, deps)
-                                observe_change(msg.await_timeout)
+                                if msg.version == state_version.value:
+                                    scripts.install_change_observer(driver, deps)
+                                    observe_change(msg.await_timeout)
+                                else:
+                                    send(Stale())
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
