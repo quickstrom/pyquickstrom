@@ -6,18 +6,28 @@
     <title>Form</title>
 </head>
 <body>
-    <form action="MultiPage.html">
+    <form action="multi-page.html">
         <input type="text" name="message">
         <input type="submit" value="Go">
     </form>
     <p style="display: none;" id="message"></p>
     <script>
         const form = document.querySelector("form");
+        const textInput = document.querySelector("form input[type=text]");
+
+        form.addEventListener("submit", (e) => {
+          if (textInput.value.trim() === "") {
+            e.preventDefault();
+          }
+        });
+
+
         const msg = document.querySelector("#message");
         const params = new URLSearchParams(window.location.search);
         const msgParam = params.get('message');
         if (msgParam) {
             form.remove();
+            msg.style.display = "block";
             msg.textContent = msgParam;
         }
     </script>

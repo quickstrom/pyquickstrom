@@ -1,42 +1,61 @@
-module Spec where
+import quickstrom;
 
-import Quickstrom
-import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.String (trim)
+syntax _becomes_ 8;
+let ~a becomes b = nextT (a == b);
 
-readyWhen :: String
-readyWhen = "body"
+syntax _?._ 9;
+let a ?. b = if a != null { a[b] };
 
-actions :: Actions
-actions =
-  clicks
-    <> [ focus "input[type=text]" `weighted` 5 
-       , keyPress ' ' `weighted` 5
-       , keyPress 'a' `weighted` 5
-       ]
+syntax _?:_ 8;
+let a ?: ~b = if a != null { a } else { b };
 
-proposition :: Boolean
-proposition =
-  let
-    initial = isJust formMessage
+let ~input =
+  first(
+    for i in `input[type=text]` {
+      { message: i.value, active: i.active }
+    }
+  );
 
-    enterMessage = formMessage /= next formMessage
+let ~trimmedInputMessage =
+  if input != null {
+    trim(input.message)
+  };
 
-    submitInvalidMessage = (trim <$> formMessage) == Just "" && next (isNothing submittedMessage)
+let ~inputActive = input ?. "active" ?: false;
 
-    submitValidMessage =
-      (trim <$> formMessage) /= Just ""
-        && formMessage
-        == next submittedMessage
-        && isNothing submittedMessage
-        && next (isNothing formMessage)
-  in
-    initial && always (enterMessage || submitInvalidMessage || submitValidMessage)
+let ~submittedMessage =
+  first(
+    for p in `#message` {
+      if p.visible { p.textContent }
+    }
+  );
 
-formMessage :: Maybe String
-formMessage = map _.value (queryOne "input[type=text]" { value })
+action ~submit! = click!(`input[type=submit]`);
+action ~focusInput! = focus!(`input[type=text]`);
+action ~pressKey! = [
+  keyPress!(keys.space),
+  keyPress!("a")
+] when inputActive;
 
-submittedMessage :: Maybe String
-submittedMessage = do
-  { textContent, display } <- queryOne "#message" { textContent, display: cssValue "display" }
-  if display == "none" then Nothing else Just textContent
+let ~prop = 
+  let ~initial = input ?. "message" == "";
+  
+  let ~enterMessage = changed(input ?. "message");
+
+  let ~focusInput = not inputActive && nextT inputActive;
+
+  let ~submitInvalidMessage =
+    trimmedInputMessage == ""
+      && submittedMessage == null
+      && nextT(submittedMessage == null);
+
+  let ~submitValidMessage =
+    trimmedInputMessage != ""
+      && submittedMessage == null
+      && submittedMessage becomes input ?. "message"
+      && input becomes null;
+  
+  initial && ((focusInput || enterMessage || submitInvalidMessage) until {100} submitValidMessage);
+
+check prop with * when loaded?;
+

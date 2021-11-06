@@ -1,16 +1,13 @@
 import dataclasses
 import io
-import queue
 import subprocess
 import logging
-import multiprocessing
 import threading
 import time
 from shutil import which
 from dataclasses import dataclass
 import png
-from typing import List, Tuple, Union, Literal, Any
-from selenium.common.exceptions import TimeoutException
+from typing import List, Union, Literal, Any
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
