@@ -1,42 +1,61 @@
-module Spec where
+import quickstrom;
 
-import Quickstrom
-import Data.Maybe (Maybe(..), isJust, isNothing)
-import Data.String (trim)
+let ~input =
+  first(
+    for i in `input[type=text]` {
+      { message: i.value, active: i.active }
+    }
+  );
 
-readyWhen :: String
-readyWhen = "body"
+let ~trimmedInputMessage = trim(input.message);
 
-actions :: Actions
-actions =
-  clicks
-    <> [ focus "input[type=text]" `weighted` 5 
-       , keyPress ' ' `weighted` 5
-       , keyPress 'a' `weighted` 5
-       ]
+let ~submittedMessage =
+  first(
+    for p in `#message` {
+      if p.visible { p.textContent }
+    }
+  );
 
-proposition :: Boolean
-proposition =
-  let
-    initial = isJust formMessage
+let ~isLoading = `.loading`.visible;
 
-    enterMessage = formMessage /= next formMessage
+action ~clientCodeLoaded? = changed?(`.loading`);
 
-    submitInvalidMessage = (trim <$> formMessage) == Just "" && next (isNothing submittedMessage)
+let ~hasValidationError = length(`input[type=text].error`) == 1;
 
-    submitValidMessage =
-      (trim <$> formMessage) /= Just ""
-        && formMessage
-        == next submittedMessage
-        && isNothing submittedMessage
-        && next (isNothing formMessage)
-  in
-    initial && always (enterMessage || submitInvalidMessage || submitValidMessage)
+action ~messageInvalidated? = changed?(`input[type=text]`) when hasValidationError;
 
-formMessage :: Maybe String
-formMessage = map _.value (queryOne "input[type=text]" { value })
+action ~submitValid! = click!(`input[type=submit]`) timeout 1000 when trimmedInputMessage != "";
+action ~submitInvalid! = click!(`input[type=submit]`) when trimmedInputMessage == "";
 
-submittedMessage :: Maybe String
-submittedMessage = do
-  { textContent, display } <- queryOne "#message" { textContent, display: cssValue "display" }
-  if display == "none" then Nothing else Just textContent
+action ~focusInput! = focus!(`input[type=text]`);
+action ~pressKey! = [
+  keyPress!(keys.space),
+  keyPress!("a")
+] when input.active;
+
+// States and transitions
+
+let ~initial = input.message == "";
+
+let ~enterMessage = not unchanged(input.message);
+
+let ~focusInput = (not input.active) && (next input.active);
+
+let ~submitInvalidMessage = trimmedInputMessage == "" && next hasValidationError;
+
+let ~submitValidMessage =
+    let msg = trimmedInputMessage;
+    msg != ""
+      && submittedMessage == null
+      && (not isLoading)
+      && next isLoading
+      && next (next (
+        not isLoading
+        && trim(submittedMessage) == msg
+      ));
+
+let ~prop = 
+  initial && ((focusInput || enterMessage || submitInvalidMessage) until {100} submitValidMessage);
+
+check prop with * when clientCodeLoaded?;
+

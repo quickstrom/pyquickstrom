@@ -1,16 +1,13 @@
 import dataclasses
 import io
-import queue
 import subprocess
 import logging
-import multiprocessing
 import threading
 import time
 from shutil import which
 from dataclasses import dataclass
 import png
-from typing import List, Tuple, Union, Literal, Any
-from selenium.common.exceptions import TimeoutException
+from typing import List, Union, Literal, Any
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -36,18 +33,17 @@ class SpecstromError(Exception):
     def __str__(self):
         return f"{self.message}, exit code {self.exit_code}"
 
-
 @dataclass
-class ElementChange():
-    elements: List[WebElement]
+class ClientSideEvents():
+    events: List[Action]
     state: State
 
 
 @dataclass
 class Scripts():
     query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
-    install_change_observer: Callable[[WebDriver, Dict[Selector, Schema]], None]
-    await_change: Callable[[WebDriver, int], Union[ElementChange, None]]
+    install_event_listener: Callable[[WebDriver, Dict[Selector, Schema]], None]
+    await_events: Callable[[WebDriver, int], Union[ClientSideEvents, None]]
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
@@ -146,6 +142,22 @@ class Check():
 
                     return result.map_states(r, on_state)
 
+                def observe_change(driver, deps, state_version, timeout: int):
+                    self.log.debug(f"Awaiting change with timeout {timeout}")
+                    change = scripts.await_events(driver, timeout)
+                    self.log.debug(f"Change: {change}")
+
+                    if change is None:
+                        self.log.info(f"Timed out!")
+                        state = scripts.query_state(driver, deps)
+                        screenshot(driver, dict_hash(state))
+                        state_version.increment()
+                        send(Timeout(state=state))
+                    else:
+                        screenshot(driver, dict_hash(change.state))
+                        state_version.increment()
+                        send(Events(change.events, change.state))
+
                 def run_sessions() -> List[result.PlainResult]:
                     while True:
                         msg = receive()
@@ -163,19 +175,12 @@ class Check():
                             # Now that cookies are set, we have to visit the origin again.
                             driver.get(self.origin)
 
-                            # horrible hack that should be removed once we have events!
-                            time.sleep(3)
-                            self.log.debug("Deps: %s",
-                                           json.dumps(msg.dependencies))
-                            state = scripts.query_state(
-                                driver, msg.dependencies)
-                            screenshot(driver, dict_hash(state))
-                            event = Action(id='loaded',
-                                           isEvent=True,
-                                           args=[],
-                                           timeout=None)
-                            send(Events(events=[event], state=state))
-                            await_session_commands(driver, msg.dependencies)
+                            state_version = Counter(initial_value=0)
+
+                            scripts.install_event_listener(driver, msg.dependencies)
+                            observe_change(driver, msg.dependencies, state_version, 10000)
+
+                            await_session_commands(driver, msg.dependencies, state_version)
                         elif isinstance(msg, Done):
                             return [
                                 attach_screenshots(
@@ -183,27 +188,8 @@ class Check():
                                 for r in msg.results
                             ]
 
-                def await_session_commands(driver: WebDriver, deps):
+                def await_session_commands(driver: WebDriver, deps, state_version):
                     try:
-                        state_version = Counter(initial_value=1)
-
-                        def observe_change(timeout: int):
-                            self.log.debug(f"Awaiting change with timeout {timeout}")
-                            change = scripts.await_change(driver, timeout)
-                            self.log.debug(f"Change: {change}")
-
-                            if change is None:
-                                self.log.info(f"Timed out!")
-                                state = scripts.query_state(driver, deps)
-                                screenshot(driver, dict_hash(state))
-                                state_version.increment()
-                                send(Timeout(state=state))
-                            else:
-                                screenshot(driver, dict_hash(change.state))
-                                state_version.increment()
-                                events = [Action(id='changed', args=[element], isEvent=True, timeout=None) for element in change.elements]
-                                send(Events(events, change.state))
-
                         while True:
                             msg = receive()
 
@@ -221,7 +207,7 @@ class Check():
 
                                     if msg.action.timeout is not None:
                                         self.log.debug("Installing change observer")
-                                        scripts.install_change_observer(driver, deps)
+                                        scripts.install_event_listener(driver, deps)
 
                                     state = scripts.query_state(driver, deps)
                                     screenshot(driver, dict_hash(state))
@@ -229,12 +215,17 @@ class Check():
                                     send(Performed(state=state))
 
                                     if msg.action.timeout is not None:
-                                        observe_change(msg.action.timeout)
+                                        observe_change(driver, deps, state_version, msg.action.timeout)
                                 else:
+                                    self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
                                     send(Stale())
                             elif isinstance(msg, AwaitEvents):
-                                scripts.install_change_observer(driver, deps)
-                                observe_change(msg.await_timeout)
+                                if msg.version == state_version.value:
+                                    scripts.install_event_listener(driver, deps)
+                                    observe_change(driver, deps, state_version, msg.await_timeout)
+                                else:
+                                    self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
+                                    send(Stale())
                             elif isinstance(msg, End):
                                 self.log.info("Ending session")
                                 return
@@ -281,16 +272,25 @@ class Check():
             raise Exception(f"Unsupported browser: {self.browser}")
 
     def load_scripts(self) -> Scripts:
-        def map_element_change(r): 
-            return ElementChange(elements_to_refs(r['elements']), elements_to_refs(r['state'])) if r is not None else None
+        def map_client_side_events(r): 
+            def map_event(e: dict):
+                if e['tag'] == 'loaded':
+                    return Action(id='loaded', args=[], isEvent=True, timeout=None)
+                elif e['tag'] == 'changed':
+                    return Action(id='changed', args=[elements_to_refs(e['element'])], isEvent=True, timeout=None)
+                else:
+                    raise Exception(f"Invalid event tag in: {e}")
+
+            return ClientSideEvents([map_event(e) for e in r['events']], elements_to_refs(r['state'])) if r is not None else None
 
         result_mappers = {
             'queryState': lambda r: elements_to_refs(r),
-            'installChangeObserver': lambda r: r,
-            'awaitChange': map_element_change,
+            'installEventListener': lambda r: r,
+            'awaitEvents': map_client_side_events,
         }
 
-        def load_script(name: str) -> Callable[[WebDriver, Any], Any]:
+        # can't type this with varargs
+        def load_script(name: str) -> Any:
             key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
             client_side_dir = os.getenv(key)
             if not client_side_dir:
@@ -298,16 +298,16 @@ class Check():
             file = open(f'{client_side_dir}/{name}.js')
             script = file.read()
 
-            def f(driver: WebDriver, arg: JsonLike) -> JsonLike:
-                r = driver.execute_async_script(script, arg)
+            def f(driver: WebDriver, *args: List[JsonLike]) -> JsonLike:
+                r = driver.execute_async_script(script, args)
                 return result_mappers[name](r)
 
             return f
 
         return Scripts(
             query_state=load_script('queryState'),
-            install_change_observer=load_script('installChangeObserver'),
-            await_change=load_script('awaitChange'),
+            install_event_listener=load_script('installEventListener'),
+            await_events=load_script('awaitEvents'),
         )
 
 

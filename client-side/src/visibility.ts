@@ -4,6 +4,7 @@ export function isElementVisible(el: HTMLElement): boolean {
         cs.getPropertyValue("display") !== "none" &&
         cs.getPropertyValue("visibility") !== "hidden" &&
         cs.getPropertyValue("opacity") !== "0" &&
-        el.offsetParent !== null
+        // Fixed element have no offsetParent
+        (cs.position === "fixed" || el.offsetParent !== null)
     );
 }
