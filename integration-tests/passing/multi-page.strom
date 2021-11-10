@@ -1,14 +1,5 @@
 import quickstrom;
 
-syntax _becomes_ 8;
-let ~a becomes b = nextT (a == b);
-
-syntax _?._ 9;
-let a ?. b = if a != null { a[b] };
-
-syntax _?:_ 8;
-let a ?: ~b = if a != null { a } else { b };
-
 let ~input =
   first(
     for i in `input[type=text]` {
@@ -16,12 +7,7 @@ let ~input =
     }
   );
 
-let ~trimmedInputMessage =
-  if input != null {
-    trim(input.message)
-  };
-
-let ~inputActive = input ?. "active" ?: false;
+let ~trimmedInputMessage = trim(input.message);
 
 let ~submittedMessage =
   first(
@@ -30,32 +16,48 @@ let ~submittedMessage =
     }
   );
 
-action ~submit! = click!(`input[type=submit]`);
+let ~isLoading = `.loading`.visible;
+
+action ~pageLoaded? = loaded? timeout 1000 when not isLoading;
+
+action ~clientCodeLoaded? = changed?(`.loading`);
+
+let ~hasValidationError = length(`input[type=text].error`) == 1;
+
+action ~messageInvalidated? = changed?(`input[type=text]`) when hasValidationError;
+
+action ~submitValid! = click!(`input[type=submit]`) timeout 1000 when trimmedInputMessage != "";
+action ~submitInvalid! = click!(`input[type=submit]`) when trimmedInputMessage == "";
+
 action ~focusInput! = focus!(`input[type=text]`);
 action ~pressKey! = [
   keyPress!(keys.space),
   keyPress!("a")
-] when inputActive;
+] when input.active;
+
+// States and transitions
+
+let ~initial = input.message == "";
+
+let ~enterMessage = not unchanged(input.message);
+
+let ~focusInput = (not input.active) && (next input.active);
+
+let ~submitInvalidMessage = trimmedInputMessage == "" && next hasValidationError;
+
+let ~submitValidMessage =
+    let msg = trimmedInputMessage;
+    msg != ""
+      && submittedMessage == null
+      && (not isLoading)
+      && next isLoading
+      && next (next (
+        not isLoading
+        && trim(submittedMessage) == msg
+      ));
 
 let ~prop = 
-  let ~initial = input ?. "message" == "";
-  
-  let ~enterMessage = changed(input ?. "message");
-
-  let ~focusInput = not inputActive && nextT inputActive;
-
-  let ~submitInvalidMessage =
-    trimmedInputMessage == ""
-      && submittedMessage == null
-      && nextT(submittedMessage == null);
-
-  let ~submitValidMessage =
-    trimmedInputMessage != ""
-      && submittedMessage == null
-      && submittedMessage becomes input ?. "message"
-      && input becomes null;
-  
   initial && ((focusInput || enterMessage || submitInvalidMessage) until {100} submitValidMessage);
 
-check prop with * when loaded?;
+check prop with * when clientCodeLoaded?;
 
