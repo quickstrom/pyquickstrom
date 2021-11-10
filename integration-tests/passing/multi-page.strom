@@ -18,8 +18,6 @@ let ~submittedMessage =
 
 let ~isLoading = `.loading`.visible;
 
-action ~pageLoaded? = loaded? timeout 1000 when not isLoading;
-
 action ~clientCodeLoaded? = changed?(`.loading`);
 
 let ~hasValidationError = length(`input[type=text].error`) == 1;
