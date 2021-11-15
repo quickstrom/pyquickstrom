@@ -43,9 +43,8 @@ let ~newTodoInput =
 
 let ~todoCount =
     let strong = first(for e in `.todoapp .todo-count strong` { e.textContent });
-    if strong != null {
-      parseInt(first(split(" ", trim(strong))))
-    } else { 0 };
+    let t = first(split(" ", trim(strong))) when strong != null;
+    if t != null { parseInt(t) } else { 0 };
 
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
 
