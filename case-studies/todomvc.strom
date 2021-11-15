@@ -29,7 +29,7 @@ action ~selectSameFilter! = click!(`.todoapp .filters a.selected`) when not isIn
 
 action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`) when not isInEditMode;
 
-action ~editTodo! = doubleClick!(`.todoapp .todo-list li label`) when not isInEditMode;
+action ~editTodo! = doubleClick!(`.todo-list li label`) when not isInEditMode;
 
 action ~deleteTodo! = click!(`.todoapp .destroy`) when not isInEditMode;
 
