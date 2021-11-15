@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import sys
 import click
 import os
 from typing import List
@@ -39,6 +42,7 @@ def todomvc_server():
 
 def run(apps: List[TestApp]):
     with todomvc_server() as server:
+        non_passed = []
         try:
             shutil.rmtree("results", ignore_errors=True)
             os.makedirs("results")
@@ -75,19 +79,24 @@ def run(apps: List[TestApp]):
                                                                      "--html-report-directory", html_report_dir,
                                                                      "--interpreter-log-file", interpreter_log_file,
                                                                      ]
-                            check = subprocess.Popen(args, stdout=results_file, stderr=results_file)
+                            click.echo(f"Command: {' '.join(args)}")
+                            check = subprocess.Popen(args, stdout=results_file, stderr=subprocess.PIPE)
                             r = check.wait()
 
                             if r == 0:
                                 click.echo(success("Passed!"))
                             elif r == 1:
                                 click.echo(failure("Error!"))
+                                non_passed.append(app.name)
                             elif r == 2:
                                 click.echo(failure("Specstrom error!"))
+                                non_passed.append(app.name)
                             elif r == 3:
                                 click.echo(failure("Failed!"))
+                                non_passed.append(app.name)
                             else:
                                 click.echo(failure(f"Unknown exit code: {r}"))
+                                non_passed.append(app.name)
                         except KeyboardInterrupt:
                             exit(1)
                         except Exception as e:
@@ -98,6 +107,8 @@ def run(apps: List[TestApp]):
 
                         click.echo("")
         finally:
+            if non_passed is not []:
+                click.echo(f"Rerun non-passed apps with: {sys.argv[0]} {' '.join(non_passed)}")
             server.kill()
 
 
@@ -159,4 +170,12 @@ all_apps = [
 ]
 
 if __name__ == "__main__":
-    run(all_apps)
+    apps_to_run = sys.argv[1:]
+    selected_apps: List[TestApp] = all_apps
+    if len(apps_to_run) > 0:
+        click.echo("Running selected apps only")
+        selected_apps = list(filter(lambda a: a.name in apps_to_run, all_apps))
+    else:
+        click.echo("Running all apps")
+
+    run(selected_apps)
