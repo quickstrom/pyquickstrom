@@ -8,14 +8,14 @@ let ~selectedFilter =
 
 let ~items =
   let listItems = `.todo-list li`;
-  for [index, [visible, editing], text, checked, input] in zipAll([ 
+  for [index, [itemVisible, editing], [text, labelVisible], checked, input] in zipAll([ 
     range(0, length(listItems) - 1),
     (for item in listItems { [item.css.display != "none", contains("editing", item.classList)] }),  
-    (for label in `.todo-list li label` { label.textContent }),
+    (for label in `.todo-list li label` { [label.textContent, label.visible] }),
     (for cb in `.todo-list li input[type=checkbox]` { cb.checked }),
     (for e in `.todo-list li .edit` { { pendingText: e.value, active: e.active } })
   ]) {
-    if visible { { index: index, text: text, checked: checked, editing: editing, editInput: input } }
+    if itemVisible && (labelVisible || editing) { { index: index, text: text, checked: checked, editing: editing, editInput: input } }
   };
 
 let ~lastItemText = 
@@ -42,9 +42,9 @@ let ~newTodoInput =
   });
 
 let ~todoCount =
-    let strong = first(for e in `.todoapp .todo-count strong` { e.textContent });
+    let strong = first(for e in `.todoapp .todo-count strong` { e.textContent when e.visible });
     let t = first(split(" ", trim(strong))) when strong != null;
-    if t != null { parseInt(t) } else { 0 };
+    if t != null && t != "" { parseInt(t) } else { 0 };
 
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
 
