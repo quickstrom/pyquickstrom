@@ -16,6 +16,10 @@ import todomvc/elements;
 // Actions
 //-------------------------------------------------
 
+action ~pageLoaded? = loaded? timeout 1000;
+
+action ~ready? = changed?(`body`);
+
 action ~selectOtherFilter! = click!(`.todoapp .filters a:not(.selected)`)
   // weighted 5.0
   when not isInEditMode
@@ -58,9 +62,12 @@ action ~createTodo! = [keyPress!(keys.return)]
 // States & Transitions
 //-------------------------------------------------
 
+let ~notLoaded = newTodoInput == null;
+
 let ~initial =
     selectedFilter == null
       && numItems == 0
+      && newTodoInput != null
       && newTodoInput.pendingText == "";
 
 let ~focusNewTodo =
@@ -243,6 +250,8 @@ let ~correctFilterStates =
   };
 
 let ~prop_safety =
+  notLoaded until {100}
+  (
   initial
     && always
        ( focusNewTodo
@@ -259,6 +268,7 @@ let ~prop_safety =
            || abortEdit
            || commitEdit
        )
-    && always (hasFilters && correctFilterStates);
+    && always (hasFilters && correctFilterStates)
+  );
 
-check prop_safety with * when loaded?;
+check prop_safety with * when [pageLoaded?, ready?];

@@ -1,10 +1,9 @@
-import quickstrom.executor as executor
-import quickstrom.printer as printer
 import click
 import os
 from typing import List
 from dataclasses import dataclass, asdict
 from urllib.parse import urljoin
+import shutil
 import pathlib
 import subprocess
 
@@ -30,42 +29,65 @@ def failure(s): return click.style(s, fg='red')
 
 case_studies_dir = pathlib.Path(__file__).parent
 
-ulib_dir = case_studies_dir.parent.joinpath("ulib")
-
 
 def todomvc_server():
-    return subprocess.Popen(["python3", "-m", "http.server", "--directory", os.getenv("TODOMVC_DIR"), "12345"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    todomvc_dir = os.getenv("TODOMVC_DIR")
+    if todomvc_dir is None:
+        raise Exception("Missing TODOMVC_DIR environment variable")
+    return subprocess.Popen(["python3", "-m", "http.server", "--directory", todomvc_dir, "12345"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def run(apps: List[TestApp]):
     with todomvc_server() as server:
         try:
-            os.makedirs("results", exist_ok=True)
-            browsers: List[executor.Browser] = [
+            shutil.rmtree("results", ignore_errors=True)
+            os.makedirs("results")
+            browsers: List[str] = [
                 "chrome",
                 # , "firefox"
             ]
-            include_paths = list(map(lambda p: str(p.absolute()),
-                                     [case_studies_dir, ulib_dir]))
+            include_paths = [str(p.absolute()) for p in [case_studies_dir]]
             for app in apps:
-                checks = [executor.Check(app.module, origin=urljoin("file://", app.origin), browser=browser,
-                                         include_paths=include_paths, capture_screenshots=False) for browser in browsers]
-                for check in checks:
-                    with open(f"results/{app.name}.{app.module}.{check.browser}.log", "w") as results_file:
+                origin=urljoin("file://", app.origin)
+
+                for browser in browsers:
+                    result_dir = str(pathlib.Path(f"results/{app.name}.{app.module}.{browser}").absolute())
+                    os.makedirs(result_dir)
+                    html_report_dir = f"{result_dir}/html-report"
+                    interpreter_log_file = f"{result_dir}/interpreter.log"
+                    shutil.rmtree(html_report_dir, ignore_errors=True)
+
+                    with open(f"{result_dir}/result.log", "w") as results_file:
                         click.echo(heading1(f"{app.name}"))
-                        for key, value in asdict(check).items():
-                            if key != 'log':
-                                click.echo(f"{key}: {value}")
-                        click.echo("details: " + results_file.name)
+                        click.echo(f"Browser: {browser}")
+                        click.echo("Text report: " + results_file.name)
+                        click.echo(f"Interpreter log: {interpreter_log_file}")
+                        click.echo(f"HTML report: {html_report_dir}/index.html")
 
                         try:
-                            results = check.execute()
-                            printer.print_results(results, file=results_file)
+                            include_flags = [arg for path in include_paths for arg in ["-I", path] ]
+                            args = ["quickstrom"] + include_flags + ["check",
+                                                                     app.module,
+                                                                     origin,
+                                                                     "--reporter=console",
+                                                                     "--capture-screenshots",
+                                                                     "--reporter=html",
+                                                                     "--html-report-directory", html_report_dir,
+                                                                     "--interpreter-log-file", interpreter_log_file,
+                                                                     ]
+                            check = subprocess.Popen(args, stdout=results_file, stderr=results_file)
+                            r = check.wait()
 
-                            for result in results:
-                                color = success if result.valid.value else failure
-                                click.echo(
-                                    "result: " + color(f"{result.valid.certainty} {result.valid.value}"))
+                            if r == 0:
+                                click.echo(success("Passed!"))
+                            elif r == 1:
+                                click.echo(failure("Error!"))
+                            elif r == 2:
+                                click.echo(failure("Specstrom error!"))
+                            elif r == 3:
+                                click.echo(failure("Failed!"))
+                            else:
+                                click.echo(failure(f"Unknown exit code: {r}"))
                         except KeyboardInterrupt:
                             exit(1)
                         except Exception as e:

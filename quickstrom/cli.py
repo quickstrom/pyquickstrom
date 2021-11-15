@@ -2,7 +2,7 @@ import logging
 from quickstrom.protocol import ErrorResult, RunResult
 from quickstrom.reporter import Reporter
 import click
-from typing import Tuple, cast, Dict, List
+from typing import Tuple, cast, Dict, List, Optional, IO, AnyStr
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
@@ -63,6 +63,7 @@ def root(ctx, color, log_level, include):
               multiple=True,
               default=['console'],
               help='enable a reporter by name')
+@click.option('--interpreter-log-file', default=None)
 @click.option('--json-report-file', default='report.json')
 @click.option('--json-report-files-directory',
               default='json-report-files',
@@ -74,7 +75,7 @@ def root(ctx, color, log_level, include):
               help='set a cookie based on three values, e.g. --cookie domain name value')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], json_report_file: str,
+          reporter: List[str], interpreter_log_file: Optional[str], json_report_file: str,
           json_report_files_directory: str, html_report_directory: str,
           cookie: List[Tuple[str, str, str]]):
     """Checks the configured properties in the given module."""
@@ -100,35 +101,41 @@ def check(module: str, origin: str, browser: executor.Browser,
     if origin_url.scheme == "file" and not Path(origin_url.path).is_file():
         print(f"File does not exist: {origin}")
         exit(1)
-    try:
-        cookies = [ executor.Cookie(domain, name, value) for (domain, name, value) in cookie ]
-        results = executor.Check(module, origin_url.geturl(), browser,
-                                 cast(List[str], global_options['includes']),
-                                 capture_screenshots, cookies).execute()
-        chosen_reporters = reporters_by_names(reporter)
-        for result in results:
-            for r in chosen_reporters:
-                r.report(result)
 
-            click.echo("")
+    if interpreter_log_file is None:
+        interpreter_log_file = "interpreter.log"
+               
+    with open(str(interpreter_log_file), "w+") as ilog:
+        try:
+            cookies = [ executor.Cookie(domain, name, value) for (domain, name, value) in cookie ]
+            results = executor.Check(module, origin_url.geturl(), browser,
+                                    cast(List[str], global_options['includes']),
+                                    capture_screenshots, cookies, interpreter_log_file=ilog).execute()
+            chosen_reporters = reporters_by_names(reporter)
+            for result in results:
+                for r in chosen_reporters:
+                    r.report(result)
 
-            if isinstance(result, Passed):
-                click.echo(click.style("All tests passed.", fg="green"))
-            if isinstance(result, Failed):
-                click.echo(
-                    click.style(f"Failed: {result.failed_test.validity.certainty} {result.failed_test.validity.value}", fg="red")
-                )
-            elif isinstance(result, Errored):
-                click.echo(click.style(f"Error: {result.error}", fg="red"))
+                click.echo("")
 
-        if any([(isinstance(r, Errored)) for r in results]):
-            exit(1)
-        elif any([(isinstance(r, Failed)) for r in results]):
-            exit(3)
-    except executor.SpecstromError as err:
-        print(err)
-        print(f"See interpreter log file for details: {err.log_file}")
-        exit(2)
+                if isinstance(result, Passed):
+                    click.echo(click.style("All tests passed.", fg="green"))
+                if isinstance(result, Failed):
+                    click.echo(
+                        click.style(f"Failed: {result.failed_test.validity.certainty} {result.failed_test.validity.value}", fg="red")
+                    )
+                elif isinstance(result, Errored):
+                    click.echo(click.style(f"Error: {result.error}", fg="red"))
+
+            if any([(isinstance(r, Errored)) for r in results]):
+                exit(1)
+            elif any([(isinstance(r, Failed)) for r in results]):
+                exit(3)
+            print(f"Interpreter log: {ilog.name}")
+        except executor.SpecstromError as err:
+            print(err)
+            print(f"See interpreter log file for details: {ilog.name}")
+            exit(2)
 
 
 root.add_command(check)
