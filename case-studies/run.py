@@ -3,19 +3,27 @@
 import sys
 import click
 import os
-from typing import List
+from typing import List, Literal, Optional, Union
 from dataclasses import dataclass, asdict
 from urllib.parse import urljoin
 import shutil
 import pathlib
 import subprocess
 
+ResultName = Union[
+    Literal['passed'], 
+    Literal['failed'], 
+    Literal['error'],
+    Literal['specstrom-error'],
+    Literal['unknown'],
+    ]
 
 @dataclass
 class TestApp():
     name: str
     module: str
     origin: str
+    expected: ResultName
 
 
 def heading1(s): return click.style(s, bold=True, underline=True)
@@ -30,8 +38,23 @@ def success(s): return click.style(s, fg='green')
 def failure(s): return click.style(s, fg='red')
 
 
+def warning(s): return click.style(s, fg='yellow')
+
+
 case_studies_dir = pathlib.Path(__file__).parent
 
+
+def result_from_exit_code(n: int) -> ResultName:
+    if n == 0:
+        return 'passed'
+    elif n == 1:
+        return 'error'
+    elif n == 2:
+        return 'specstrom-error'
+    elif n == 3:
+        return 'failed'
+    else:
+        return 'unknown'
 
 def todomvc_server():
     todomvc_dir = os.getenv("TODOMVC_DIR")
@@ -42,7 +65,7 @@ def todomvc_server():
 
 def run(apps: List[TestApp]):
     with todomvc_server() as server:
-        non_passed = []
+        unexpected_result_tests = []
         try:
             shutil.rmtree("results", ignore_errors=True)
             os.makedirs("results")
@@ -61,92 +84,89 @@ def run(apps: List[TestApp]):
                     interpreter_log_file = f"{result_dir}/interpreter.log"
                     shutil.rmtree(html_report_dir, ignore_errors=True)
 
-                    with open(f"{result_dir}/result.log", "w") as results_file:
-                        click.echo(heading1(f"{app.name}"))
-                        click.echo(f"Browser: {browser}")
-                        click.echo("Text report: " + results_file.name)
-                        click.echo(f"Interpreter log: {interpreter_log_file}")
-                        click.echo(f"HTML report: {html_report_dir}/index.html")
+                    with open(f"{result_dir}/stdout.log", "w") as stdout_file:
+                        with open(f"{result_dir}/stderr.log", "w") as stderr_file:
+                            click.echo(heading1(f"{app.name}"))
+                            click.echo(f"Browser: {browser}")
+                            click.echo("Stdout: " + stdout_file.name)
+                            click.echo("Stderr: " + stderr_file.name)
+                            click.echo(f"Interpreter log: {interpreter_log_file}")
+                            click.echo(f"HTML report: {html_report_dir}/index.html")
 
-                        try:
-                            include_flags = [arg for path in include_paths for arg in ["-I", path] ]
-                            args = ["quickstrom"] + include_flags + ["check",
-                                                                     app.module,
-                                                                     origin,
-                                                                     "--reporter=console",
-                                                                     "--capture-screenshots",
-                                                                     "--reporter=html",
-                                                                     "--html-report-directory", html_report_dir,
-                                                                     "--interpreter-log-file", interpreter_log_file,
-                                                                     ]
-                            click.echo(f"Command: {' '.join(args)}")
-                            check = subprocess.Popen(args, stdout=results_file, stderr=subprocess.PIPE)
-                            r = check.wait()
+                            try:
+                                include_flags = [arg for path in include_paths for arg in ["-I", path] ]
+                                args = ["quickstrom"] + include_flags + ["--log-level", "debug",
+                                                                        "check",
+                                                                        app.module,
+                                                                        origin,
+                                                                        "--reporter=console",
+                                                                        "--capture-screenshots",
+                                                                        "--reporter=html",
+                                                                        "--html-report-directory", html_report_dir,
+                                                                        "--interpreter-log-file", interpreter_log_file,
+                                                                        ]
+                                click.echo(f"Command: {' '.join(args)}")
+                                check = subprocess.Popen(args, stdout=stdout_file, stderr=stderr_file)
+                                r = result_from_exit_code(check.wait())
 
-                            if r == 0:
-                                click.echo(success("Passed!"))
-                            elif r == 1:
-                                click.echo(failure("Error!"))
-                                non_passed.append(app.name)
-                            elif r == 2:
-                                click.echo(failure("Specstrom error!"))
-                                non_passed.append(app.name)
-                            elif r == 3:
-                                click.echo(failure("Failed!"))
-                                non_passed.append(app.name)
-                            else:
-                                click.echo(failure(f"Unknown exit code: {r}"))
-                                non_passed.append(app.name)
-                        except KeyboardInterrupt:
-                            exit(1)
-                        except Exception as e:
-                            click.echo(
-                                f"Test failed with exception:\n{e}", file=results_file)
-                            click.echo(
-                                failure("result: failed with exception"))
+                                if r != app.expected:
+                                    unexpected_result_tests.append(app.name)
+                                    click.echo(failure(f"Expected '{app.expected}' but result was '{r}'!"))
+                                else:
+                                    if r == 'passed':
+                                        click.echo(success("Passed!"))
+                                    else:
+                                        click.echo(warning(f"Got expected '{r}'!"))
+                            except KeyboardInterrupt:
+                                exit(1)
+                            except Exception as e:
+                                click.echo(
+                                    f"Test failed with exception:\n{e}", file=stdout_file)
+                                click.echo(
+                                    failure("result: failed with exception"))
 
-                        click.echo("")
+                            click.echo("")
         finally:
-            if non_passed is not []:
-                click.echo(f"Rerun non-passed apps with: {sys.argv[0]} {' '.join(non_passed)}")
+            if len(unexpected_result_tests) > 0:
+                click.echo(f"Rerun apps with unexpected results:\n\n{sys.argv[0]} {' '.join(unexpected_result_tests)}")
             server.kill()
 
 
-def todomvc_app(name: str) -> TestApp:
+def todomvc_app(name: str, path: str = "index.html", expected: ResultName = 'passed') -> TestApp:
     base = "http://localhost:12345"
-    url = f"{base}/examples/{name}/index.html"
-    return TestApp(name, "todomvc", url)
+    url = f"{base}/examples/{name}/{path}"
+    return TestApp(name, "todomvc", url, expected)
 
 
 all_apps = [
-    todomvc_app("angular2"),
+    todomvc_app("angular2", expected='failed'),
     todomvc_app("angularjs_require"),
     todomvc_app("backbone_require"),
     todomvc_app("closure"),
-    todomvc_app("duel"),
+    todomvc_app("duel", path="www/index.html", expected='failed'),
     todomvc_app("enyo_backbone"),
     todomvc_app("jquery"),
     todomvc_app("knockoutjs"),
-    todomvc_app("mithril"),
+    todomvc_app("mithril", expected='failed'),
     todomvc_app("react-alt"),
     todomvc_app("riotjs"),
     todomvc_app("typescript-react"),
-    todomvc_app("angular2_es2015"),
+    todomvc_app("angular2_es2015", expected='failed'),
     todomvc_app("aurelia"),
     todomvc_app("binding-scala"),
-    todomvc_app("cujo"),
+    todomvc_app("cujo", expected='error'),
     todomvc_app("elm"),
     todomvc_app("exoskeleton"),
     todomvc_app("jsblocks"),
-    todomvc_app("knockoutjs_require"),
+    todomvc_app("knockoutjs_require", expected='failed'),
     todomvc_app("polymer"),
     todomvc_app("react-backbone"),
     todomvc_app("scalajs-react"),
-    todomvc_app("vanilla-es6"),
-    todomvc_app("angular-dart"),
+    todomvc_app("vanilla-es6", expected='failed'),
+    todomvc_app("angular-dart", path="web/", expected='error'),
     todomvc_app("backbone"),
     todomvc_app("canjs"),
-    todomvc_app("dijon"),
+    todomvc_app("dijon", expected='failed'),
     todomvc_app("emberjs"),
     todomvc_app("firebase-angular"),
     todomvc_app("js_of_ocaml"),
