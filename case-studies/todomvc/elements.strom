@@ -15,7 +15,9 @@ let ~items =
     (for cb in `.todo-list li input[type=checkbox]` { cb.checked }),
     (for e in `.todo-list li .edit` { { pendingText: e.value, active: e.active } })
   ]) {
-    if itemVisible && (labelVisible || editing) { { index: index, text: text, checked: checked, editing: editing, editInput: input } }
+    if itemVisible && (labelVisible || editing) {
+      { index: index, text: text, checked: checked, editing: editing, editInput: input }
+    }
   };
 
 let ~lastItemText = 
@@ -44,7 +46,7 @@ let ~newTodoInput =
 let ~todoCount =
     let strong = first(for e in `.todoapp .todo-count strong` { e.textContent when e.visible });
     let t = first(split(" ", trim(strong))) when strong != null;
-    if t != null && t != "" { parseInt(t) } else { 0 };
+    if t != null && t != "" { parseInt(t) };
 
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
 
