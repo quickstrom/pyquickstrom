@@ -13,10 +13,11 @@ let ~items =
     (for item in listItems { [item.css.display != "none", contains("editing", item.classList)] }),  
     (for label in `.todo-list li label` { [label.textContent, label.visible] }),
     (for cb in `.todo-list li input[type=checkbox]` { cb.checked }),
-    (for e in `.todo-list li .edit` { { pendingText: e.value, active: e.active } })
+    (for e in `.todo-list li .edit` { { pendingText: e.value, active: e.active, visible: e.visible } })
   ]) {
-    if itemVisible && (labelVisible || editing) {
-      { index: index, text: text, checked: checked, editing: editing, editInput: input }
+    let isEditing = editing && input.visible;
+    if itemVisible && (labelVisible || isEditing) {
+      { index: index, text: text, checked: checked, isEditing: isEditing, editInput: input }
     }
   };
 
@@ -30,7 +31,7 @@ let ~numUnchecked = length(for i in items { i when not i.checked });
 
 let ~numChecked = length(for i in items { i when i.checked });
 
-let ~itemsInEditMode = for item in items { item when item.editing };
+let ~itemsInEditMode = for item in items { item when item.isEditing };
 
 let ~itemInEditMode = first(itemsInEditMode);
 

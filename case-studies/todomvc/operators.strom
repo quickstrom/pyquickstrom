@@ -25,3 +25,5 @@ let ~a becomes b = nextT (a == b);
 
 syntax _does not become_ 8;
 let ~a does not become b = nextT (a != b);
+
+let nowOrNextT(~p) = p || nextT p;

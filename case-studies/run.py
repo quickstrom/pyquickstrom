@@ -172,7 +172,7 @@ all_apps = [
     todomvc_app("js_of_ocaml"),
     todomvc_app("kotlin-react"),
     todomvc_app("ractive"),
-    todomvc_app("react-hooks"),
+    todomvc_app("react-hooks", expected='error'),
     todomvc_app("typescript-angular"),
     todomvc_app("vanillajs"),
     todomvc_app("angularjs"),

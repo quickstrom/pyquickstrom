@@ -34,4 +34,5 @@ New bugs since [The TodoMVC Showdown](https://wickstrom.tech/programming/2020/07
     - vanilla-es6
 - adding a new item first shows an empty state (not explictly forbidden by official spec)
     - angular-dart
-
+- not available/compiled
+   - react-hooks
