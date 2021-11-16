@@ -95,7 +95,7 @@ class Check():
                     self.log.debug("Sending %s", msg)
                     output_messages.write(msg)
                 else:
-                    raise Exception("Done, can't send.")
+                    self.log.warning("Done, can't send.")
 
             def perform_action(driver, action):
                 if action.id == 'click':
@@ -142,21 +142,21 @@ class Check():
 
                 return result.map_states(r, on_state)
 
-            def observe_change(driver, deps, state_version, timeout: int):
-                self.log.debug(f"Awaiting change with timeout {timeout}")
-                change = scripts.await_events(driver, timeout)
-                self.log.debug(f"Change: {change}")
+            def await_events(driver, deps, state_version, timeout: int):
+                self.log.debug(f"Awaiting events with timeout {timeout}")
+                events = scripts.await_events(driver, timeout)
+                self.log.debug(f"Change: {events}")
 
-                if change is None:
+                if events is None:
                     self.log.info(f"Timed out!")
                     state = scripts.query_state(driver, deps)
                     screenshot(driver, dict_hash(state))
                     state_version.increment()
                     send(Timeout(state=state))
                 else:
-                    screenshot(driver, dict_hash(change.state))
+                    screenshot(driver, dict_hash(events.state))
                     state_version.increment()
-                    send(Events(change.events, change.state))
+                    send(Events(events.events, events.state))
 
             def run_sessions() -> List[result.PlainResult]:
                 while True:
@@ -178,7 +178,7 @@ class Check():
                         state_version = Counter(initial_value=0)
 
                         scripts.install_event_listener(driver, msg.dependencies)
-                        observe_change(driver, msg.dependencies, state_version, 10000)
+                        await_events(driver, msg.dependencies, state_version, 10000)
 
                         await_session_commands(driver, msg.dependencies, state_version)
                     elif isinstance(msg, Done):
@@ -215,14 +215,14 @@ class Check():
                                 send(Performed(state=state))
 
                                 if msg.action.timeout is not None:
-                                    observe_change(driver, deps, state_version, msg.action.timeout)
+                                    await_events(driver, deps, state_version, msg.action.timeout)
                             else:
                                 self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
                                 send(Stale())
                         elif isinstance(msg, AwaitEvents):
                             if msg.version == state_version.value:
                                 scripts.install_event_listener(driver, deps)
-                                observe_change(driver, deps, state_version, msg.await_timeout)
+                                await_events(driver, deps, state_version, msg.await_timeout)
                             else:
                                 self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
                                 send(Stale())
@@ -272,6 +272,10 @@ class Check():
             raise Exception(f"Unsupported browser: {self.browser}")
 
     def load_scripts(self) -> Scripts:
+        def map_query_state(r):
+            if r is None:
+                raise Exception("WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action.")
+            return elements_to_refs(r)
         def map_client_side_events(r): 
             def map_event(e: dict):
                 if e['tag'] == 'loaded':
@@ -284,7 +288,7 @@ class Check():
             return ClientSideEvents([map_event(e) for e in r['events']], elements_to_refs(r['state'])) if r is not None else None
 
         result_mappers = {
-            'queryState': lambda r: elements_to_refs(r),
+            'queryState': map_query_state,
             'installEventListener': lambda r: r,
             'awaitEvents': map_client_side_events,
         }
