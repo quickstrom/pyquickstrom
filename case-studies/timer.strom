@@ -25,7 +25,7 @@ let ~waiting =
     unchanged([remaining, started, stopped]);
 let ~starting = stopped && nextT(
     // contains(start!, happened) && 
-    started);
+    if remaining == 0 { stopped } else { started });
 let ~stopping = started && nextT(
     // contains(stop!, happened) && 
     stopped);
@@ -37,7 +37,6 @@ let ~liveness =
 let ~goesToZero =
     always(contains(start!, happened) ==> eventually'(remaining == 0));
 
-let ~prop = safety && liveness;
+let ~prop = safety && liveness && goesToZero;
 
 check prop with * when loaded?;
-// check goesToZero with [start!, wait!, tick?] when loaded?;
