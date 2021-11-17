@@ -127,9 +127,10 @@ def run(apps: List[TestApp]):
 
                             click.echo("")
         finally:
-            if len(unexpected_result_tests) > 0:
-                click.echo(f"Rerun apps with unexpected results:\n\n{sys.argv[0]} {' '.join(unexpected_result_tests)}")
             server.kill()
+            if len(unexpected_result_tests) > 0:
+                click.echo(f"There were unexpected results. Rerun only those apps with:\n\n{sys.argv[0]} {' '.join(unexpected_result_tests)}")
+                exit(1)
 
 
 def todomvc_app(name: str, path: str = "index.html", expected: ResultName = 'passed') -> TestApp:
@@ -168,7 +169,7 @@ all_apps = [
     todomvc_app("canjs"),
     todomvc_app("dijon", expected='failed'),
     todomvc_app("emberjs"),
-    todomvc_app("firebase-angular"),
+    todomvc_app("firebase-angular", expected='failed'), # due to its async state updates
     todomvc_app("js_of_ocaml"),
     todomvc_app("kotlin-react"),
     todomvc_app("ractive"),

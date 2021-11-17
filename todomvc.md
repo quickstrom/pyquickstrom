@@ -39,3 +39,6 @@ New bugs since [The TodoMVC Showdown](https://wickstrom.tech/programming/2020/07
    - emberjs_require
 - invalid markup (not matching the standard selectors)
    - gwt
+
+- excluded/dubious:
+  - firebase-angular (async state updates, complicates spec too much)
