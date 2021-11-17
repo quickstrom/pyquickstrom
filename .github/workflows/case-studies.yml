@@ -6,7 +6,54 @@ jobs:
     strategy:
       matrix:
         app: 
+          - angular-dart
+          - angular2
+          - angular2_es2015
           - angularjs
+          - angularjs_require
+          - aurelia
+          - backbone
+          - backbone_marionette
+          - backbone_require
+          - binding-scala
+          - canjs
+          - canjs_require
+          - closure
+          - cujo
+          - dijon
+          - dojo
+          - duel
+          - elm
+          - emberjs
+          - emberjs_require
+          - enyo_backbone
+          - exoskeleton
+          - firebase-angular
+          - gwt
+          - jquery
+          - js_of_ocaml
+          - jsblocks
+          - knockback
+          - knockoutjs
+          - knockoutjs_require
+          - kotlin-react
+          - lavaca_require
+          - mithril
+          - polymer
+          - ractive
+          - react
+          - react-alt
+          - react-backbone
+          - react-hooks
+          - reagent
+          - riotjs
+          - scalajs-react
+          - typescript-angular
+          - typescript-backbone
+          - typescript-react
+          - vanilla-es6
+          - vanillajs
+          - vue
     steps:
     - uses: actions/checkout@v2.3.1
     - uses: cachix/install-nix-action@v12
@@ -21,5 +68,5 @@ jobs:
     - run: nix show-config
     - run: |
         pushd case-studies
-        nix-shell --command "./run.py ${{matrix.browser}}"
+        nix-shell --command "./run.py ${{matrix.app}}"
         popd
