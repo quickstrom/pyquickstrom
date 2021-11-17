@@ -274,7 +274,7 @@ let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Comple
 
 let ~correctFilterStates =
   match selectedFilter {
-    | case null { true }
+    | case null { numItems == 0 }
     | case "All"  { todoCount != null && todoCount == numUnchecked && todoCount <= numItems }
     | case "Active"  { todoCount != null && numItems == todoCount }
     | case "Completed" { true }
