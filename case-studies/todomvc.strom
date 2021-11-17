@@ -263,6 +263,12 @@ let ~enterEditMode =
       enterEditText until {100} (commitEdit(initialItem) || abortEdit(initialItem))
     );
 
+let ~editModeTransition =
+  (numInEditMode == 1 ~> numInEditMode == 1)
+  || (numInEditMode == 1 ~> numInEditMode == 0)
+  ;
+
+// Global Invariants
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
 
@@ -274,20 +280,9 @@ let ~correctFilterStates =
     | case "Completed" { true }
   };
 
-let ~editModeTransition =
-  (numInEditMode == 1 ~> numInEditMode == 1)
-  || (numInEditMode == 1 ~> numInEditMode == 0)
-  ;
+let ~editModeHasItems = isInEditMode ==> numItems > 0;
 
-// TODO: remove?
-let ~stutter = happened == [] && unchanged([
-  items,
-  selectedFilter,
-  availableFilters,
-  newTodoInput,
-  todoCount,
-  toggleAllChecked
-]);
+// State machine definition
 
 let ~prop_safety =
   notLoaded until {100}
@@ -306,12 +301,11 @@ let ~prop_safety =
            || enterEditMode
            || editModeTransition
        )
-    // && always (hasFilters && correctFilterStates)
-    // && always (isInEditMode ==> numItems > 0)
+    && always (hasFilters && correctFilterStates && editModeHasItems)
   );
 
 action ~pageLoaded? = loaded? timeout 2000;
 
 action ~ready? = changed?(`body`) when initial;
 
-check prop_safety with * when [pageLoaded?];
+check prop_safety with * when pageLoaded?;

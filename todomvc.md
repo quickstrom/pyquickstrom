@@ -16,23 +16,26 @@ New bugs since [The TodoMVC Showdown](https://wickstrom.tech/programming/2020/07
 
 ## Results (pending)
 
-```
-./run.py duel mithril react-alt angular2_es2015 binding-scala cujo elm jsblocks knockoutjs_require polymer vanilla-es6 angular-dart dijon emberjs firebase-angular js_of_ocaml kotlin-react ractive react-hooks typescript-angular vanillajs angularjs backbone_marionette canjs_require dojo emberjs_require gwt knockback lavaca_require react reagent typescript-backbone vue
-```
-
 - doesn't activate the edit input after double click
     - angular2 (failed)
-- clears pending input on filter change
+- clears pending input on filter change (or removal of last item)
     - duel
     - mithril
+    - lavaca_require
 - no checkboxes
     - angular2_es2015
 - no filters
     - knockoutjs_require
     - dijon
+- adds pending item on other interaction (double-click other item, change filter, etc)
+    - vanillajs
+    - vanilla-es6
 - no `<strong>` in the todo count
     - vanilla-es6
 - adding a new item first shows an empty state (not explictly forbidden by official spec)
     - angular-dart
 - not available/compiled
    - react-hooks
+   - emberjs_require
+- invalid markup (not matching the standard selectors)
+   - gwt
