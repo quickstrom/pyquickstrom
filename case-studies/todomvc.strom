@@ -65,7 +65,9 @@ let ~initial =
     selectedFilter == null
       && numItems == 0
       && newTodoInput != null
-      && newTodoInput.pendingText == "";
+      && newTodoInput.pendingText == ""
+      && newTodoInput.active
+      ;
 
 let ~notLoaded = not initial;
 
