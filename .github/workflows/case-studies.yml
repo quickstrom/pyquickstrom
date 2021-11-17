@@ -73,12 +73,16 @@ jobs:
         nix-shell --command "echo Done"
         popd
     - name: Run test
-      run: |
-        pushd case-studies
-        nix-shell --command "./run.py ${{matrix.app}}"
-        popd
+      uses: nick-invision/retry@v2
+      with:
+        timeout_minutes: 2
+        max_attempts: 3
+        command: |
+            pushd case-studies
+            nix-shell --command "./run.py ${{matrix.app}}"
+            popd
     - name: Archive results
       uses: actions/upload-artifact@v2
       with:
-        name: test-results
+        name: test-results-${{matrix.app}}
         path: case-studies/results/${{matrix.app}}.todomvc.chrome
