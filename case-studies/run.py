@@ -174,7 +174,7 @@ all_apps = [
     todomvc_app("ractive"),
     todomvc_app("react-hooks", expected='error'),
     todomvc_app("typescript-angular"),
-    todomvc_app("vanillajs"),
+    todomvc_app("vanillajs", expected='failed'),
     todomvc_app("angularjs"),
     todomvc_app("backbone_marionette"),
     todomvc_app("canjs_require"),
