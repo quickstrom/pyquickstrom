@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Timer</title>
+        <style>
+         html, body {
+           min-height: 100%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           flex-direction: column;
+         }
+
+         body {
+           font-size: 32px;
+           font-family: sans-serif;
+         }
+
+         input, button {
+           font-size: inherit;
+           padding: .25em .75em;
+         }
+
+         #timer {
+           display: none;
+           align-items: center;
+           justify-content: center;
+           flex-direction: column;
+         }
+
+         #time {
+           display: block;
+           margin: 1rem;
+           font-size: 200%;
+         }
+        </style>
+    </head>
+    <body>
+      <form id="start-timer">
+        <input name="seconds" type="number" value="5" min="1" />
+        <input type="submit" value="Start"/>
+      </form>
+      <div id="timer">
+        <time id="time"></time>
+        <button id="pause-resume">Pause</button>
+      </div>
+      <script>
+       function listen(event, element) {
+         return new Promise(resolve => {
+           element.addEventListener(event, e => {
+             resolve(e);
+             e.preventDefault();
+           });
+         });
+       }
+       function delay(ms) {
+         return new Promise(resolve => {
+           setTimeout(resolve, ms);
+         });
+       }
+
+       const form = document.querySelector("#start-timer");
+       const seconds = form.querySelector("[name=seconds]");
+       const start = form.querySelector("[type=submit]");
+       const timer = document.querySelector("#timer");
+       const time = timer.querySelector("#time");
+       const pauseResume = timer.querySelector("#pause-resume");
+
+       function runTimer(secondsLeft) {
+         time.textContent = `${secondsLeft}`;
+
+         if (secondsLeft === 0) {
+           pauseResume.remove();
+           return Promise.resolve();
+         }
+
+         return Promise.race([
+           delay(1000).then(() => true),
+           listen("click", pauseResume).then(() => false),
+         ]).then(cont => {
+           if (cont) {
+             return runTimer(secondsLeft - 1);
+           } else {
+             pauseResume.textContent = "Resume";
+             return listen("click", pauseResume).then(() => {
+                pauseResume.textContent = "Pause";
+               runTimer(secondsLeft);
+             });
+           }
+         });
+       }
+
+       listen("submit", form).then(() => {
+         form.remove();
+         timer.style.display = "flex";
+         runTimer(Number.parseInt(seconds.value));
+       });
+      </script>
+    </body>
+</html>
