@@ -1,13 +1,6 @@
 // This is the TodoMVC specification from 
 // https://wickstrom.tech/programming/2020/07/02/the-todomvc-showdown-testing-with-webcheck.html
 // ported to the new Specstrom-backed implementation of Quickstrom.
-// 
-// Would be nice to limit the imports as in the comments below.
-// Also they're commented out until we have deduplication of
-// imported definitions. 
-// 
-// import list;
-// import string;
 import quickstrom;
 import todomvc/operators;
 import todomvc/elements;
@@ -32,17 +25,13 @@ action ~deleteTodo! = click!(`.todoapp .destroy`) when not isInEditMode;
 action ~focusInput! = focus!(`.todoapp .new-todo`) when not isInEditMode;
 
 action ~typePendingText! = [keyPress!(" "), keyPress!("a"), keyPress!("b"), keyPress!(keys.backspace)] 
-  when newTodoInput != null && newTodoInput.active 
-  // weighted 5.0
-  ;
+  when newTodoInput != null && newTodoInput.active;
 
 action ~typeEditText! = [
     keyPress!("c"),
     keyPress!(keys.backspace),
   ] 
-  when isInEditMode
-  // weighted 5.0
-  ;
+  when isInEditMode;
 
 action ~abortEdit! = keyPress!(keys.escape) when isInEditMode;
 
@@ -51,9 +40,7 @@ action ~commitEdit! = keyPress!(keys.return) when isInEditMode;
 action ~createTodo! = keyPress!(keys.return)
   when newTodoInput != null 
     && newTodoInput.pendingText != ""
-    && newTodoInput.active
-  // weighted 5.0
-  ;
+    && newTodoInput.active;
 
 action ~itemsChanged? = changed?(`.todo-list li`);
 
@@ -66,8 +53,7 @@ let ~initial =
       && numItems == 0
       && newTodoInput != null
       && newTodoInput.pendingText == ""
-      && newTodoInput.active
-      ;
+      && newTodoInput.active;
 
 let ~notLoaded = not initial;
 
@@ -133,13 +119,6 @@ let ~addNew =
   })
   ;
 
-let ~itemsChangedAsync =
-  not isInEditMode
-  && unchanged([newTodoInput.pendingText when newTodoInput != null, isInEditMode])
-  && changed(items)
-  // && nextT (contains(itemsChanged?, happened))
-  ;
-
 let ~checkOne =
   unchanged(newTodoInput.pendingText)
     && unchanged(selectedFilter)
@@ -174,9 +153,7 @@ let ~delete =
             | case "All" { true }
           }
       }
-    })
-  ;
-
+    });
 
 let ~toggleAll =
   unchanged(newTodoInput.pendingText)
@@ -227,8 +204,7 @@ let ~enterEditText =
         && nextT (not contains(keyPress!(keys.escape), happened))
         && editInput != null
         && changed(editInput.text) 
-        && unchanged([numInEditMode, selectedFilter, numItems, todoCount])
-    ;
+        && unchanged([numInEditMode, selectedFilter, numItems, todoCount]);
 
 let abortEdit(originalItem) =
     (numInEditMode == 1 ~> numInEditMode == 0)
@@ -237,21 +213,20 @@ let abortEdit(originalItem) =
           contains(keyPress!(keys.escape), happened)
             && correspondingItem != null
             && correspondingItem.text == originalItem.text
-        )
-        ;
+        );
 
 let commitEdit(originalItem) =
     (numInEditMode == 1 ~> numInEditMode == 0)
         && nextT (not contains(keyPress!(keys.escape), happened))
         && (match editInput.text {
-        | case "" { numItems -= 1 }
-        | case newText { 
-          nextT (
-            let correspondingItem = items[originalItem.index];
-            correspondingItem != null && correspondingItem.text == newText
-          ) 
-          && unchanged(numItems)
-        }
+          | case "" { numItems -= 1 }
+          | case newText { 
+            nextT (
+              let correspondingItem = items[originalItem.index];
+              correspondingItem != null && correspondingItem.text == newText
+            ) 
+            && unchanged(numItems)
+          }
         })
         && unchanged([
             selectedFilter,
@@ -267,8 +242,7 @@ let ~enterEditMode =
 
 let ~editModeTransition =
   (numInEditMode == 1 ~> numInEditMode == 1)
-  || (numInEditMode == 1 ~> numInEditMode == 0)
-  ;
+  || (numInEditMode == 1 ~> numInEditMode == 0);
 
 // Global Invariants
 
