@@ -71,7 +71,7 @@
          time.textContent = `${secondsLeft}`;
 
          if (secondsLeft === 0) {
-           pauseResume.remove();
+           pauseResume.style.display = "none";
            return Promise.resolve();
          }
 
@@ -84,7 +84,7 @@
            } else {
              pauseResume.textContent = "Resume";
              return listen("click", pauseResume).then(() => {
-                pauseResume.textContent = "Pause";
+               pauseResume.textContent = "Pause";
                runTimer(secondsLeft);
              });
            }
@@ -92,7 +92,7 @@
        }
 
        listen("submit", form).then(() => {
-         form.remove();
+         form.style.display = "none";
          timer.style.display = "flex";
          runTimer(Number.parseInt(seconds.value));
        });

@@ -10,6 +10,8 @@ import shutil
 import pathlib
 import subprocess
 
+case_studies_dir = pathlib.Path(__file__).parent.resolve()
+
 ResultName = Union[
     Literal['passed'], 
     Literal['failed'], 
@@ -41,7 +43,7 @@ def failure(s): return click.style(s, fg='red')
 def warning(s): return click.style(s, fg='yellow')
 
 
-case_studies_dir = pathlib.Path(__file__).parent
+case_studies_dir = pathlib.Path(__file__).parent.resolve()
 
 
 def result_from_exit_code(n: int) -> ResultName:
@@ -188,6 +190,9 @@ all_apps = [
     todomvc_app("vanilla-es6", expected='failed'),
     todomvc_app("vanillajs", expected='failed'),
     todomvc_app("vue"),
+
+    # Non-todomvc
+    TestApp("timer", "timer", str(case_studies_dir / "timer.html"), expected='passed')
 ]
 
 if __name__ == "__main__":

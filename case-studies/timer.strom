@@ -1,0 +1,25 @@
+import quickstrom;
+
+let ~time = first(`#time`).textContent;
+
+let ~secondsFocused = first(`input[name=seconds]`).active;
+
+let ~paused = first(`#pause-resume`).textContent == "Resume";
+
+action ~timeChanged? = changed?(`#time`);
+
+action ~focusSeconds! = focus!(`input[name=seconds]`) when not secondsFocused;
+
+action ~increment! = keyPress!(keys.arrowUp) when secondsFocused;
+
+action ~decrement! = keyPress!(keys.arrowDown) when secondsFocused;
+
+action ~start! = click!(`input[type=submit]`) timeout 1000;
+
+action ~resume! = click!(`#pause-resume`) timeout 2000 when paused;
+
+action ~pause! = click!(`#pause-resume`) when not paused;
+
+let ~prop = true until {100} time == "0";
+
+check prop with * when loaded?;
