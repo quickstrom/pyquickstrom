@@ -66,6 +66,11 @@ jobs:
         name: quickstrom
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix show-config
+    - name: Prepare nix shell
+      run: |
+        pushd case-studies
+        nix-shell --command "echo Done"
+        popd
     - name: Run test
       run: |
         pushd case-studies
