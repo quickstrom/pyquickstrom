@@ -33,7 +33,7 @@ action ~typeEditText! = [
   ] 
   when isInEditMode;
 
-action ~abortEdit! = keyPress!(keys.escape) when isInEditMode;
+action ~abortEdit! = [keyPress!(keys.escape), click!(`body`)] when isInEditMode;
 
 action ~commitEdit! = keyPress!(keys.return) when isInEditMode;
 
