@@ -1,25 +1,43 @@
 import quickstrom;
 
-let ~time = first(`#time`).textContent;
+// temporary definition here
+let eventually'(~p) = true until {100} p;
 
-let ~secondsFocused = first(`input[name=seconds]`).active;
+let ~remaining = parseInt(`#remaining`.textContent);
+let ~started = `#toggle`.textContent == "Stop";
+let ~stopped = `#toggle`.textContent == "Start";
 
-let ~paused = first(`#pause-resume`).textContent == "Resume";
+action ~start! = click!(`#toggle`) when stopped;
+action ~stop! = click!(`#toggle`) when started;
+action ~wait! = noop! timeout 1000 when started;
+action ~tick? = changed?(`#remaining`);
 
-action ~timeChanged? = changed?(`#time`);
+let ~ticking =
+    let old = remaining;
+    started
+        && nextT (
+            // contains(tick?, happened) &&
+            remaining == old - 1
+            && if remaining == 0 { stopped } else { started }
+        );
+let ~waiting = 
+    // nextT(contains(wait!, happened)) && 
+    unchanged([remaining, started, stopped]);
+let ~starting = stopped && nextT(
+    // contains(start!, happened) && 
+    started);
+let ~stopping = started && nextT(
+    // contains(stop!, happened) && 
+    stopped);
+let ~safety = 
+    contains(loaded?, happened)
+        && always(starting || stopping || waiting || ticking);
+let ~liveness =
+    always(contains(start!, happened) ==> eventually'(stopped));
+let ~goesToZero =
+    always(contains(start!, happened) ==> eventually'(remaining == 0));
 
-action ~focusSeconds! = focus!(`input[name=seconds]`) when not secondsFocused;
-
-action ~increment! = keyPress!(keys.arrowUp) when secondsFocused;
-
-action ~decrement! = keyPress!(keys.arrowDown) when secondsFocused;
-
-action ~start! = click!(`input[type=submit]`) timeout 1000;
-
-action ~resume! = click!(`#pause-resume`) timeout 2000 when paused;
-
-action ~pause! = click!(`#pause-resume`) when not paused;
-
-let ~prop = true until {100} time == "0";
+let ~prop = safety && liveness;
 
 check prop with * when loaded?;
+// check goesToZero with [start!, wait!, tick?] when loaded?;

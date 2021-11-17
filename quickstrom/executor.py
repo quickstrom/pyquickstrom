@@ -98,7 +98,9 @@ class Check():
                     self.log.warning("Done, can't send.")
 
             def perform_action(driver, action):
-                if action.id == 'click':
+                if action.id == 'noop':
+                    pass
+                elif action.id == 'click':
                     id = action.args[0]
                     element = WebElement(driver, id)
                     ActionChains(driver).move_to_element(element).click(element).perform()

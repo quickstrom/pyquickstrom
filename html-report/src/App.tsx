@@ -551,21 +551,6 @@ const ElementState: FunctionComponent<{ element: QueriedElement }> = ({
     );
 };
 
-function excludeStutters(report: Report<Failed>): Report<Failed> {
-    return {
-        ...report,
-        result: {
-            ...report.result,
-            failedTest: {
-                ...report.result.failedTest,
-                transitions: report.result.failedTest.transitions.filter(
-                    (t) => !t.stutter
-                ),
-            },
-        },
-    };
-}
-
 function App({ report }: { report: Report<Result> }) {
     switch (report.result.tag) {
         case "Passed":
@@ -573,7 +558,7 @@ function App({ report }: { report: Report<Result> }) {
         case "Errored":
             return <ErroredReport report={report as Report<Errored>} />;
         case "Failed":
-            return <TestsReport report={excludeStutters(report as Report<Failed>)} />;
+            return <TestsReport report={report as Report<Failed>} />;
     }
 }
 

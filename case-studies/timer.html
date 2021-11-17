@@ -17,33 +17,30 @@
            font-family: sans-serif;
          }
 
-         input, button {
+         button {
            font-size: inherit;
            padding: .25em .75em;
          }
 
          #timer {
-           display: none;
+           display: flex;
            align-items: center;
            justify-content: center;
            flex-direction: column;
          }
 
-         #time {
+         #remaining {
            display: block;
-           margin: 1rem;
+           padding: 2rem;
            font-size: 200%;
+           font-weight: bold;
          }
         </style>
     </head>
     <body>
-      <form id="start-timer">
-        <input name="seconds" type="number" value="5" min="1" />
-        <input type="submit" value="Start"/>
-      </form>
       <div id="timer">
-        <time id="time"></time>
-        <button id="pause-resume">Pause</button>
+        <time id="remaining">5</time>
+        <button id="toggle">Start</button>
       </div>
       <script>
        function listen(event, element) {
@@ -60,41 +57,41 @@
          });
        }
 
-       const form = document.querySelector("#start-timer");
-       const seconds = form.querySelector("[name=seconds]");
-       const start = form.querySelector("[type=submit]");
-       const timer = document.querySelector("#timer");
-       const time = timer.querySelector("#time");
-       const pauseResume = timer.querySelector("#pause-resume");
+       const remaining = document.querySelector("#remaining");
+       const toggle = document.querySelector("#toggle");
 
-       function runTimer(secondsLeft) {
-         time.textContent = `${secondsLeft}`;
+       function runTimer(msLeft) {
+         const seconds = Math.ceil(msLeft / 1000);
+         remaining.textContent = `${seconds}`;
 
-         if (secondsLeft === 0) {
-           pauseResume.style.display = "none";
+         if (msLeft <= 0) {
+           toggle.textContent = "Start";
            return Promise.resolve();
          }
 
+         const before = (new Date()).getTime();
+         const remainder = msLeft % 1000;
+
          return Promise.race([
-           delay(1000).then(() => true),
-           listen("click", pauseResume).then(() => false),
+           delay(remainder).then(() => true),
+           listen("click", toggle).then(() => false),
          ]).then(cont => {
+           const passed = (new Date()).getTime() - before;
            if (cont) {
-             return runTimer(secondsLeft - 1);
+             return runTimer(msLeft - passed);
            } else {
-             pauseResume.textContent = "Resume";
-             return listen("click", pauseResume).then(() => {
-               pauseResume.textContent = "Pause";
-               runTimer(secondsLeft);
+             toggle.textContent = "Start";
+             return listen("click", toggle).then(() => {
+               toggle.textContent = "Stop";
+               runTimer(msLeft - passed);
              });
            }
          });
        }
 
-       listen("submit", form).then(() => {
-         form.style.display = "none";
-         timer.style.display = "flex";
-         runTimer(Number.parseInt(seconds.value));
+       listen("click", toggle).then(() => {
+         toggle.textContent = "Stop";
+         runTimer(5000);
        });
       </script>
     </body>
