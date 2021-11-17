@@ -177,7 +177,7 @@ all_apps = [
     todomvc_app("typescript-angular"),
     todomvc_app("vanillajs", expected='failed'),
     todomvc_app("angularjs", expected='failed'),
-    todomvc_app("backbone_marionette"),
+    todomvc_app("backbone_marionette", expected='failed'),
     todomvc_app("canjs_require"),
     todomvc_app("dojo", expected='failed'),
     todomvc_app("emberjs_require", expected='error'), # this should be excluded

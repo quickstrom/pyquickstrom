@@ -34,11 +34,12 @@ New bugs since [The TodoMVC Showdown](https://wickstrom.tech/programming/2020/07
     - vanilla-es6
 - adding a new item first shows an empty state (not explictly forbidden by official spec)
     - angular-dart
+- commiting an empty todo in edit mode doesn't fully delete it (even if it's hidden), it can be restored with toggle all later
+    - backbone_marionette
 - not available/compiled
    - react-hooks
    - emberjs_require
 - invalid markup (not matching the standard selectors)
    - gwt
-
-- excluded/dubious:
+- **excluded/dubious**:
   - firebase-angular (async state updates, complicates spec too much)
