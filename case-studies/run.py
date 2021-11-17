@@ -80,7 +80,7 @@ def run(apps: List[TestApp]):
                 origin=urljoin("file://", app.origin)
 
                 for browser in browsers:
-                    result_dir = str(pathlib.Path(f"results/{app.name}.{app.module}.{browser}").absolute())
+                    result_dir = str(pathlib.Path(f"results/{app.name}.{browser}").absolute())
                     os.makedirs(result_dir)
                     html_report_dir = f"{result_dir}/html-report"
                     interpreter_log_file = f"{result_dir}/interpreter.log"
