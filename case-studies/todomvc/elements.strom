@@ -49,6 +49,8 @@ let ~todoCount =
     let t = first(split(" ", trim(strong))) when strong != null;
     if t != null && t != "" { parseInt(t) };
 
+let ~itemsLeft = first(for e in `.todoapp .todo-count` { e.textContent when e.visible });
+
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
 
 let ~toggleAllChecked = first(for c in `.todoapp #toggle-all` { c.checked }) ?? false;
