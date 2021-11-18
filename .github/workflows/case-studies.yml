@@ -26,10 +26,10 @@ jobs:
           - duel
           - elm
           - emberjs
-          - emberjs_require
+          # - emberjs_require
           - enyo_backbone
           - exoskeleton
-          - firebase-angular
+          # - firebase-angular
           - gwt
           - jquery
           - js_of_ocaml
@@ -45,7 +45,7 @@ jobs:
           - react
           - react-alt
           - react-backbone
-          - react-hooks
+          # - react-hooks
           - reagent
           - riotjs
           - scalajs-react
@@ -80,6 +80,7 @@ jobs:
       with:
         timeout_minutes: 2
         max_attempts: 5
+        retry_on: timeout
         command: |
             pushd case-studies
             nix-shell --command "./run.py ${{matrix.app}}"
