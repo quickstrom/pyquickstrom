@@ -27,6 +27,8 @@
     - angular-dart
 - commiting an empty todo in edit mode doesn't fully delete it (even if it's hidden), it can be restored with toggle all later
     - backbone_marionette
+- incorrect pluralization of "N items left"
+    - polymer
 
 ### Excluded?
 
