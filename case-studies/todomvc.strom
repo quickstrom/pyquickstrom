@@ -258,14 +258,15 @@ let ~correctFilterStates =
 
 let ~editModeHasItems = isInEditMode ==> numItems > 0;
 
+let hasWord(word, sentence) =
+    let parts = split(" ", trim(sentence));
+    contains(word, parts);
+
 let ~itemsLeftPluralized =
   match todoCount {
     | case null { itemsLeft == null }
-    | case 1 { itemsLeft == "1 item left" }
-    | case n {
-      let parts = split(" ", itemsLeft);
-      parts[1] == "items"
-    }
+    | case 1 { hasWord("item", itemsLeft)}
+    | case n { hasWord("items", itemsLeft) }
   };
 
 // State machine definition

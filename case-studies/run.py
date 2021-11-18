@@ -13,8 +13,8 @@ import subprocess
 case_studies_dir = pathlib.Path(__file__).parent.resolve()
 
 ResultName = Union[
-    Literal['passed'], 
-    Literal['failed'], 
+    Literal['passed'],
+    Literal['failed'],
     Literal['error'],
     Literal['specstrom-error'],
     Literal['unknown'],
@@ -160,11 +160,11 @@ all_apps = [
     todomvc_app("dojo", expected='failed'),
     todomvc_app("duel", path="www/index.html", expected='failed'),
     todomvc_app("elm"),
-    todomvc_app("emberjs_require", expected='error'), # this should be excluded
+    # todomvc_app("emberjs_require", expected='error'), # this should be excluded
     todomvc_app("emberjs"),
     todomvc_app("enyo_backbone"),
     todomvc_app("exoskeleton"),
-    todomvc_app("firebase-angular", expected='failed'), # due to its async state updates
+    # todomvc_app("firebase-angular", expected='failed'), # excluded due to its async state updates
     todomvc_app("gwt", expected='error'),
     todomvc_app("jquery"),
     todomvc_app("js_of_ocaml"),
@@ -175,11 +175,11 @@ all_apps = [
     todomvc_app("kotlin-react"),
     todomvc_app("lavaca_require", expected='failed'),
     todomvc_app("mithril", expected='failed'),
-    todomvc_app("polymer"),
+    todomvc_app("polymer", expected='failed'),
     todomvc_app("ractive"),
     todomvc_app("react-alt"),
     todomvc_app("react-backbone"),
-    todomvc_app("react-hooks", expected='error'), # this should be excluded
+    # todomvc_app("react-hooks", expected='error'), # this should be excluded
     todomvc_app("react"),
     todomvc_app("reagent", expected='failed'),
     todomvc_app("riotjs"),

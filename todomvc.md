@@ -27,14 +27,17 @@
     - angular-dart
 - commiting an empty todo in edit mode doesn't fully delete it (even if it's hidden), it can be restored with toggle all later
     - backbone_marionette
+
+### Excluded?
+
+- doesn't run (exception in console)
+  - cujo
 - not available/compiled
    - react-hooks
    - emberjs_require
 - invalid markup (not matching the standard selectors)
    - gwt
-- doesn't run (exception in console)
-  - cujo
-- **excluded/dubious**:
+- dubious:
   - firebase-angular (async state updates, complicates spec too much)
 
 [showdown]: https://wickstrom.tech/programming/2020/07/02/the-todomvc-showdown-testing-with-webcheck.html
