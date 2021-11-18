@@ -181,7 +181,7 @@ all_apps = [
     todomvc_app("react-backbone"),
     todomvc_app("react-hooks", expected='error'), # this should be excluded
     todomvc_app("react"),
-    todomvc_app("reagent"),
+    todomvc_app("reagent", expected='failed'),
     todomvc_app("riotjs"),
     todomvc_app("scalajs-react"),
     todomvc_app("typescript-angular"),
