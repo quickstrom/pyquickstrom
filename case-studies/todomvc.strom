@@ -264,14 +264,16 @@ let ~editModeTransition =
   || (numInEditMode == 1 ~> numInEditMode == 0);
 
 let ~reload =
-  nextT(contains(reload!, happened))
-    && newTodoInput.pendingText != "" ==> changed(newTodoInput.pendingText)
-    && unchanged([
-      selectedFilter,
-      availableFilters,
-      for item in items { item.text },
-      todoCount
-    ]);
+  let oldFilter = selectedFilter;
+  let oldItems = for item in items { item.text };
+  let oldTodoCount = todoCount;
+  nextT(
+    contains(reload!, happened)
+    && selectedFilter becomes oldFilter
+    && for item in items { item.text } becomes oldItems
+    && todoCount becomes oldTodoCount
+  )
+    && newTodoInput.pendingText != "" ==> changed(newTodoInput.pendingText);
 
 // Global Invariants
 
