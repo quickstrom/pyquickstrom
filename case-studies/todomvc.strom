@@ -9,6 +9,8 @@ import todomvc/elements;
 // Actions
 //-------------------------------------------------
 
+action ~reloadPage! = reload! timeout 2000 when selectedFilter != null && not isInEditMode;
+
 action ~selectOtherFilter! = click!(`.todoapp .filters a:not(.selected)`)
   // weighted 5.0
   when not isInEditMode
@@ -69,7 +71,8 @@ let ~focusNewTodo =
     ]);
 
 let ~enterNewTodoText =
-  changed(newTodoInput.pendingText)
+  newTodoInput.active
+    && changed(newTodoInput.pendingText)
     && unchanged(items)
     && unchanged(selectedFilter);
 
@@ -86,8 +89,13 @@ let ~changeFilter =
     | case "Completed" { selectedFilter becomes "All" || selectedFilter becomes "Active" }
   });
 
+let ~initialize =
+  numItems == 0 && nextT initial;
+
 let ~setSameFilter =
-    unchanged([
+  // TODO: check happened for the selectSameFilter action
+  selectedFilter != null && not isInEditMode
+    && unchanged([
       selectedFilter,
       newTodoInput.pendingText,
       availableFilters,
@@ -118,6 +126,17 @@ let ~addNew =
     | case "Completed" { unchanged([items, selectedFilter]) }
   })
   ;
+
+let ~failAddNew =
+  newTodoInput != null
+  && trim(newTodoInput.pendingText) == ""
+  && unchanged([
+      selectedFilter,
+      newTodoInput.pendingText,
+      availableFilters,
+      for item in items { item.text },
+      todoCount
+    ]);
 
 let ~checkOne =
   unchanged(newTodoInput.pendingText)
@@ -203,7 +222,7 @@ let ~enterEditText =
     numInEditMode == 1
         && nextT (not contains(keyPress!(keys.escape), happened))
         && editInput != null
-        && changed(editInput.text)
+        && changed(editInput.text when editInput != null)
         && unchanged([numInEditMode, selectedFilter, numItems, todoCount]);
 
 let abortEdit(originalItem) =
@@ -244,6 +263,16 @@ let ~editModeTransition =
   (numInEditMode == 1 ~> numInEditMode == 1)
   || (numInEditMode == 1 ~> numInEditMode == 0);
 
+let ~reload =
+  nextT(contains(reload!, happened))
+    && newTodoInput.pendingText != "" ==> changed(newTodoInput.pendingText)
+    && unchanged([
+      selectedFilter,
+      availableFilters,
+      for item in items { item.text },
+      todoCount
+    ]);
+
 // Global Invariants
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
@@ -278,9 +307,11 @@ let ~prop_safety =
   (
   initial
     && always
-       ( focusNewTodo
+       ( initialize
+           || focusNewTodo
            || enterNewTodoText
            || addNew
+           || failAddNew
            || changeFilter
            || setSameFilter
            || checkOne
@@ -289,6 +320,7 @@ let ~prop_safety =
            || toggleAll
            || enterEditMode
            || editModeTransition
+           || reload
        )
     && always (hasFilters && hasToggleAll && correctFilterStates && editModeHasItems && itemsLeftPluralized)
   );

@@ -100,6 +100,8 @@ class Check():
             def perform_action(driver, action):
                 if action.id == 'noop':
                     pass
+                elif action.id == 'reload':
+                    driver.refresh()
                 elif action.id == 'click':
                     id = action.args[0]
                     element = WebElement(driver, id)
@@ -278,7 +280,7 @@ class Check():
             if r is None:
                 raise Exception("WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action.")
             return elements_to_refs(r)
-        def map_client_side_events(r): 
+        def map_client_side_events(r):
             def map_event(e: dict):
                 if e['tag'] == 'loaded':
                     return Action(id='loaded', args=[], isEvent=True, timeout=None)
@@ -332,7 +334,7 @@ class Counter(object):
     def __init__(self, initial_value=0):
         self.value = initial_value
         self._lock = threading.Lock()
-        
+
     def increment(self):
         with self._lock:
             self.value += 1

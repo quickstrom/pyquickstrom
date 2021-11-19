@@ -3,6 +3,8 @@ import list;
 import ltl;
 import quickstrom/keys;
 
+action ~reload! = { id: "reload", event: false, args: [] };
+
 action click!(x) = for element in x. { id: "click", event: false, args: [element.ref] } when element.enabled && element.visible && element.interactable;
 
 action doubleClick!(x) = for element in x. { id: "doubleClick", event: false, args: [element.ref] } when element.enabled && element.visible && element.interactable;
