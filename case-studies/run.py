@@ -166,7 +166,7 @@ all_apps = [
     todomvc_app("exoskeleton"),
     # todomvc_app("firebase-angular", expected='failed'), # excluded due to its async state updates
     todomvc_app("gwt", expected='error'),
-    todomvc_app("jquery"),
+    todomvc_app("jquery", expected='failed'),
     todomvc_app("js_of_ocaml"),
     todomvc_app("jsblocks"),
     todomvc_app("knockback"),

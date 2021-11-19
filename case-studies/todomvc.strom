@@ -248,6 +248,8 @@ let ~editModeTransition =
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
 
+let ~hasToggleAll = selectedFilter != null ==> toggleAllLabel != null;
+
 let ~correctFilterStates =
   match selectedFilter {
     | case null { numItems == 0 }
@@ -288,7 +290,7 @@ let ~prop_safety =
            || enterEditMode
            || editModeTransition
        )
-    && always (hasFilters && correctFilterStates && editModeHasItems && itemsLeftPluralized)
+    && always (hasFilters && hasToggleAll && correctFilterStates && editModeHasItems && itemsLeftPluralized)
   );
 
 action ~pageLoaded? = loaded? timeout 2000;

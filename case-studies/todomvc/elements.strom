@@ -53,4 +53,8 @@ let ~itemsLeft = first(for e in `.todoapp .todo-count` { e.innerText when e.visi
 
 let ~availableFilters = for f in `.todoapp .filters a` { f.textContent };
 
-let ~toggleAllChecked = first(for c in `.todoapp #toggle-all` { c.checked }) ?? false;
+let ~toggleAllLabel =
+  let t = first(`.todoapp label[for=toggle-all]`);
+  t when t != null && t.visible;
+
+let ~toggleAllChecked = first(for c in `.todoapp #toggle-all` { c.checked });
