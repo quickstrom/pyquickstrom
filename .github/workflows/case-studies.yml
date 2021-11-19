@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: 
+        app:
           - angular-dart
           - angular2
           - angular2_es2015
@@ -89,4 +89,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: test-results-${{matrix.app}}
-        path: case-studies/results/${{matrix.app}}.chrome
+        path: case-studies/results/${{matrix.app}}.*.*
