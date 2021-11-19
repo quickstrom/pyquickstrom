@@ -80,22 +80,23 @@ def run(apps: List[TestApp]):
                 origin=urljoin("file://", app.origin)
 
                 for browser in browsers:
-                    result_dir = str(pathlib.Path(f"results/{app.name}.{browser}").absolute())
-                    os.makedirs(result_dir)
-                    html_report_dir = f"{result_dir}/html-report"
-                    interpreter_log_file = f"{result_dir}/interpreter.log"
-                    shutil.rmtree(html_report_dir, ignore_errors=True)
+                    max_tries = 5
+                    for try_n in range(1, max_tries + 1):
+                        result_dir = str(pathlib.Path(f"results/{app.name}.{browser}.{try_n}").absolute())
+                        os.makedirs(result_dir)
+                        html_report_dir = f"{result_dir}/html-report"
+                        interpreter_log_file = f"{result_dir}/interpreter.log"
+                        shutil.rmtree(html_report_dir, ignore_errors=True)
 
-                    with open(f"{result_dir}/stdout.log", "w") as stdout_file:
-                        with open(f"{result_dir}/stderr.log", "w") as stderr_file:
-                            click.echo(heading1(f"{app.name}"))
-                            click.echo(f"Browser: {browser}")
-                            click.echo("Stdout: " + stdout_file.name)
-                            click.echo("Stderr: " + stderr_file.name)
-                            click.echo(f"Interpreter log: {interpreter_log_file}")
-                            click.echo(f"HTML report: {html_report_dir}/index.html")
+                        with open(f"{result_dir}/stdout.log", "w") as stdout_file:
+                            with open(f"{result_dir}/stderr.log", "w") as stderr_file:
+                                click.echo(heading1(f"{app.name}"))
+                                click.echo(f"Browser: {browser}")
+                                click.echo("Stdout: " + stdout_file.name)
+                                click.echo("Stderr: " + stderr_file.name)
+                                click.echo(f"Interpreter log: {interpreter_log_file}")
+                                click.echo(f"HTML report: {html_report_dir}/index.html")
 
-                            try:
                                 include_flags = [arg for path in include_paths for arg in ["-I", path] ]
                                 args = ["quickstrom"] + include_flags + ["--log-level", "debug",
                                                                         "check",
@@ -108,26 +109,34 @@ def run(apps: List[TestApp]):
                                                                         "--interpreter-log-file", interpreter_log_file,
                                                                         ]
                                 click.echo(f"Command: {' '.join(args)}")
-                                check = subprocess.Popen(args, stdout=stdout_file, stderr=stderr_file)
-                                r = result_from_exit_code(check.wait())
+                                click.echo("")
 
-                                if r != app.expected:
-                                    unexpected_result_tests.append(app.name)
-                                    click.echo(failure(f"Expected '{app.expected}' but result was '{r}'!"))
-                                else:
-                                    if r == 'passed':
-                                        click.echo(success("Passed!"))
+                                click.echo(f"Try {try_n}...")
+                                try:
+                                    check = subprocess.Popen(args, stdout=stdout_file, stderr=stderr_file)
+                                    r = result_from_exit_code(check.wait())
+
+                                    if r != app.expected:
+                                        if try_n == max_tries or app.expected == 'passed':
+                                            unexpected_result_tests.append(app.name)
+                                        click.echo(failure(f"Expected '{app.expected}' but result was '{r}'!"))
+                                        if app.expected == 'passed':
+                                            break
                                     else:
-                                        click.echo(warning(f"Got expected '{r}'!"))
-                            except KeyboardInterrupt:
-                                exit(1)
-                            except Exception as e:
-                                click.echo(
-                                    f"Test failed with exception:\n{e}", file=stdout_file)
-                                click.echo(
-                                    failure("result: failed with exception"))
+                                        if r == 'passed':
+                                            click.echo(success("Passed!"))
+                                        else:
+                                            click.echo(warning(f"Got expected '{r}'!"))
+                                        break
+                                except KeyboardInterrupt:
+                                    exit(1)
+                                except Exception as e:
+                                    click.echo(
+                                        f"Test failed with exception:\n{e}", file=stdout_file)
+                                    click.echo(
+                                        failure("result: failed with exception"))
 
-                            click.echo("")
+                                click.echo("")
         finally:
             server.kill()
             if len(unexpected_result_tests) > 0:
