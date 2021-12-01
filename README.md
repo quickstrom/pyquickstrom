@@ -34,8 +34,10 @@ poetry run quickstrom -Iulib -Icase-studies --log-level=debug check todomvc $TOD
 
 ## Run Integration Tests
 
+Run the following command with either `chrome` or `firefox`:
+
 ```shell
-nix build -f integration-tests/default.nix --option sandbox relaxed
+nix build -L -f integration-tests/default.nix --option sandbox relaxed --argstr browser (chrome|firefox)
 ```
 
 ## Typechecking

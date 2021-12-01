@@ -7,7 +7,7 @@ let
     pkgs.chromium
   ] else [
     pkgs.geckodriver
-    pkgs.firefox
+    pkgs.firefox-bin
   ];
 
   makeTest = { name, module, origin, options ? "", expectedExitCode }:
@@ -38,7 +38,7 @@ let
         fi
       '';
       doCheck = true;
-      buildInputs = [ quickstrom ] ++ webdriver-deps;
+      buildInputs = [ quickstrom pkgs.xvfb_run ] ++ webdriver-deps;
       __noChroot = true;
     };
 

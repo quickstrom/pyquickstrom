@@ -25,6 +25,7 @@ let
       mkdir -p $out/share
       cp -r ${./ulib} $out/share/ulib
       wrapProgram $out/bin/quickstrom \
+        --prefix PATH : ${specstrom}/bin \
         --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
         --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
         --add-flags "-I$out/share/ulib"

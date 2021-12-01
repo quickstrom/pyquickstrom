@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 import click
@@ -62,7 +62,7 @@ def todomvc_server():
     todomvc_dir = os.getenv("TODOMVC_DIR")
     if todomvc_dir is None:
         raise Exception("Missing TODOMVC_DIR environment variable")
-    return subprocess.Popen(["python3", "-m", "http.server", "--directory", todomvc_dir, "12345"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return subprocess.Popen([sys.executable, "-m", "http.server", "--directory", todomvc_dir, "12345"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def run(apps: List[TestApp]):
@@ -82,7 +82,7 @@ def run(apps: List[TestApp]):
                 for browser in browsers:
                     max_tries = 5
                     for try_n in range(1, max_tries + 1):
-                        result_dir = str(pathlib.Path(f"results/{app.name}.{browser}.{try_n}").absolute())
+                        result_dir = str(pathlib.Path(f"./results/{app.name}.{browser}.{try_n}"))
                         os.makedirs(result_dir)
                         html_report_dir = f"{result_dir}/html-report"
                         interpreter_log_file = f"{result_dir}/interpreter.log"
@@ -102,6 +102,7 @@ def run(apps: List[TestApp]):
                                                                         "check",
                                                                         app.module,
                                                                         origin,
+                                                                        f"--browser={browser}",
                                                                         "--reporter=console",
                                                                         "--capture-screenshots",
                                                                         "--reporter=html",
@@ -134,7 +135,7 @@ def run(apps: List[TestApp]):
                                     click.echo(
                                         f"Test failed with exception:\n{e}", file=stdout_file)
                                     click.echo(
-                                        failure("result: failed with exception"))
+                                        failure(f"result: failed with exception\n{e}"))
 
                                 click.echo("")
         finally:

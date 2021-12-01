@@ -254,6 +254,10 @@ class Check():
         if self.browser == 'chrome':
             options = chrome_options.Options()
             options.headless = True
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--whitelisted-ips")
             browser_path = which("chrome") or which("chromium")
             options.binary_location = browser_path    # type: ignore
             chromedriver_path = which('chromedriver')
@@ -278,7 +282,7 @@ class Check():
             if r is None:
                 raise Exception("WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action.")
             return elements_to_refs(r)
-        def map_client_side_events(r): 
+        def map_client_side_events(r):
             def map_event(e: dict):
                 if e['tag'] == 'loaded':
                     return Action(id='loaded', args=[], isEvent=True, timeout=None)
@@ -332,7 +336,7 @@ class Counter(object):
     def __init__(self, initial_value=0):
         self.value = initial_value
         self._lock = threading.Lock()
-        
+
     def increment(self):
         with self._lock:
             self.value += 1
