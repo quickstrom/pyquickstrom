@@ -260,6 +260,9 @@ class Check():
                                 send(Stale())
                         elif isinstance(msg, AwaitEvents):
                             if msg.version == state_version.value:
+                                self.log.info(
+                                    f"Awaiting events in state {state_version.value} with timeout {msg.await_timeout}"
+                                )
                                 scripts.install_event_listener(driver, deps)
                                 await_events(driver, deps, state_version, msg.await_timeout)
                             else:
