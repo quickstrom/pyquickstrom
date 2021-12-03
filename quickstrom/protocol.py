@@ -30,6 +30,9 @@ class TraceActions():
 class TraceState():
     state: State
 
+@dataclass
+class TraceError():
+    error: str
 
 TraceElement = Union[TraceActions, TraceState]
 
@@ -52,7 +55,7 @@ class RunResult():
 
 @dataclass
 class ErrorResult():
-    error: str
+    trace: Trace
 
 
 Result = Union[RunResult, ErrorResult]
@@ -105,6 +108,9 @@ class Events():
     events: List[Action]
     state: State
 
+@dataclass
+class Error():
+    error_message: str
 
 def message_writer(fp: IO[str]):
     dumps: Callable[[Any],
@@ -130,6 +136,8 @@ class _ProtocolEncoder(json.JSONEncoder):
         elif isinstance(o, Events):
             events: Any = [self.default(event) for event in o.events]
             return {'tag': 'Events', 'contents': [events, o.state]}
+        elif isinstance(o, Error):
+            return {'tag': 'Error', 'errorMessage': o.error_message}
         elif isinstance(o, Action):
             return {
                 'id': o.id,
@@ -143,12 +151,14 @@ class _ProtocolEncoder(json.JSONEncoder):
 
 def _decode_hook(d: Any) -> Any:
     if 'tag' not in d:
-        if 'valid' in d and 'trace' in d:
-            return RunResult(d['valid'], d['trace'])
         if 'id' in d and 'args' in d and 'isEvent' in d and 'timeout' in d:
             return Action(d['id'], d['args'], d['isEvent'], d['timeout'])
         else:
             return d
+    if d['tag'] == 'RunResult':
+        return RunResult(d['valid'], d['trace'])
+    if d['tag'] == 'ErrorResult':
+        return ErrorResult(d['trace'])
     if d['tag'] == 'Start':
         return Start(dependencies=d['dependencies'])
     if d['tag'] == 'RequestAction':
@@ -167,5 +177,7 @@ def _decode_hook(d: Any) -> Any:
         return TraceActions(actions=d['contents'])
     elif d['tag'] == 'TraceState':
         return TraceState(state=d['contents'])
+    elif d['tag'] == 'TraceError':
+        return TraceError(error=d['contents'])
     else:
         raise (Exception(f"Unsupported tagged JSON type: {d['tag']}"))

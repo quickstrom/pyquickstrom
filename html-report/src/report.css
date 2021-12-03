@@ -6,6 +6,7 @@ html, body {
     height: 100%;
     font-family: 'Free Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 16px;
+    line-height: 1.4;
     background: #222;
     color: #ccc;
 }
@@ -69,6 +70,9 @@ header .summary.success {
 
 section.error {
     padding: 1.5rem;
+    color: #d33;
+    font-family: 'Monaco', 'Consolas', 'Ubuntu Mono', monospace;
+    white-space: pre;
 }
 
 main {
@@ -197,6 +201,7 @@ main .controls button:active {
     flex: 0 0 auto;
     position: relative;
     margin: 0 auto;
+    overflow: hidden;
 }
 .state-screenshot img {
     display: block;

@@ -88,11 +88,20 @@ class Initial(Generic[E, I]):
 
 
 @dataclass(frozen=True)
-class Transition(Generic[E, I]):
+class StateTransition(Generic[E, I]):
     from_state: Optional[State[E, I]]
     to_state: State[E, I]
-    stutter: bool
     actions: List[protocol.Action]
+
+
+@dataclass(frozen=True)
+class ErrorTransition(Generic[E, I]):
+    from_state: Optional[State[E, I]]
+    actions: List[protocol.Action]
+    error: str
+
+
+Transition = Union[StateTransition[E, I], ErrorTransition[E, I]]
 
 
 @dataclass(frozen=True)
@@ -102,9 +111,9 @@ class Test(Generic[E, I]):
 
 
 @dataclass(frozen=True)
-class Errored():
-    error: str
-    tests: int
+class Errored(Generic[E, I]):
+    passed_tests: List[Test[E, I]]
+    errored_test: Test[E, I]
 
 
 @dataclass(frozen=True)
@@ -117,6 +126,7 @@ class Failed(Generic[E, I]):
 class Passed(Generic[E, I]):
     passed_tests: List[Test[E, I]]
 
+
 Result = Union[Failed[E, I], Passed[E, I], Errored]
 
 ResultWithScreenshots = Result[protocol.JsonLike, I]
@@ -124,14 +134,20 @@ ResultWithScreenshots = Result[protocol.JsonLike, I]
 PlainResult = ResultWithScreenshots[bytes]
 
 
-def map_states( r: Result[E, I], f: Callable[[State[E, I]], State[E2, O]]
-) -> Result[E2, O]:
-    def on_test(test: Test):
-        return Test(test.validity, [
-            Transition(
+def map_states(r: Result[E, I], f: Callable[[State[E, I]],
+                                            State[E2, O]]) -> Result[E2, O]:
+    def on_transition(t: Transition[E, I]):
+        if isinstance(t, StateTransition):
+            return StateTransition(
                 f(t.from_state) if t.from_state else None, f(t.to_state),
-                t.stutter, t.actions) for t in test.transitions
-        ])
+                t.actions)
+        elif isinstance(t, ErrorTransition):
+            return ErrorTransition(
+                f(t.from_state) if t.from_state else None, t.actions, t.error)
+
+    def on_test(test: Test):
+        return Test(test.validity,
+                    [on_transition(t) for t in test.transitions])
 
     if isinstance(r, Passed):
         return Passed([on_test(test) for test in r.passed_tests])
@@ -139,7 +155,8 @@ def map_states( r: Result[E, I], f: Callable[[State[E, I]], State[E2, O]]
         return Failed([on_test(test) for test in r.passed_tests],
                       on_test(r.failed_test))
     elif isinstance(r, Errored):
-        return Errored(r.error, r.tests)
+        return Errored(list(map(on_test, r.passed_tests)),
+                       on_test(r.errored_test))
 
 
 def from_state(state: protocol.State) -> State[protocol.JsonLike, bytes]:
@@ -150,6 +167,7 @@ def transitions_from_trace(
         full_trace: protocol.Trace
 ) -> List[Transition[protocol.JsonLike, bytes]]:
     A = TypeVar('A')
+    B = TypeVar('B')
     trace = list(full_trace.copy())
 
     def pop(cls: Type[A]) -> A:
@@ -160,20 +178,42 @@ def transitions_from_trace(
         else:
             raise TypeError(f"Expected a {cls} in trace but got {type(first)}")
 
-    transitions: List[Transition] = []
+    def pop_either(a: Type[A], b: Type[B]) -> Union[A, B]:
+        assert len(trace) > 0
+        first = trace.pop(0)
+        if isinstance(first, a) or isinstance(first, b):
+            return first
+        else:
+            raise TypeError(
+                f"Expected {a} or {b} in trace but got {type(first)}")
+
+    transitions: List[Transition[protocol.JsonLike, bytes]] = []
     last_state: Optional[State] = None
     while len(trace) > 0:
-        actions = pop(protocol.TraceActions)
-        new_state = pop(protocol.TraceState)
-        to_state = from_state(new_state.state)
-        transitions.append(
-            Transition(
-                from_state=last_state,
-                to_state=to_state,
-                actions=actions.actions,
-                stutter=False,
-            ))
-        last_state = to_state
+        actions = pop_either(protocol.TraceActions, protocol.TraceError)
+        if isinstance(actions, protocol.TraceError):
+            transitions.append(
+                ErrorTransition(from_state=last_state,
+                                actions=[],
+                                error=actions.error))
+            break
+
+        last = pop_either(protocol.TraceState, protocol.TraceError)
+        if isinstance(last, protocol.TraceError):
+            transitions.append(
+                ErrorTransition(from_state=last_state,
+                                actions=actions.actions,
+                                error=last.error))
+            break
+        elif isinstance(last, protocol.TraceState):
+            to_state = from_state(last.state)
+            transitions.append(
+                StateTransition(
+                    from_state=last_state,
+                    to_state=to_state,
+                    actions=actions.actions,
+                ))
+            last_state = to_state
 
     return transitions
 
@@ -187,12 +227,15 @@ def from_protocol_result(result: protocol.Result) -> PlainResult:
             return Failed([],
                           Test(result.valid,
                                transitions_from_trace(result.trace)))
-    else:
-        return Errored(result.error, 1)
+    elif isinstance(result, protocol.ErrorResult):
+        return Errored([],
+                       Test(protocol.Validity('Definitely', False),
+                            transitions_from_trace(result.trace)))
 
 
-DiffedResult = Union[Failed[Diff[protocol.JsonLike], I],
-                     Passed[Diff[protocol.JsonLike], I], Errored]
+DiffedResult = Union[Failed[Diff[protocol.JsonLike],
+                            I], Passed[Diff[protocol.JsonLike], I],
+                     Errored[Diff[protocol.JsonLike], I]]
 
 
 def diff_states(
@@ -248,23 +291,26 @@ def diff_transitions(
     results: List[Transition[Diff[protocol.JsonLike], I]] = []
     last_state = None
     for t in ts:
-        stutter = last_state is not None and last_state.hash == t.to_state.hash
+        if isinstance(t, StateTransition):
 
-        def _diff_states():
-            if last_state is None:
-                return (None, mark_unmodified(t.to_state))
-            elif stutter:
-                return (mark_unmodified(last_state), mark_unmodified(t.to_state))
-            else:
-                return diff_states(last_state, t.to_state)
+            def _diff_states():
+                assert isinstance(t, StateTransition)
+                if last_state is None:
+                    return (None, mark_unmodified(t.to_state))
+                else:
+                    return diff_states(last_state, t.to_state)
 
-        (diff_old, diff_new) = _diff_states()
-        results.append(
-            Transition(from_state=diff_old,
-                       to_state=diff_new,
-                       stutter=stutter,
-                       actions=t.actions))
-        last_state = t.to_state
+            (diff_old, diff_new) = _diff_states()
+            results.append(
+                StateTransition(from_state=diff_old,
+                                to_state=diff_new,
+                                actions=t.actions))
+            last_state = t.to_state
+        elif isinstance(t, ErrorTransition):
+            results.append(
+                ErrorTransition(
+                    mark_unmodified(t.from_state) if t.from_state else None,
+                    t.actions, t.error))
 
     return results
 
@@ -283,8 +329,13 @@ def diff_result(result: ResultWithScreenshots[I]) -> DiffedResult[I]:
     elif isinstance(result, Passed):
         return Passed([diff_test(test) for test in result.passed_tests])
 
+
 def mark_unmodified(s: State[E, I]) -> State[Diff[E], I]:
-    return State(s.hash, { sel: [Unmodified(e) for e in es] for sel, es in s.queries.items() }, s.screenshot)
+    return State(
+        s.hash,
+        {sel: [Unmodified(e) for e in es]
+         for sel, es in s.queries.items()}, s.screenshot)
+
 
 def mark_all_unmodified(r: Result[E, I]) -> Result[Diff[E], I]:
     return map_states(r, mark_unmodified)

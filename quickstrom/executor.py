@@ -7,7 +7,7 @@ import time
 from shutil import which
 from dataclasses import dataclass
 import png
-from typing import List, Union, Literal, Any, AnyStr
+from typing import List, Tuple, Union, Literal, Any, AnyStr
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -34,6 +34,30 @@ class SpecstromError(Exception):
         return f"{self.message}, exit code {self.exit_code}"
 
 @dataclass
+class PerformActionError(Exception):
+    action: Action
+    error: Exception
+
+    def __str__(self):
+        return f"Error while performing {self.action}:\n\n{self.error}"
+
+@dataclass
+class UnsupportedActionError(Exception):
+    action: Action
+
+    def __str__(self):
+        return f"Error while performing {self.action} (this is likely a bug in Quickstrom)"
+
+@dataclass
+class ScriptError(Exception):
+    name: str
+    script_args: List[JsonLike]
+    error: Exception
+
+    def __str__(self):
+        return f"Error while invoking script {self.name} with args {self.script_args}:\n{self.error}"
+
+@dataclass
 class ClientSideEvents():
     events: List[Action]
     state: State
@@ -43,7 +67,7 @@ class ClientSideEvents():
 class Scripts():
     query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
     install_event_listener: Callable[[WebDriver, Dict[Selector, Schema]], None]
-    await_events: Callable[[WebDriver, int], Union[ClientSideEvents, None]]
+    await_events: Callable[[WebDriver, Dict[Selector, Schema], int], Optional[ClientSideEvents]]
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
@@ -98,26 +122,36 @@ class Check():
                     self.log.warning("Done, can't send.")
 
             def perform_action(driver, action):
-                if action.id == 'noop':
-                    pass
-                elif action.id == 'click':
-                    id = action.args[0]
-                    element = WebElement(driver, id)
-                    ActionChains(driver).move_to_element(element).click(element).perform()
-                elif action.id == 'doubleClick':
-                    id = action.args[0]
-                    element = WebElement(driver, id)
-                    ActionChains(driver).move_to_element(element).double_click(element).perform()
-                elif action.id == 'focus':
-                    id = action.args[0]
-                    element = WebElement(driver, id)
-                    element.send_keys("")
-                elif action.id == 'keyPress':
-                    char = action.args[0]
-                    element = driver.switch_to.active_element
-                    element.send_keys(char)
-                else:
-                    raise Exception(f'Unsupported action: {action}')
+                try:
+                    if action.id == 'noop':
+                        pass
+                    elif action.id == 'click':
+                        id = action.args[0]
+                        element = WebElement(driver, id)
+                        ActionChains(driver).move_to_element(element).click(element).perform()
+                    elif action.id == 'doubleClick':
+                        id = action.args[0]
+                        element = WebElement(driver, id)
+                        ActionChains(driver).move_to_element(element).double_click(element).perform()
+                    elif action.id == 'focus':
+                        id = action.args[0]
+                        element = WebElement(driver, id)
+                        element.send_keys("")
+                    elif action.id == 'keyPress':
+                        char = action.args[0]
+                        element = driver.switch_to.active_element
+                        element.send_keys(char)
+                    elif action.id == 'enterText':
+                        element = driver.switch_to.active_element
+                        element.send_keys(action.args[0])
+                    elif action.id == 'enterTextInto':
+                        id = action.args[1]
+                        element = WebElement(driver, id)
+                        element.send_keys(action.args[0])
+                    else:
+                        raise UnsupportedActionError(action)
+                except Exception as e:
+                    raise PerformActionError(action, e)
 
             def screenshot(driver: WebDriver, hash: str):
                 if self.capture_screenshots:
@@ -146,7 +180,7 @@ class Check():
 
             def await_events(driver, deps, state_version, timeout: int):
                 self.log.debug(f"Awaiting events with timeout {timeout}")
-                events = scripts.await_events(driver, timeout)
+                events = scripts.await_events(driver, deps, timeout)
                 self.log.debug(f"Change: {events}")
 
                 if events is None:
@@ -165,24 +199,27 @@ class Check():
                     msg = receive()
                     assert msg is not None
                     if isinstance(msg, Start):
-                        self.log.info("Starting session")
-                        driver = self.new_driver()
-                        driver.set_window_size(1200, 1200)
+                        try:
+                            self.log.info("Starting session")
+                            driver = self.new_driver()
+                            driver.set_window_size(1200, 1200)
 
-                        # First we need to visit the page in order to set cookies.
-                        driver.get(self.origin)
-                        for cookie in self.cookies:
-                            self.log.debug(f"Setting {cookie}")
-                            driver.add_cookie(dataclasses.asdict(cookie))
-                        # Now that cookies are set, we have to visit the origin again.
-                        driver.get(self.origin)
+                            # First we need to visit the page in order to set cookies.
+                            driver.get(self.origin)
+                            for cookie in self.cookies:
+                                self.log.debug(f"Setting {cookie}")
+                                driver.add_cookie(dataclasses.asdict(cookie))
+                            # Now that cookies are set, we have to visit the origin again.
+                            driver.get(self.origin)
 
-                        state_version = Counter(initial_value=0)
+                            state_version = Counter(initial_value=0)
 
-                        scripts.install_event_listener(driver, msg.dependencies)
-                        await_events(driver, msg.dependencies, state_version, 10000)
+                            scripts.install_event_listener(driver, msg.dependencies)
+                            await_events(driver, msg.dependencies, state_version, 10000)
 
-                        await_session_commands(driver, msg.dependencies, state_version)
+                            await_session_commands(driver, msg.dependencies, state_version)
+                        except Exception as e:
+                            send(Error(str(e)))
                     elif isinstance(msg, Done):
                         return [
                             attach_screenshots(
@@ -278,12 +315,14 @@ class Check():
             if r is None:
                 raise Exception("WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action.")
             return elements_to_refs(r)
-        def map_client_side_events(r): 
+        def map_client_side_events(r):
             def map_event(e: dict):
                 if e['tag'] == 'loaded':
                     return Action(id='loaded', args=[], isEvent=True, timeout=None)
                 elif e['tag'] == 'changed':
                     return Action(id='changed', args=[elements_to_refs(e['element'])], isEvent=True, timeout=None)
+                elif e['tag'] == 'detached':
+                    return Action(id='detached', args=[e['markup']], isEvent=True, timeout=None)
                 else:
                     raise Exception(f"Invalid event tag in: {e}")
 
@@ -295,7 +334,6 @@ class Check():
             'awaitEvents': map_client_side_events,
         }
 
-        # can't type this with varargs
         def load_script(name: str) -> Any:
             key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
             client_side_dir = os.getenv(key)
@@ -304,9 +342,12 @@ class Check():
             file = open(f'{client_side_dir}/{name}.js')
             script = file.read()
 
-            def f(driver: WebDriver, *args: List[JsonLike]) -> JsonLike:
-                r = driver.execute_async_script(script, args)
-                return result_mappers[name](r)
+            def f(driver: WebDriver, *args: Any) -> JsonLike:
+                try:
+                    r = driver.execute_async_script(script, *args)
+                    return result_mappers[name](r)
+                except Exception as e:
+                    raise ScriptError(name, list(args), e)
 
             return f
 
@@ -332,7 +373,7 @@ class Counter(object):
     def __init__(self, initial_value=0):
         self.value = initial_value
         self._lock = threading.Lock()
-        
+
     def increment(self):
         with self._lock:
             self.value += 1
