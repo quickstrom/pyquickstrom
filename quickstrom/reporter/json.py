@@ -34,7 +34,7 @@ def write_screenshots(result: PlainResult,
     def on_state(
         state: State[protocol.JsonLike,
                      bytes]) -> State[protocol.JsonLike, Path]:
-        
+
         if state.screenshot:
             p = dir / Path(f"{state.hash}.png")
             p.write_bytes(state.screenshot.image)
@@ -74,8 +74,8 @@ class _ReporterEncoder(json.JSONEncoder):
         elif isinstance(o, Errored):
             return {
                 'tag': 'Errored',
-                'error': o.error,
-                'tests': o.tests,
+                'passedTests': [self.default(test) for test in o.passed_tests],
+                'erroredTest': self.default(o.errored_test),
             }
         elif isinstance(o, Failed):
             return {
@@ -93,12 +93,19 @@ class _ReporterEncoder(json.JSONEncoder):
                 'events': [self.default(t) for t in o.events],
                 'state': o.state,
             }
-        elif isinstance(o, Transition):
+        elif isinstance(o, StateTransition):
             return {
+                'tag': 'StateTransition',
                 'fromState': o.from_state,
                 'toState': o.to_state,
-                'stutter': o.stutter,
                 'actions': [self.default(t) for t in o.actions],
+            }
+        elif isinstance(o, ErrorTransition):
+            return {
+                'tag': 'ErrorTransition',
+                'fromState': o.from_state,
+                'actions': [self.default(t) for t in o.actions],
+                'error': o.error,
             }
         elif isinstance(o, State):
             return {

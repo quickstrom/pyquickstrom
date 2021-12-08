@@ -38,7 +38,11 @@ def indent(s: str, level: int) -> str:
     return f"{' ' * level * 2}{s}"
 
 
-def print_state_diff(transition: Transition[Diff[JsonLike], bytes],
+def errored(s: str) -> str:
+    return click.style(s, fg='red')
+
+
+def print_state_diff(transition: StateTransition[Diff[JsonLike], bytes],
                      file: Optional[IO[Text]]):
     def without_internal_props(
             d: Dict[Selector, JsonLike]) -> Dict[Selector, JsonLike]:
@@ -81,9 +85,12 @@ def print_state_diff(transition: Transition[Diff[JsonLike], bytes],
         element = element_diff.value
         assert isinstance(element, dict)
         color = element_color(element_diff)
-        attrs = [color(f"{key}: {format_value(value)}")
-            for key, value in without_internal_props(element).items()]
-        return color(click.style(f"{element['ref']}", bold=True)) + "\n" + "\n".join(attrs)
+        attrs = [
+            color(f"{key}: {format_value(value)}")
+            for key, value in without_internal_props(element).items()
+        ]
+        return color(click.style(f"{element['ref']}",
+                                 bold=True)) + "\n" + "\n".join(attrs)
 
     def format_states(elements: List[Diff[JsonLike]]) -> List[str]:
         return [format_state(element) for element in elements]
@@ -110,23 +117,29 @@ class ConsoleReporter(Reporter):
     file: Optional[IO[Text]] = sys.stdout
 
     def report_test(self, test: Test[Diff[protocol.JsonLike], bytes]):
-            click.echo("Trace:", file=self.file)
-            for i, transition in enumerate(test.transitions):
-                click.echo(element_heading(f"\nTransition #{i}"),
+        click.echo("Trace:", file=self.file)
+        for i, transition in enumerate(test.transitions):
+            click.echo(element_heading(f"\nTransition #{i}"), file=self.file)
+            click.echo(f"\nActions and events:", file=self.file)
+            for action in transition.actions:
+                click.echo(f"\n- {printer.pretty_print_action(action)}",
                            file=self.file)
-                click.echo(f"\nActions and events:", file=self.file)
-                for action in transition.actions:
-                    click.echo(f"\n- {printer.pretty_print_action(action)}",
-                               file=self.file)
+
+            if isinstance(transition, StateTransition):
                 click.echo(f"\nState difference:", file=self.file)
                 print_state_diff(transition, file=self.file)
+            elif isinstance(transition, ErrorTransition):
+                click.echo("\nError:\n", file=self.file)
+                click.echo(errored(transition.error), file=self.file)
 
     def report(self, result: PlainResult):
         if isinstance(result, Failed):
             diffed_test = diff_test(result.failed_test)
             self.report_test(diffed_test)
+        elif isinstance(result, Errored):
+            diffed_test = diff_test(result.errored_test)
+            self.report_test(diffed_test)
         elif isinstance(result, Passed) and self.report_on_success:
             for test in result.passed_tests:
                 diffed_test = diff_test(test)
                 self.report_test(diffed_test)
-

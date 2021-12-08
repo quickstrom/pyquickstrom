@@ -1,6 +1,6 @@
 import { queryState } from "../queries";
 
 // @ts-ignore
-const [[queries], done] = args;
+const [queries, done] = args;
 
 done(queryState(queries));

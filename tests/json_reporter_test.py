@@ -14,10 +14,12 @@ def protocol_result_from_result(r: result.PlainResult) -> protocol.Result:
             return state.queries
 
         def to_trace_elements(
-                transition: result.Transition) -> List[protocol.TraceElement]:
+                transition: result.Transition[protocol.JsonLike, bytes]) -> List[protocol.TraceElement]:
             return [
                 protocol.TraceActions(transition.actions),
-                protocol.TraceState(to_state(transition.to_state)),
+                protocol.TraceState(to_state(transition.to_state))
+                    if isinstance(transition, result.StateTransition)
+                    else protocol.TraceError(transition.error),
             ]
 
         return [e for t in test.transitions for e in to_trace_elements(t)]
@@ -31,7 +33,7 @@ def protocol_result_from_result(r: result.PlainResult) -> protocol.Result:
         test = r.failed_test
         return protocol.RunResult(test.validity, to_trace(test))
     elif isinstance(r, result.Errored):
-        return protocol.ErrorResult(r.error)
+        return protocol.ErrorResult(to_trace(r.errored_test))
     else:
         raise TypeError(f"Invalid result: {r}")
 

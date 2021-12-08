@@ -13,6 +13,28 @@ import quickstrom.reporter.console as console_reporter
 from quickstrom.result import Errored, Failed, Passed
 
 
+def ordinal(n: int) -> str:
+    if n == 11:
+        return "11th"
+    elif n == 12:
+        return "12th"
+    else:
+        r = n % 10
+        if r == 1:
+            return f"{n}st"
+        elif r == 2:
+            return f"2nd"
+        else:
+            return f"{n}th"
+
+def format_after_passed_tests_str(passed_tests: List, suffix: str) -> str:
+    l = len(passed_tests)
+    if l == 0:
+        return f"The {ordinal(l + 1)} test {suffix}"
+    else:
+        return f"After {l} passing tests, the {ordinal(l + 1)} test {suffix}"
+
+
 class NoWebdriverFilter(logging.Filter):
     def filter(self, record):
         return not record.name.startswith('selenium.webdriver.remote')
@@ -43,7 +65,11 @@ def root(ctx, color, log_level, include):
     else:
         raise click.UsageError(f"Invalid color option: `{color}`")
     global_options['includes'] = include
-    logging.basicConfig(format='%(asctime)s.%(msecs)03d %(name)-24s %(levelname)-8s %(message)s', level=getattr(logging, log_level.upper()), datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(
+        format=
+        '%(asctime)s.%(msecs)03d %(name)-24s %(levelname)-8s %(message)s',
+        level=getattr(logging, log_level.upper()),
+        datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger("urllib3").setLevel(logging.INFO)
     logging.getLogger("selenium.webdriver.remote").setLevel(logging.INFO)
 
@@ -69,15 +95,16 @@ def root(ctx, color, log_level, include):
               default='json-report-files',
               help='directory for report assets, e.g. screenshots')
 @click.option('--html-report-directory', default='html-report')
-@click.option('--cookie',
-              multiple=True,
-              type=(str, str, str),
-              help='set a cookie based on three values, e.g. --cookie domain name value')
+@click.option(
+    '--cookie',
+    multiple=True,
+    type=(str, str, str),
+    help='set a cookie based on three values, e.g. --cookie domain name value')
 def check(module: str, origin: str, browser: executor.Browser,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], interpreter_log_file: Optional[str], json_report_file: str,
-          json_report_files_directory: str, html_report_directory: str,
-          cookie: List[Tuple[str, str, str]]):
+          reporter: List[str], interpreter_log_file: Optional[str],
+          json_report_file: str, json_report_files_directory: str,
+          html_report_directory: str, cookie: List[Tuple[str, str, str]]):
     """Checks the configured properties in the given module."""
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
@@ -104,13 +131,21 @@ def check(module: str, origin: str, browser: executor.Browser,
 
     if interpreter_log_file is None:
         interpreter_log_file = "interpreter.log"
-               
+
     with open(str(interpreter_log_file), "w+") as ilog:
         try:
-            cookies = [ executor.Cookie(domain, name, value) for (domain, name, value) in cookie ]
-            results = executor.Check(module, origin_url.geturl(), browser,
-                                    cast(List[str], global_options['includes']),
-                                    capture_screenshots, cookies, interpreter_log_file=ilog).execute()
+            cookies = [
+                executor.Cookie(domain, name, value)
+                for (domain, name, value) in cookie
+            ]
+            results = executor.Check(module,
+                                     origin_url.geturl(),
+                                     browser,
+                                     cast(List[str],
+                                          global_options['includes']),
+                                     capture_screenshots,
+                                     cookies,
+                                     interpreter_log_file=ilog).execute()
             chosen_reporters = reporters_by_names(reporter)
             for result in results:
                 for r in chosen_reporters:
@@ -119,13 +154,21 @@ def check(module: str, origin: str, browser: executor.Browser,
                 click.echo("")
 
                 if isinstance(result, Passed):
-                    click.echo(click.style("All tests passed.", fg="green"))
+                    l = len(result.passed_tests)
+                    if l == 1:
+                        click.echo(click.style(f"The test passed.", fg="green"))
+                    else:
+                        click.echo(click.style(f"All {l} tests passed.", fg="green"))
                 if isinstance(result, Failed):
                     click.echo(
-                        click.style(f"Failed: {result.failed_test.validity.certainty} {result.failed_test.validity.value}", fg="red")
-                    )
+                        click.style(
+                            format_after_passed_tests_str(result.passed_tests, f"failed with {result.failed_test.validity.certainty} {result.failed_test.validity.value}."),
+                            fg="red"))
                 elif isinstance(result, Errored):
-                    click.echo(click.style(f"Error: {result.error}", fg="red"))
+                    click.echo(
+                        click.style(
+                            format_after_passed_tests_str(result.passed_tests, f"errored!"),
+                            fg="red"))
 
             if any([(isinstance(r, Errored)) for r in results]):
                 exit(1)

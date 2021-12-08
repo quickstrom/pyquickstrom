@@ -15,6 +15,8 @@ action keyPress!(key) = { id: "keyPress", event: false, args: [key] };
 
 action enterText!(text) = { id: "enterText", event: false, args: [text] };
 
+action enterTextInto!(text, elements) = for element in elements. { id: "enterTextInto", event: false, args: [text, element.ref] };
+
 action changed?(x) = for element in x. { id: "changed", event: true, args: [x.ref]};
 
 action loaded? = { id: "loaded", event: true, args: [] };
