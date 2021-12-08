@@ -36,3 +36,4 @@ split_before_logical_operator = true
 
 [tool.pyright]
 stubPath = "typings"
+typeCheckingMode = "basic"

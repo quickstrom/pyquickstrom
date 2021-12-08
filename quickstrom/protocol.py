@@ -34,7 +34,7 @@ class TraceState():
 class TraceError():
     error: str
 
-TraceElement = Union[TraceActions, TraceState]
+TraceElement = Union[TraceActions, TraceState, TraceError]
 
 Trace = List[TraceElement]
 

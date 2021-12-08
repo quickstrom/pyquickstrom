@@ -1,7 +1,6 @@
 import quickstrom.protocol as protocol
 from quickstrom.hash import dict_hash
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 Selector = str
@@ -18,7 +17,7 @@ class Screenshot(Generic[I]):
     scale: int
 
 
-T = TypeVar('T', contravariant=True)
+T = TypeVar('T')
 
 
 @dataclass(frozen=True, eq=True)
@@ -136,7 +135,7 @@ PlainResult = ResultWithScreenshots[bytes]
 
 def map_states(r: Result[E, I], f: Callable[[State[E, I]],
                                             State[E2, O]]) -> Result[E2, O]:
-    def on_transition(t: Transition[E, I]):
+    def on_transition(t: Transition[E, I]) -> Transition[E2, O]:
         if isinstance(t, StateTransition):
             return StateTransition(
                 f(t.from_state) if t.from_state else None, f(t.to_state),
@@ -145,9 +144,8 @@ def map_states(r: Result[E, I], f: Callable[[State[E, I]],
             return ErrorTransition(
                 f(t.from_state) if t.from_state else None, t.actions, t.error)
 
-    def on_test(test: Test):
-        return Test(test.validity,
-                    [on_transition(t) for t in test.transitions])
+    def on_test(test: Test[E, I]) -> Test[E2, O]:
+        return Test(test.validity, [on_transition(t) for t in test.transitions]) # type: ignore
 
     if isinstance(r, Passed):
         return Passed([on_test(test) for test in r.passed_tests])
@@ -169,14 +167,6 @@ def transitions_from_trace(
     A = TypeVar('A')
     B = TypeVar('B')
     trace = list(full_trace.copy())
-
-    def pop(cls: Type[A]) -> A:
-        assert len(trace) > 0
-        first = trace.pop(0)
-        if isinstance(first, cls):
-            return first
-        else:
-            raise TypeError(f"Expected a {cls} in trace but got {type(first)}")
 
     def pop_either(a: Type[A], b: Type[B]) -> Union[A, B]:
         assert len(trace) > 0
@@ -222,15 +212,15 @@ def from_protocol_result(result: protocol.Result) -> PlainResult:
     if isinstance(result, protocol.RunResult):
         if result.valid.value:
             return Passed(
-                [Test(result.valid, transitions_from_trace(result.trace))])
+                [Test(result.valid, transitions_from_trace(result.trace))]) # type: ignore
         else:
             return Failed([],
                           Test(result.valid,
-                               transitions_from_trace(result.trace)))
+                               transitions_from_trace(result.trace))) # type: ignore
     elif isinstance(result, protocol.ErrorResult):
         return Errored([],
                        Test(protocol.Validity('Definitely', False),
-                            transitions_from_trace(result.trace)))
+                            transitions_from_trace(result.trace))) # type: ignore
 
 
 DiffedResult = Union[Failed[Diff[protocol.JsonLike],
@@ -317,7 +307,7 @@ def diff_transitions(
 
 def diff_test(
         test: Test[protocol.JsonLike, I]) -> Test[Diff[protocol.JsonLike], I]:
-    return Test(test.validity, diff_transitions(test.transitions))
+    return Test(test.validity, diff_transitions(test.transitions)) # type: ignore
 
 
 def diff_result(result: ResultWithScreenshots[I]) -> DiffedResult[I]:
