@@ -47,6 +47,8 @@ def states() -> SearchStrategy[protocol.State]:
 def trace_states():
     return states().map(lambda s: protocol.TraceState(s))
 
+def trace_errors():
+    return one_of(just("error1"), just("error2")).map(lambda e: protocol.TraceError(e))
 
 @composite
 def traces(draw):
@@ -56,6 +58,14 @@ def traces(draw):
 
     return list(chain(*draw(lists(pairs(), min_size=1, max_size=10))))
 
+@composite
+def traces_with_potential_error(draw):
+    @composite
+    def error_pairs(draw):
+        return [draw(trace_actions()), draw(trace_errors())]
+    trace = draw(traces())
+    end = draw(one_of(error_pairs(), just([])))
+    return trace + end
 
 @composite
 def validities(draw):
@@ -72,7 +82,7 @@ def run_results(draw):
 
 @composite
 def error_results(draw):
-    return protocol.ErrorResult(draw(one_of(just("error1"), just("error2"))))
+    return protocol.ErrorResult(draw(traces_with_potential_error()))
 
 
 def results():
