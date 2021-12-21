@@ -102,7 +102,7 @@ export function runQuery(selector: Selector, schema: Schema): ElementState[] {
 export function queryState(deps: Dependencies): QueriedState {
     var r: QueriedState = {};
     Object.entries(deps).forEach(([selector, schema]) => {
-        r[selector] = runQuery(selector, schema);
+        r[selector] = runQuery(selector, schema).filter((e: ElementState) => e.ref?.isConnected ?? true);
     });
     return r;
 }
