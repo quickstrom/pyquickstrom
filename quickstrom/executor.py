@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import png
 from typing import List, Tuple, Union, Literal, Any, AnyStr
 from selenium import webdriver
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -179,20 +180,27 @@ class Check():
                 return result.map_states(r, on_state)
 
             def await_events(driver, deps, state_version, timeout: int):
-                self.log.debug(f"Awaiting events with timeout {timeout}")
-                events = scripts.await_events(driver, deps, timeout)
-                self.log.debug(f"Change: {events}")
-
-                if events is None:
-                    self.log.info(f"Timed out!")
+                def on_no_events():
                     state = scripts.query_state(driver, deps)
                     screenshot(driver, dict_hash(state))
                     state_version.increment()
                     send(Timeout(state=state))
-                else:
-                    screenshot(driver, dict_hash(events.state))
-                    state_version.increment()
-                    send(Events(events.events, events.state))
+                    
+                try:
+                    self.log.debug(f"Awaiting events with timeout {timeout}")
+                    events = scripts.await_events(driver, deps, timeout)
+                    self.log.debug(f"Change: {events}")
+
+                    if events is None:
+                        self.log.info(f"Timed out!")
+                        on_no_events()
+                    else:
+                        screenshot(driver, dict_hash(events.state))
+                        state_version.increment()
+                        send(Events(events.events, events.state))
+                except StaleElementReferenceException as e:
+                    self.log.error(f"Stale element reference: {e}")
+                    on_no_events()
 
             def run_sessions() -> List[result.PlainResult]:
                 while True:
