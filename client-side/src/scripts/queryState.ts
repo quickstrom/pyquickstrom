@@ -1,6 +1,5 @@
 import { queryState } from "../queries";
 
-// @ts-ignore
-const [queries, done] = args;
-
-done(queryState(queries));
+window.quickstrom.run = function (queries) {
+    return queryState(queries)
+};

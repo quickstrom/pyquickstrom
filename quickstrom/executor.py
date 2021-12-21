@@ -337,7 +337,7 @@ class Check():
             'awaitEvents': map_client_side_events,
         }
 
-        def load_script(name: str) -> Any:
+        def load_script(name: str, is_async: bool = False) -> Any:
             key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
             client_side_dir = os.getenv(key)
             if not client_side_dir:
@@ -347,7 +347,7 @@ class Check():
 
             def f(driver: WebDriver, *args: Any) -> JsonLike:
                 try:
-                    r = driver.execute_async_script(script, *args)
+                    r = driver.execute_async_script(script, *args) if is_async else driver.execute_script(script, *args)
                     return result_mappers[name](r)
                 except Exception as e:
                     raise ScriptError(name, list(args), e)
@@ -357,7 +357,7 @@ class Check():
         return Scripts(
             query_state=load_script('queryState'),
             install_event_listener=load_script('installEventListener'),
-            await_events=load_script('awaitEvents'),
+            await_events=load_script('awaitEvents', is_async=True),
         )
 
 
