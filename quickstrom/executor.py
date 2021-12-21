@@ -357,6 +357,8 @@ class Check():
                 try:
                     r = driver.execute_async_script(script, *args) if is_async else driver.execute_script(script, *args)
                     return result_mappers[name](r)
+                except StaleElementReferenceException as e:
+                    raise e
                 except Exception as e:
                     raise ScriptError(name, list(args), e)
 
