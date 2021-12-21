@@ -3,5 +3,7 @@ pkgs.mkShell {
     buildInputs = with pkgs; [
       nodejs
       nodePackages.typescript
+      nodePackages.browserify
+      nodePackages.prettier
     ];
   }
