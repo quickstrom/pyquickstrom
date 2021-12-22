@@ -87,6 +87,7 @@ class Check():
     origin: str
     browser: Browser
     include_paths: List[str]
+    headless: bool
     capture_screenshots: bool
     cookies: List[Cookie]
     interpreter_log_file: IO
@@ -149,6 +150,10 @@ class Check():
                         id = action.args[1]
                         element = WebElement(driver, id)
                         element.send_keys(action.args[0])
+                    elif action.id == 'clear':
+                        id = action.args[1]
+                        element = WebElement(driver, id)
+                        element.clear()
                     else:
                         raise UnsupportedActionError(action)
                 except Exception as e:
@@ -301,7 +306,7 @@ class Check():
     def new_driver(self):
         if self.browser == 'chrome':
             options = chrome_options.Options()
-            options.headless = True
+            options.headless = self.headless
             browser_path = which("chrome") or which("chromium")
             options.binary_location = browser_path    # type: ignore
             chromedriver_path = which('chromedriver')
@@ -311,7 +316,7 @@ class Check():
                                     executable_path=chromedriver_path)
         elif self.browser == 'firefox':
             options = firefox_options.Options()
-            options.headless = True
+            options.headless = self.headless
             options.binary = which("firefox")    # type: ignore
             geckodriver_path = which('geckodriver')
             if not geckodriver_path:
