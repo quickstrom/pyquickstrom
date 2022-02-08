@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 import shutil
 import pathlib
 import subprocess
+import time
 
 case_studies_dir = pathlib.Path(__file__).parent.resolve()
 
@@ -86,6 +87,8 @@ def run(apps: List[TestApp]):
                         os.makedirs(result_dir)
                         html_report_dir = f"{result_dir}/html-report"
                         interpreter_log_file = f"{result_dir}/interpreter.log"
+                        duration_file = f"{result_dir}/duration"
+                        start_time = time.time()
                         shutil.rmtree(html_report_dir, ignore_errors=True)
 
                         with open(f"{result_dir}/stdout.log", "w") as stdout_file:
@@ -135,6 +138,10 @@ def run(apps: List[TestApp]):
                                         f"Test failed with exception:\n{e}", file=stdout_file)
                                     click.echo(
                                         failure("result: failed with exception"))
+                                finally:
+                                    end_time = time.time()
+                                    with open(duration_file, 'w+') as f:
+                                        f.write(str(end_time - start_time))
 
                                 click.echo("")
         finally:
