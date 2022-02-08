@@ -1,24 +1,21 @@
 import { toDetached } from "../events";
-import { queryState } from "../queries";
-
-// @ts-ignore
-const [queries, timeoutMs, done] = args;
+import { queryState, Dependencies } from "../queries";
 
 function delay(ms: number): Promise<null> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }
 
-(function () {
-  Promise.race([
-    (window as any).quickstromEventsObserver,
-    delay(timeoutMs),
-  ]).then((events) => {
-    if (events) {
-      done({ events: events.map(toDetached), state: queryState(queries) });
-    } else {
-      done(null);
-    }
-  });
-})();
+window.quickstrom.run = function(queries: Dependencies, timeoutMs: number, done: any) {
+    Promise.race([
+        window.quickstrom.eventsObserver,
+        delay(timeoutMs),
+    ]).then((events) => {
+        if (events) {
+            done({ events: events.map(toDetached), state: queryState(queries) });
+        } else {
+            done(null);
+        }
+    });
+};

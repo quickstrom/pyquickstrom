@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import png
 from typing import List, Tuple, Union, Literal, Any, AnyStr
 from selenium import webdriver
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -86,6 +87,7 @@ class Check():
     origin: str
     browser: Browser
     include_paths: List[str]
+    headless: bool
     capture_screenshots: bool
     cookies: List[Cookie]
     interpreter_log_file: IO
@@ -148,6 +150,10 @@ class Check():
                         id = action.args[1]
                         element = WebElement(driver, id)
                         element.send_keys(action.args[0])
+                    elif action.id == 'clear':
+                        id = action.args[1]
+                        element = WebElement(driver, id)
+                        element.clear()
                     else:
                         raise UnsupportedActionError(action)
                 except Exception as e:
@@ -179,20 +185,27 @@ class Check():
                 return result.map_states(r, on_state)
 
             def await_events(driver, deps, state_version, timeout: int):
-                self.log.debug(f"Awaiting events with timeout {timeout}")
-                events = scripts.await_events(driver, deps, timeout)
-                self.log.debug(f"Change: {events}")
-
-                if events is None:
-                    self.log.info(f"Timed out!")
+                def on_no_events():
                     state = scripts.query_state(driver, deps)
                     screenshot(driver, dict_hash(state))
                     state_version.increment()
                     send(Timeout(state=state))
-                else:
-                    screenshot(driver, dict_hash(events.state))
-                    state_version.increment()
-                    send(Events(events.events, events.state))
+                    
+                try:
+                    self.log.debug(f"Awaiting events with timeout {timeout}")
+                    events = scripts.await_events(driver, deps, timeout)
+                    self.log.debug(f"Change: {events}")
+
+                    if events is None:
+                        self.log.info(f"Timed out!")
+                        on_no_events()
+                    else:
+                        screenshot(driver, dict_hash(events.state))
+                        state_version.increment()
+                        send(Events(events.events, events.state))
+                except StaleElementReferenceException as e:
+                    self.log.error(f"Stale element reference: {e}")
+                    on_no_events()
 
             def run_sessions() -> List[result.PlainResult]:
                 while True:
@@ -293,7 +306,7 @@ class Check():
     def new_driver(self):
         if self.browser == 'chrome':
             options = chrome_options.Options()
-            options.headless = True
+            options.headless = self.headless
             browser_path = which("chrome") or which("chromium")
             options.binary_location = browser_path    # type: ignore
             chromedriver_path = which('chromedriver')
@@ -303,7 +316,7 @@ class Check():
                                     executable_path=chromedriver_path)
         elif self.browser == 'firefox':
             options = firefox_options.Options()
-            options.headless = True
+            options.headless = self.headless
             options.binary = which("firefox")    # type: ignore
             geckodriver_path = which('geckodriver')
             if not geckodriver_path:
@@ -337,7 +350,7 @@ class Check():
             'awaitEvents': map_client_side_events,
         }
 
-        def load_script(name: str) -> Any:
+        def load_script(name: str, is_async: bool = False) -> Any:
             key = 'QUICKSTROM_CLIENT_SIDE_DIRECTORY'
             client_side_dir = os.getenv(key)
             if not client_side_dir:
@@ -347,8 +360,10 @@ class Check():
 
             def f(driver: WebDriver, *args: Any) -> JsonLike:
                 try:
-                    r = driver.execute_async_script(script, *args)
+                    r = driver.execute_async_script(script, *args) if is_async else driver.execute_script(script, *args)
                     return result_mappers[name](r)
+                except StaleElementReferenceException as e:
+                    raise e
                 except Exception as e:
                     raise ScriptError(name, list(args), e)
 
@@ -357,7 +372,7 @@ class Check():
         return Scripts(
             query_state=load_script('queryState'),
             install_event_listener=load_script('installEventListener'),
-            await_events=load_script('awaitEvents'),
+            await_events=load_script('awaitEvents', is_async=True),
         )
 
 

@@ -1,14 +1,10 @@
 import { awaitChanged, awaitLoaded, awaitStyleChanged } from "../events";
 
-// @ts-ignore
-const [queries, done] = args;
-
-(function() {
+window.quickstrom.run = function(queries) {
     const selectors = Object.keys(queries);
-    (window as any).quickstromEventsObserver = Promise.race([
+    window.quickstrom.eventsObserver = Promise.race([
         awaitLoaded(),
         awaitChanged(selectors),
         awaitStyleChanged(queries),
     ]);
-    done();
-})();
+};
