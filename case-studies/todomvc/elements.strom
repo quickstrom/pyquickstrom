@@ -57,4 +57,4 @@ let ~toggleAllLabel =
   let t = first(`.todoapp label[for=toggle-all]`);
   t when t != null && t.visible;
 
-let ~toggleAllChecked = first(for c in `.todoapp #toggle-all` { c.checked });
+let ~toggleAllChecked = exists c in `.todoapp #toggle-all` { c.checked };

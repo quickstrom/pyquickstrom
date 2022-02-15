@@ -27,6 +27,7 @@ def ordinal(n: int) -> str:
         else:
             return f"{n}th"
 
+
 def format_after_passed_tests_str(passed_tests: List, suffix: str) -> str:
     l = len(passed_tests)
     if l == 0:
@@ -101,8 +102,7 @@ def root(ctx, color, log_level, include):
     multiple=True,
     type=(str, str, str),
     help='set a cookie based on three values, e.g. --cookie domain name value')
-def check(module: str, origin: str, browser: executor.Browser,
-          headless: bool,
+def check(module: str, origin: str, browser: executor.Browser, headless: bool,
           capture_screenshots: bool, console_report_on_success: bool,
           reporter: List[str], interpreter_log_file: Optional[str],
           json_report_file: str, json_report_files_directory: str,
@@ -159,19 +159,23 @@ def check(module: str, origin: str, browser: executor.Browser,
                 if isinstance(result, Passed):
                     l = len(result.passed_tests)
                     if l == 1:
-                        click.echo(click.style(f"The test passed.", fg="green"))
+                        click.echo(click.style(f"The test passed.",
+                                               fg="green"))
                     else:
-                        click.echo(click.style(f"All {l} tests passed.", fg="green"))
+                        click.echo(
+                            click.style(f"All {l} tests passed.", fg="green"))
                 if isinstance(result, Failed):
                     click.echo(
-                        click.style(
-                            format_after_passed_tests_str(result.passed_tests, f"failed with {result.failed_test.validity.certainty} {result.failed_test.validity.value}."),
-                            fg="red"))
+                        click.style(format_after_passed_tests_str(
+                            result.passed_tests,
+                            f"failed with {result.failed_test.validity.certainty} {result.failed_test.validity.value}."
+                        ),
+                                    fg="red"))
                 elif isinstance(result, Errored):
                     click.echo(
-                        click.style(
-                            format_after_passed_tests_str(result.passed_tests, f"errored!"),
-                            fg="red"))
+                        click.style(format_after_passed_tests_str(
+                            result.passed_tests, f"errored!"),
+                                    fg="red"))
 
             if any([(isinstance(r, Errored)) for r in results]):
                 exit(1)

@@ -29,7 +29,7 @@ Further, the integration tests and main Nix derivation can't currently be built 
 ## Check a TodoMVC Implementation
 
 ```shell
-poetry run quickstrom -Iulib -Icase-studies --log-level=debug check todomvc $TODOMVC_DIR/examples/dojo/index.html --browser=chrome --capture-screenshots
+poetry run quickstrom -Iulib -Icase-studies --log-level=debug check todomvc $(nix eval --file ./case-studies/todomvc.nix --raw '')/examples/dojo/index.html --browser=chrome --capture-screenshots
 ```
 
 ## Run Integration Tests

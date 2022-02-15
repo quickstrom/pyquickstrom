@@ -34,6 +34,7 @@ class SpecstromError(Exception):
     def __str__(self):
         return f"{self.message}, exit code {self.exit_code}"
 
+
 @dataclass
 class PerformActionError(Exception):
     action: Action
@@ -42,12 +43,14 @@ class PerformActionError(Exception):
     def __str__(self):
         return f"Error while performing {self.action}:\n\n{self.error}"
 
+
 @dataclass
 class UnsupportedActionError(Exception):
     action: Action
 
     def __str__(self):
         return f"Error while performing {self.action} (this is likely a bug in Quickstrom)"
+
 
 @dataclass
 class ScriptError(Exception):
@@ -57,6 +60,7 @@ class ScriptError(Exception):
 
     def __str__(self):
         return f"Error while invoking script {self.name} with args {self.script_args}:\n{self.error}"
+
 
 @dataclass
 class ClientSideEvents():
@@ -68,7 +72,8 @@ class ClientSideEvents():
 class Scripts():
     query_state: Callable[[WebDriver, Dict[Selector, Schema]], State]
     install_event_listener: Callable[[WebDriver, Dict[Selector, Schema]], None]
-    await_events: Callable[[WebDriver, Dict[Selector, Schema], int], Optional[ClientSideEvents]]
+    await_events: Callable[[WebDriver, Dict[Selector, Schema], int],
+                           Optional[ClientSideEvents]]
 
 
 Browser = Union[Literal['chrome'], Literal['firefox']]
@@ -111,7 +116,8 @@ class Check():
                         return None
                     else:
                         raise SpecstromError("Specstrom invocation failed",
-                                                exit_code, self.interpreter_log_file.name)
+                                             exit_code,
+                                             self.interpreter_log_file.name)
                 else:
                     self.log.debug("Received %s", msg)
                     return msg
@@ -130,11 +136,13 @@ class Check():
                     elif action.id == 'click':
                         id = action.args[0]
                         element = WebElement(driver, id)
-                        ActionChains(driver).move_to_element(element).click(element).perform()
+                        ActionChains(driver).move_to_element(element).click(
+                            element).perform()
                     elif action.id == 'doubleClick':
                         id = action.args[0]
                         element = WebElement(driver, id)
-                        ActionChains(driver).move_to_element(element).double_click(element).perform()
+                        ActionChains(driver).move_to_element(
+                            element).double_click(element).perform()
                     elif action.id == 'focus':
                         id = action.args[0]
                         element = WebElement(driver, id)
@@ -161,7 +169,8 @@ class Check():
 
             def screenshot(driver: WebDriver, hash: str):
                 if self.capture_screenshots:
-                    bs: bytes = driver.get_screenshot_as_png()    # type: ignore
+                    bs: bytes = driver.get_screenshot_as_png(
+                    )    # type: ignore
                     (width, height, _, _) = png.Reader(io.BytesIO(bs)).read()
                     window_size = driver.get_window_size()
                     scale = round(width / window_size['width'])
@@ -170,9 +179,9 @@ class Check():
                             "Width and height scales do not match for screenshot"
                         )
                     screenshots[hash] = result.Screenshot(image=bs,
-                                                            width=width,
-                                                            height=height,
-                                                            scale=scale)
+                                                          width=width,
+                                                          height=height,
+                                                          scale=scale)
 
             def attach_screenshots(
                     r: result.PlainResult) -> result.PlainResult:
@@ -190,7 +199,7 @@ class Check():
                     screenshot(driver, dict_hash(state))
                     state_version.increment()
                     send(Timeout(state=state))
-                    
+
                 try:
                     self.log.debug(f"Awaiting events with timeout {timeout}")
                     events = scripts.await_events(driver, deps, timeout)
@@ -227,16 +236,18 @@ class Check():
 
                             state_version = Counter(initial_value=0)
 
-                            scripts.install_event_listener(driver, msg.dependencies)
-                            await_events(driver, msg.dependencies, state_version, 10000)
+                            scripts.install_event_listener(
+                                driver, msg.dependencies)
+                            await_events(driver, msg.dependencies,
+                                         state_version, 10000)
 
-                            await_session_commands(driver, msg.dependencies, state_version)
+                            await_session_commands(driver, msg.dependencies,
+                                                   state_version)
                         except Exception as e:
                             send(Error(str(e)))
                     elif isinstance(msg, Done):
                         return [
-                            attach_screenshots(
-                                result.from_protocol_result(r))
+                            attach_screenshots(result.from_protocol_result(r))
                             for r in msg.results
                         ]
 
@@ -258,8 +269,10 @@ class Check():
                                 perform_action(driver, msg.action)
 
                                 if msg.action.timeout is not None:
-                                    self.log.debug("Installing change observer")
-                                    scripts.install_event_listener(driver, deps)
+                                    self.log.debug(
+                                        "Installing change observer")
+                                    scripts.install_event_listener(
+                                        driver, deps)
 
                                 state = scripts.query_state(driver, deps)
                                 screenshot(driver, dict_hash(state))
@@ -267,9 +280,12 @@ class Check():
                                 send(Performed(state=state))
 
                                 if msg.action.timeout is not None:
-                                    await_events(driver, deps, state_version, msg.action.timeout)
+                                    await_events(driver, deps, state_version,
+                                                 msg.action.timeout)
                             else:
-                                self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
+                                self.log.warn(
+                                    f"Got stale message ({msg}) in state {state_version.value}"
+                                )
                                 send(Stale())
                         elif isinstance(msg, AwaitEvents):
                             if msg.version == state_version.value:
@@ -277,9 +293,12 @@ class Check():
                                     f"Awaiting events in state {state_version.value} with timeout {msg.await_timeout}"
                                 )
                                 scripts.install_event_listener(driver, deps)
-                                await_events(driver, deps, state_version, msg.await_timeout)
+                                await_events(driver, deps, state_version,
+                                             msg.await_timeout)
                             else:
-                                self.log.warn(f"Got stale message ({msg}) in state {state_version.value}")
+                                self.log.warn(
+                                    f"Got stale message ({msg}) in state {state_version.value}"
+                                )
                                 send(Stale())
                         elif isinstance(msg, End):
                             self.log.info("Ending session")
@@ -329,20 +348,34 @@ class Check():
     def load_scripts(self) -> Scripts:
         def map_query_state(r):
             if r is None:
-                raise Exception("WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action.")
+                raise Exception(
+                    "WebDriver script invocation failed with unexpected None result. This might be caused by an unexpected page navigation in the browser. Consider adding a timeout to the corresponding action."
+                )
             return elements_to_refs(r)
+
         def map_client_side_events(r):
             def map_event(e: dict):
                 if e['tag'] == 'loaded':
-                    return Action(id='loaded', args=[], isEvent=True, timeout=None)
+                    return Action(id='loaded',
+                                  args=[],
+                                  isEvent=True,
+                                  timeout=None)
                 elif e['tag'] == 'changed':
-                    return Action(id='changed', args=[elements_to_refs(e['element'])], isEvent=True, timeout=None)
+                    return Action(id='changed',
+                                  args=[elements_to_refs(e['element'])],
+                                  isEvent=True,
+                                  timeout=None)
                 elif e['tag'] == 'detached':
-                    return Action(id='detached', args=[e['markup']], isEvent=True, timeout=None)
+                    return Action(id='detached',
+                                  args=[e['markup']],
+                                  isEvent=True,
+                                  timeout=None)
                 else:
                     raise Exception(f"Invalid event tag in: {e}")
 
-            return ClientSideEvents([map_event(e) for e in r['events']], elements_to_refs(r['state'])) if r is not None else None
+            return ClientSideEvents([map_event(e) for e in r['events']],
+                                    elements_to_refs(
+                                        r['state'])) if r is not None else None
 
         result_mappers = {
             'queryState': map_query_state,
@@ -360,7 +393,9 @@ class Check():
 
             def f(driver: WebDriver, *args: Any) -> JsonLike:
                 try:
-                    r = driver.execute_async_script(script, *args) if is_async else driver.execute_script(script, *args)
+                    r = driver.execute_async_script(
+                        script, *args) if is_async else driver.execute_script(
+                            script, *args)
                     return result_mappers[name](r)
                 except StaleElementReferenceException as e:
                     raise e
