@@ -8,7 +8,7 @@ import time
 import os
 import pathlib
 
-from . import shared
+import shared
 
 
 def run(apps: List[shared.TestApp]):
@@ -17,7 +17,7 @@ def run(apps: List[shared.TestApp]):
         try:
             shutil.rmtree("results", ignore_errors=True)
             os.makedirs("results")
-            browsers: List[str] = [
+            browsers: List[shared.Browser] = [
                 "chrome",
             # , "firefox"
             ]
@@ -51,11 +51,6 @@ def run(apps: List[shared.TestApp]):
                                     f"HTML report: {html_report_dir}/index.html"
                                 )
 
-                                include_flags = [
-                                    arg for path in shared.include_paths
-                                    for arg in ["-I", path]
-                                ]
-
                                 click.echo(f"Try {try_n}...")
                                 try:
                                     r = shared.check(
@@ -64,7 +59,9 @@ def run(apps: List[shared.TestApp]):
                                         interpreter_log_file=
                                         interpreter_log_file,
                                         stdout=stdout_file,
-                                        stderr=stderr_file)
+                                        stderr=stderr_file,
+                                        browser=browser,
+                                        headful=False)
 
                                     if r != app.expected:
                                         if try_n == max_tries or app.expected == 'passed':
@@ -78,7 +75,8 @@ def run(apps: List[shared.TestApp]):
                                             break
                                     else:
                                         if r == 'passed':
-                                            click.echo(shared.success("Passed!"))
+                                            click.echo(
+                                                shared.success("Passed!"))
                                         else:
                                             click.echo(
                                                 shared.warning(
