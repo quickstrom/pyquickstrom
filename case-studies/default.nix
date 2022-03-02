@@ -1,20 +1,28 @@
-{ pkgs ? (import ../nix/nixpkgs.nix), specstrom ? null
+{ pkgs ? (import ../nix/nixpkgs.nix), specstrom ? (import ../nix/specstrom.nix)
 , quickstrom ? import ../default.nix { inherit specstrom; } }:
 let
   src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
+  # py = pkgs.python38.withPackages (p: [ p.click ]);
+  todomvc = import ./todomvc.nix;
 
-  deps = [ pkgs.chromedriver pkgs.geckodriver quickstrom pkgs.python38 ]
-    ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ];
+  # ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ]
 
-  run = pkgs.writeShellScriptBin "run-case-studies" ''
-    for i in ${pkgs.lib.concatStringsSep " " deps}; do
-        export PATH="$i/bin:$PATH"
-    done
-    pushd ${src}
-    python run.py
-    popd ${src}
-  '';
+  run = pkgs.writeShellApplication {
+    name = "run-case-study";
+    text = ''
+      export TODOMVC_DIR=${todomvc}
+      pushd ${src}
+      python run.py /tmp/case-study/results
+      popd
+    '';
+  };
 in pkgs.dockerTools.buildImage {
-  name = "case-studies";
-  config = { Cmd = [ "${run}/bin/run-case-studies" ]; };
+  name = "case-study";
+  tag = "firefox";
+  contents = [
+    specstrom
+    quickstrom
+    run
+  ];
+  config = {};
 }

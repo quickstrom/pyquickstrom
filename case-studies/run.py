@@ -11,15 +11,15 @@ import pathlib
 import shared
 
 
-def run(apps: List[shared.TestApp]):
+def run(results_root: str, apps: List[shared.TestApp]):
     with shared.todomvc_server() as server:
         unexpected_result_tests = []
         try:
-            shutil.rmtree("results", ignore_errors=True)
-            os.makedirs("results")
+            shutil.rmtree(results_root, ignore_errors=True)
+            os.makedirs(results_root)
             browsers: List[shared.Browser] = [
-                "chrome",
-            # , "firefox"
+                # "chrome",
+                "firefox"
             ]
             for app in apps:
 
@@ -28,8 +28,8 @@ def run(apps: List[shared.TestApp]):
                     for try_n in range(1, max_tries + 1):
                         result_dir = str(
                             pathlib.Path(
-                                f"results/{app.name}.{browser}.{try_n}").
-                            absolute())
+                                f"{results_root}/{app.name}.{browser}.{try_n}"
+                            ).absolute())
                         os.makedirs(result_dir)
                         html_report_dir = f"{result_dir}/html-report"
                         interpreter_log_file = f"{result_dir}/interpreter.log"
@@ -101,7 +101,7 @@ def run(apps: List[shared.TestApp]):
             server.kill()
             if len(unexpected_result_tests) > 0:
                 click.echo(
-                    f"There were unexpected results. Rerun only those apps with:\n\n{sys.argv[0]} {' '.join(unexpected_result_tests)}"
+                    f"There were unexpected results. Rerun only those apps with:\n\n{sys.argv[0]} {sys.argv[1]} {' '.join(unexpected_result_tests)}"
                 )
                 exit(1)
 
@@ -166,12 +166,17 @@ all_apps = [
 ]
 
 if __name__ == "__main__":
-    apps_to_run = sys.argv[1:]
-    selected_apps: List[shared.TestApp] = all_apps
-    if len(apps_to_run) > 0:
-        click.echo("Running selected apps only")
-        selected_apps = list(filter(lambda a: a.name in apps_to_run, all_apps))
+    if len(sys.argv) < 2:
+        click.echo(f"Usage: {sys.argv[0]} RESULTS_DIR [APP]")
     else:
-        click.echo("Running all apps")
+        results_root = sys.argv[1] or "results"
+        apps_to_run = sys.argv[2:]
+        selected_apps: List[shared.TestApp] = all_apps
+        if len(apps_to_run) > 0:
+            click.echo("Running selected apps only")
+            selected_apps = list(
+                filter(lambda a: a.name in apps_to_run, all_apps))
+        else:
+            click.echo("Running all apps")
 
-    run(selected_apps)
+        run(results_root, selected_apps)

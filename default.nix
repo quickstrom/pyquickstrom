@@ -27,6 +27,7 @@ let
       wrapProgram $out/bin/quickstrom \
         --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
         --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
+        --set PATH ${pkgs.lib.makeBinPath [specstrom pkgs.firefox pkgs.geckodriver pkgs.chromium pkgs.chromedriver]} \
         --add-flags "-I$out/share/ulib"
 
     '';

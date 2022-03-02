@@ -15,6 +15,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import selenium.webdriver.chrome.options as chrome_options
 import selenium.webdriver.firefox.options as firefox_options
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 from quickstrom.protocol import *
 from quickstrom.hash import dict_hash
@@ -336,11 +337,13 @@ class Check():
         elif self.browser == 'firefox':
             options = firefox_options.Options()
             options.headless = self.headless
-            options.binary = which("firefox")    # type: ignore
+            binary = FirefoxBinary(which("firefox"))
+            # options.binary = FirefoxBinary(which("firefox"))    # type: ignore
             geckodriver_path = which('geckodriver')
             if not geckodriver_path:
                 raise Exception("geckodriver not found in PATH")
             return webdriver.Firefox(options=options,
+                                     firefox_binary=binary,
                                      executable_path=geckodriver_path)
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
