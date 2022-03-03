@@ -248,7 +248,7 @@ let ~editModeTransition =
 
 let ~hasFilters = numItems == 0 || availableFilters == ["All", "Active", "Completed"];
 
-let ~hasToggleAll = selectedFilter != null ==> toggleAllLabel != null;
+let ~hasToggleAll = (not isInEditMode && selectedFilter != null) ==> toggleAllLabel != null;
 
 let ~correctFilterStates =
   match selectedFilter {
