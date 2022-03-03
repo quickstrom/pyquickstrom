@@ -96,6 +96,7 @@ class Check():
     headless: bool
     capture_screenshots: bool
     cookies: List[Cookie]
+    driver_log_file: Optional[str]
     interpreter_log_file: IO
     log: logging.Logger = logging.getLogger('quickstrom.executor')
 
@@ -344,7 +345,8 @@ class Check():
                 raise Exception("geckodriver not found in PATH")
             return webdriver.Firefox(options=options,
                                      firefox_binary=binary,
-                                     executable_path=geckodriver_path)
+                                     executable_path=geckodriver_path,
+                                     service_log_path=self.driver_log_file or "geckodriver.log")
         else:
             raise Exception(f"Unsupported browser: {self.browser}")
 

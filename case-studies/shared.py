@@ -79,6 +79,7 @@ def check(app: TestApp,
           browser: Browser = "firefox",
           html_report_dir: Optional[str] = None,
           interpreter_log_file: Optional[str] = None,
+          driver_log_file: Optional[str] = None,
           headful: bool = False,
           stdout: TextIO = sys.stdout,
           stderr: TextIO = sys.stderr):
@@ -103,7 +104,8 @@ def check(app: TestApp,
         "--headful" if headful else "--headless",
     ] + optional("--reporter", "html" if html_report_dir is not None else None) \
         + optional("--html-report-directory", html_report_dir) \
-            + optional("--interpreter-log-file", interpreter_log_file)
+            + optional("--interpreter-log-file", interpreter_log_file) \
+            + optional("--driver-log-file", driver_log_file)
 
     click.echo(f"Command: {' '.join(args)}")
     click.echo("")

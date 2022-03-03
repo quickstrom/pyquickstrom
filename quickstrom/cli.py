@@ -92,6 +92,7 @@ def root(ctx, color, log_level, include):
               default=['console'],
               help='enable a reporter by name')
 @click.option('--interpreter-log-file', default=None)
+@click.option('--driver-log-file', default=None)
 @click.option('--json-report-file', default='report.json')
 @click.option('--json-report-files-directory',
               default='json-report-files',
@@ -104,7 +105,7 @@ def root(ctx, color, log_level, include):
     help='set a cookie based on three values, e.g. --cookie domain name value')
 def check(module: str, origin: str, browser: executor.Browser, headless: bool,
           capture_screenshots: bool, console_report_on_success: bool,
-          reporter: List[str], interpreter_log_file: Optional[str],
+          reporter: List[str], interpreter_log_file: Optional[str], driver_log_file: Optional[str],
           json_report_file: str, json_report_files_directory: str,
           html_report_directory: str, cookie: List[Tuple[str, str, str]]):
     """Checks the configured properties in the given module."""
@@ -148,7 +149,8 @@ def check(module: str, origin: str, browser: executor.Browser, headless: bool,
                                      headless,
                                      capture_screenshots,
                                      cookies,
-                                     interpreter_log_file=ilog).execute()
+                                     interpreter_log_file=ilog,
+                                     driver_log_file=driver_log_file).execute()
             chosen_reporters = reporters_by_names(reporter)
             for result in results:
                 for r in chosen_reporters:

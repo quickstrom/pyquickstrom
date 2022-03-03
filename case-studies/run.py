@@ -33,6 +33,7 @@ def run(results_root: str, apps: List[shared.TestApp]):
                         os.makedirs(result_dir)
                         html_report_dir = f"{result_dir}/html-report"
                         interpreter_log_file = f"{result_dir}/interpreter.log"
+                        driver_log_file = f"{result_dir}/driver.log"
                         duration_file = f"{result_dir}/duration"
                         start_time = time.time()
                         shutil.rmtree(html_report_dir, ignore_errors=True)
@@ -48,6 +49,8 @@ def run(results_root: str, apps: List[shared.TestApp]):
                                 click.echo(
                                     f"Interpreter log: {interpreter_log_file}")
                                 click.echo(
+                                    f"Driver log: {driver_log_file}")
+                                click.echo(
                                     f"HTML report: {html_report_dir}/index.html"
                                 )
 
@@ -58,6 +61,7 @@ def run(results_root: str, apps: List[shared.TestApp]):
                                         html_report_dir=html_report_dir,
                                         interpreter_log_file=
                                         interpreter_log_file,
+                                        driver_log_file=driver_log_file,
                                         stdout=stdout_file,
                                         stderr=stderr_file,
                                         browser=browser,

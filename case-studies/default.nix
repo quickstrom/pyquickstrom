@@ -2,17 +2,16 @@
 , quickstrom ? import ../default.nix { inherit specstrom; } }:
 let
   src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
-  # py = pkgs.python38.withPackages (p: [ p.click ]);
+  py = pkgs.python38.withPackages (p: [ p.click ]);
   todomvc = import ./todomvc.nix;
-
-  # ++ pkgs.lib.optional pkgs.stdenv.isLinux [ pkgs.firefox pkgs.chromium ]
 
   run = pkgs.writeShellApplication {
     name = "run-case-study";
+    runtimeInputs = [py];
     text = ''
       export TODOMVC_DIR=${todomvc}
       pushd ${src}
-      python run.py /tmp/case-study/results
+      python run.py /tmp/case-study/results "$@"
       popd
     '';
   };
@@ -20,9 +19,10 @@ in pkgs.dockerTools.buildImage {
   name = "case-study";
   tag = "firefox";
   contents = [
-    specstrom
+    pkgs.coreutils
+    pkgs.bashInteractive
     quickstrom
     run
   ];
-  config = {};
+  config = { Cmd = ["run-case-study"]; };
 }
