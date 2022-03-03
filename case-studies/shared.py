@@ -93,8 +93,7 @@ def check(app: TestApp,
             return []
 
     args = ["quickstrom"] + include_flags + [
-        "--log-level",
-        "debug",
+        "--log-level=debug",
         "check",
         app.module,
         app.origin_url(),
