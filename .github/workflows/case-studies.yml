@@ -76,15 +76,10 @@ jobs:
         nix-shell --command "echo Done"
         popd
     - name: Run test
-      uses: nick-invision/retry@v2
-      with:
-        timeout_minutes: 2
-        max_attempts: 5
-        retry_on: timeout
-        command: |
-            pushd case-studies
-            nix-shell --command "./run.py ${{matrix.app}}"
-            popd
+      run: |
+        pushd case-studies
+        nix-shell --command "./run.py ${{matrix.app}}"
+        popd
     - name: Archive results
       uses: actions/upload-artifact@v2
       with:
