@@ -101,7 +101,7 @@ let ~addNew =
   let trimmed = trim(newTodoInput.pendingText);
   // Blank todo items cannot be created.
   trimmed != ""
-  // Creating an itme clears the input and always enabled one of the filters.
+  // Creating an item clears the input and always enabled one of the filters.
   && newTodoInput.pendingText becomes "" && selectedFilter does not become null
   // Pressing return is the only way to create a todo item.
   && nextT (contains(keyPress!(keys.return), happened))
@@ -144,7 +144,7 @@ let ~delete =
     && (match numItems {
       | case 0 { false }
       | case 1 {
-        numItems becomes 0 && selectedFilter becomes null
+        numItems becomes 0
       }
       | case other {
           unchanged(selectedFilter)
