@@ -1,4 +1,4 @@
-{ pkgs ? (import ../nix/nixpkgs.nix), quickstrom ? import ../default.nix { } }:
+{ pkgs ? (import ../nix/nixpkgs.nix), specstrom ? import ../nix/specstrom.nix, quickstrom ? import ../default.nix { inherit specstrom; } }:
 let
   todomvc = import ./todomvc.nix;
 in pkgs.mkShell {

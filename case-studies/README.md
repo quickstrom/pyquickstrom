@@ -1,7 +1,8 @@
 # Getting Started Guide
 
-We'll use the submitted artifact to reproduce the case study test results from "Quickstrom: Property-based acceptance testing with LTL specifications". It's
-a Docker image that checks all (or only the specified) implementations of TodoMVC.
+We'll use the submitted artifact to reproduce the case study test results from
+"Quickstrom: Property-based acceptance testing with LTL specifications". It's a
+Docker image that checks all (or only the specified) implementations of TodoMVC.
 
 Requirements:
 
@@ -12,13 +13,13 @@ Getting started steps:
 
 1. Load the image into Docker:
 
-   ```bash
+   ```
    docker load < case-study.tar.gz
    ```
 
 2. Check a single TodoMVC application:
 
-   ```bash
+   ```
    docker run --network=host -v /tmp/case-study:/tmp/case-study case-study:firefox run-case-study backbone
    ```
 
@@ -64,7 +65,7 @@ matching results, so that we can easily recheck only those.
 Similary to the _Getting Started Guide_, we use Docker to run the case study.
 But this time we supply no argument, which means we check _all_ implementations:
 
-```bash
+```
 docker run --network=host -v /tmp/case-study:/tmp/case-study case-study:firefox run-case-study
 ```
 
@@ -100,7 +101,7 @@ Quickstrom.
 To rerun the check of an implementation, supply the name as an
 argument:
 
-```bash
+```
 docker run --network=host -v /tmp/case-study:/tmp/case-study case-study:firefox run-case-study backbone_marionette
 ```
 
@@ -122,35 +123,22 @@ results.
 
 ## Source code
 
-The full source code of the components is available on GitHub in two repositories:
-
-* Specstrom
-   - Repository: https://github.com/quickstrom/specstrom
-   - Revision used: https://github.com/quickstrom/specstrom/tree/d5086152a818a10a9d07b747ef860dc17235235e
-* Quickstrom
-   - Repository: https://github.com/quickstrom/pyquickstrom
-   - Revision used: https://github.com/quickstrom/pyquickstrom/tree/40e61e2e7caae5cb8c22bb910afd171c2758a7b9
-
-## Installing from source
-
-Installing the Quickstrom packages is a little fiddly, given the WebDriver and
-browser dependencies, and that we have two components talking to eachother.
-
-If using the Nix package manager, installing and running from source is rather easy:
+The full source code of the two components (Specstrom and Quickstrom) is
+included in another image:
 
 ```
-git clone https://github.com/quickstrom/pyquickstrom.git
-cd pyquickstrom
-git checkout 40e61e2
-cd case-studies
-nix-shell
+docker load < case-study-source.tar.gz
+docker run --network=host -ti case-study-source:firefox
 ```
 
-However, depending on your system the Firefox and Chrome packages might not be
-supported. If so you'll have to install them in another way.
-
-You can now run case studies directly on your machine:
+The components are prebuilt, and you'll be in a Nix shell with all the
+dependencies required, so you're ready to launch the case study runner:
 
 ```
 ./run.py /tmp/case-study-results
 ```
+
+To inspect the source from within the container, see:
+
+* `/src/specstrom`
+* `/src/pyquickstrom`
