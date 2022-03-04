@@ -81,6 +81,7 @@ jobs:
         nix-shell --command "./run.py results ${{matrix.app}}"
         popd
     - name: Archive results
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test-results-${{matrix.app}}
