@@ -18,9 +18,11 @@ action ~selectSameFilter! = click!(`.todoapp .filters a.selected`) when not isIn
 
 action ~toggleAllTodos! = click!(`.todoapp label[for=toggle-all]`) when not isInEditMode;
 
+// timeout 100 to please Elm async usage in their impl
+
 action ~editTodo! = doubleClick!(`.todo-list li label`) timeout 100 when not isInEditMode;
 
-action ~deleteTodo! = click!(`.todoapp .destroy`) when not isInEditMode;
+action ~deleteTodo! = click!(`.todoapp .destroy`) timeout 100 when not isInEditMode;
 
 action ~focusInput! = focus!(`.todoapp .new-todo`) when not isInEditMode;
 
