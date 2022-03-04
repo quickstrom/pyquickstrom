@@ -1,3 +1,4 @@
+from ast import Await
 import dataclasses
 import io
 import subprocess
@@ -228,20 +229,22 @@ class Check():
                             driver = self.new_driver()
                             driver.set_window_size(1200, 1200)
 
-                            # First we need to visit the page in order to set cookies.
-                            driver.get(self.origin)
-                            for cookie in self.cookies:
-                                self.log.debug(f"Setting {cookie}")
-                                driver.add_cookie(dataclasses.asdict(cookie))
+                            if len(self.cookies) > 0:
+                                # First we need to visit the page in order to set cookies.
+                                driver.get(self.origin)
+                                for cookie in self.cookies:
+                                    self.log.debug(f"Setting {cookie}")
+                                    driver.add_cookie(dataclasses.asdict(cookie))
                             # Now that cookies are set, we have to visit the origin again.
                             driver.get(self.origin)
+                            # Hacky sleep to allow page load.
+                            time.sleep(1)
 
                             state_version = Counter(initial_value=0)
 
                             scripts.install_event_listener(
                                 driver, msg.dependencies)
-                            await_events(driver, msg.dependencies,
-                                         state_version, 10000)
+                            await_events(driver, msg.dependencies, state_version, 10000)
 
                             await_session_commands(driver, msg.dependencies,
                                                    state_version)
@@ -252,6 +255,8 @@ class Check():
                             attach_screenshots(result.from_protocol_result(r))
                             for r in msg.results
                         ]
+                    elif isinstance(msg, AwaitEvents):
+                        raise Exception(f"AwaitEvents in run_sessions: {msg}")
 
             def await_session_commands(driver: WebDriver, deps, state_version):
                 try:
