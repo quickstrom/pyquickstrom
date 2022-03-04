@@ -120,9 +120,23 @@ In fact, our case study has since the paper submission found a few more faulty
 implementations (`aurelia`, `canjs`, `canjs_require`). We'll update the paper to reflect the new
 results.
 
-The full source code of the components is available on GitHub:
+## Source code
+
+The full source code of the components is available on GitHub in two repositories:
 
 * Specstrom
    - Repository: https://github.com/quickstrom/specstrom
    - Revision used: https://github.com/quickstrom/specstrom/tree/d5086152a818a10a9d07b747ef860dc17235235e
 * Quickstrom
+   - Repository: https://github.com/quickstrom/pyquickstrom
+   - Revision used: https://github.com/quickstrom/pyquickstrom/tree/d5086152a818a10a9d07b747ef860dc17235235e
+
+If using the Nix package manager, installing and running from source is simple:
+
+```
+git clone https://github.com/quickstrom/pyquickstrom.git
+cd pyquickstrom
+git checkout d5086152a818a10a9d07b747ef860dc17235235e
+cd case-studies
+nix-shell
+```
