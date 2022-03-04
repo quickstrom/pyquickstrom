@@ -129,14 +129,28 @@ The full source code of the components is available on GitHub in two repositorie
    - Revision used: https://github.com/quickstrom/specstrom/tree/d5086152a818a10a9d07b747ef860dc17235235e
 * Quickstrom
    - Repository: https://github.com/quickstrom/pyquickstrom
-   - Revision used: https://github.com/quickstrom/pyquickstrom/tree/d5086152a818a10a9d07b747ef860dc17235235e
+   - Revision used: https://github.com/quickstrom/pyquickstrom/tree/40e61e2e7caae5cb8c22bb910afd171c2758a7b9
 
-If using the Nix package manager, installing and running from source is simple:
+## Installing from source
+
+Installing the Quickstrom packages is a little fiddly, given the WebDriver and
+browser dependencies, and that we have two components talking to eachother.
+
+If using the Nix package manager, installing and running from source is rather easy:
 
 ```
 git clone https://github.com/quickstrom/pyquickstrom.git
 cd pyquickstrom
-git checkout d5086152a818a10a9d07b747ef860dc17235235e
+git checkout 40e61e2
 cd case-studies
 nix-shell
+```
+
+However, depending on your system the Firefox and Chrome packages might not be
+supported. If so you'll have to install them in another way.
+
+You can now run case studies directly on your machine:
+
+```
+./run.py /tmp/case-study-results
 ```
