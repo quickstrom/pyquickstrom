@@ -80,7 +80,7 @@ def run(results_root: str, apps: List[shared.TestApp]):
                                     else:
                                         if r == 'passed':
                                             click.echo(
-                                                shared.success("Passed!"))
+                                                shared.success(f"Got expected '{r}'!"))
                                         else:
                                             click.echo(
                                                 shared.warning(
@@ -132,17 +132,13 @@ all_apps = [
     todomvc_app("canjs_require"),
     todomvc_app("canjs", expected='failed'),
     todomvc_app("closure"),
-    todomvc_app("cujo", expected='error'),
     todomvc_app("dijon", expected='failed'),
     todomvc_app("dojo", expected='failed'),
     todomvc_app("duel", path="www/index.html", expected='failed'),
     todomvc_app("elm"),
-    # todomvc_app("emberjs_require", expected='error'), # this should be excluded
     todomvc_app("emberjs", expected='failed'),
     todomvc_app("enyo_backbone"),
     todomvc_app("exoskeleton"),
-    # todomvc_app("firebase-angular", expected='failed'), # excluded due to its async state updates
-    todomvc_app("gwt", expected='error'),
     todomvc_app("jquery", expected='failed'),
     todomvc_app("js_of_ocaml"),
     todomvc_app("jsblocks"),
@@ -156,7 +152,6 @@ all_apps = [
     todomvc_app("ractive"),
     todomvc_app("react-alt"),
     todomvc_app("react-backbone"),
-    # todomvc_app("react-hooks", expected='error'), # this should be excluded
     todomvc_app("react"),
     todomvc_app("reagent", expected='failed'),
     todomvc_app("riotjs"),

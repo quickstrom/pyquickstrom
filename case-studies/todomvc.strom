@@ -279,7 +279,7 @@ let ~prop_safety =
   notLoaded until {100}
   (
   initial
-    && always
+    && (always {100}
        ( focusNewTodo
            || enterNewTodoText
            || addNew
@@ -291,7 +291,7 @@ let ~prop_safety =
            || toggleAll
            || enterEditMode
            || editModeTransition
-       )
+       ))
     && always (hasFilters && hasToggleAll && correctFilterStates && editModeHasItems && itemsLeftPluralized)
   );
 
