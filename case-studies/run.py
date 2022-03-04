@@ -108,6 +108,8 @@ def run(results_root: str, apps: List[shared.TestApp]):
                     f"There were unexpected results. Rerun only those apps with:\n\n{sys.argv[0]} {sys.argv[1]} {' '.join(unexpected_result_tests)}"
                 )
                 exit(1)
+            else:
+                click.echo("All results were as expected!")
 
 
 def todomvc_app(name: str,
@@ -172,10 +174,15 @@ if __name__ == "__main__":
         apps_to_run = sys.argv[2:]
         selected_apps: List[shared.TestApp] = all_apps
         if len(apps_to_run) > 0:
-            click.echo("Running selected apps only")
+            click.echo("Running selected apps only:")
             selected_apps = list(
                 filter(lambda a: a.name in apps_to_run, all_apps))
         else:
-            click.echo("Running all apps")
+            click.echo("Running all apps:")
+
+        for app in selected_apps:
+            click.echo(f" - {app.name}")
+
+        click.echo("")
 
         run(results_root, selected_apps)
