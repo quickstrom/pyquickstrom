@@ -137,7 +137,7 @@ all_apps = [
     todomvc_app("dijon", expected='failed'),
     todomvc_app("dojo", expected='failed'),
     todomvc_app("duel", path="www/index.html", expected='failed'),
-    todomvc_app("elm"),
+    todomvc_app("elm", expected='failed'),
     todomvc_app("emberjs", expected='failed'),
     todomvc_app("enyo_backbone"),
     todomvc_app("exoskeleton"),
