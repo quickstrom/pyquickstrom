@@ -18,7 +18,7 @@ def run(results_root: str, apps: List[shared.TestApp]):
             shutil.rmtree(results_root, ignore_errors=True)
             os.makedirs(results_root)
             browsers: List[shared.Browser] = [
-                "chrome",
+                # "chrome",
                 "firefox"
             ]
             for app in apps:
