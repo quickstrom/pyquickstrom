@@ -131,7 +131,7 @@ all_apps = [
     todomvc_app("backbone_require"),
     todomvc_app("backbone"),
     todomvc_app("binding-scala"),
-    todomvc_app("canjs_require"),
+    todomvc_app("canjs_require", expected='failed'),
     todomvc_app("canjs", expected='failed'),
     todomvc_app("closure"),
     todomvc_app("dijon", expected='failed'),
