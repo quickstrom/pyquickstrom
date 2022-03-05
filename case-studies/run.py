@@ -18,7 +18,7 @@ def run(results_root: str, apps: List[shared.TestApp]):
             shutil.rmtree(results_root, ignore_errors=True)
             os.makedirs(results_root)
             browsers: List[shared.Browser] = [
-                # "chrome",
+                "chrome",
                 "firefox"
             ]
             for app in apps:
@@ -121,7 +121,7 @@ def todomvc_app(name: str,
 
 
 all_apps = [
-    todomvc_app("angular-dart", path="web/", expected='error'),
+    todomvc_app("angular-dart", path="web/", expected='failed'),
     todomvc_app("angular2_es2015", expected='failed'),
     todomvc_app("angular2", expected='failed'),
     todomvc_app("angularjs_require"),
