@@ -151,7 +151,7 @@ all_apps = [
     todomvc_app("lavaca_require", expected='failed'),
     todomvc_app("mithril", expected='failed'),
     todomvc_app("polymer", expected='failed'),
-    todomvc_app("ractive"),
+    todomvc_app("ractive", expected='failed'),
     todomvc_app("react-alt"),
     todomvc_app("react-backbone"),
     todomvc_app("react"),
