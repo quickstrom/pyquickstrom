@@ -1,4 +1,5 @@
-{ pkgs ? (import ./nix/nixpkgs.nix), specstrom ? import ./nix/specstrom.nix }:
+{ pkgs ? (import ./nix/nixpkgs.nix), specstrom ? import ./nix/specstrom.nix
+, includeBrowsers ? true }:
 let
   poetry2nix = import ./nix/poetry2nix.nix { inherit pkgs; };
 
@@ -17,7 +18,8 @@ let
   client-side = import ./client-side { inherit pkgs; };
   html-report = import ./html-report { inherit pkgs; };
 
-  browsers = pkgs.lib.optionals pkgs.stdenv.isLinux [pkgs.firefox pkgs.chromium];
+  runtimeDeps = [ specstrom pkgs.geckodriver pkgs.chromedriver ]
+    ++ pkgs.lib.optionals includeBrowsers [ pkgs.firefox pkgs.chromium ];
 
   quickstrom-wrapped = pkgs.symlinkJoin {
     name = "quickstrom";
@@ -29,7 +31,7 @@ let
       wrapProgram $out/bin/quickstrom \
         --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
         --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
-        --set PATH ${pkgs.lib.makeBinPath ([specstrom pkgs.geckodriver pkgs.chromedriver] ++ browsers)} \
+        --set PATH ${pkgs.lib.makeBinPath runtimeDeps} \
         --add-flags "-I$out/share/ulib"
 
     '';
