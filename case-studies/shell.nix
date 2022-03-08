@@ -1,5 +1,4 @@
-{ pkgs ? (import ../nix/nixpkgs.nix)
-, specstrom ? import ../nix/specstrom.nix,
+{ pkgs ? (import ../nix/nixpkgs.nix), specstrom ? import ../nix/specstrom.nix
 , quickstrom ? import ../default.nix { includeBrowsers = pkgs.stdenv.isLinux; }
 }:
 let todomvc = import ./todomvc.nix;
