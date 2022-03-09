@@ -12,15 +12,18 @@ import shared
 @dataclass
 class Result():
     name: str
+    actual: shared.ResultName
+    expected: shared.ResultName
     duration: float
-    result: shared.ResultName
     browser: str
+    subscript: int
 
     def to_csv_row(self) -> str:
-        return f"{self.name},{self.duration},{self.result},{self.browser}\n"
+        # name,actual,expected,duration,browser,subscript
+        return f"{self.name},{self.actual},{self.expected},{self.duration},{self.browser},{self.subscript}\n"
 
 
-def measure(apps: List[shared.TestApp], file: TextIO):
+def measure(apps: List[shared.TestApp], subscript: int, file: TextIO):
     with shared.todomvc_server() as server:
         try:
             browsers: List[shared.Browser] = [
@@ -30,8 +33,8 @@ def measure(apps: List[shared.TestApp], file: TextIO):
             for app in apps:
 
                 for browser in browsers:
-                    max_tries = 3
-                    for _ in range(1, max_tries + 1):
+                    runs = 10
+                    for _ in range(1, runs + 1):
                         start_time = time.time()
                         click.echo(shared.heading1(f"{app.name}"))
                         click.echo(f"Browser: {browser}")
@@ -40,14 +43,16 @@ def measure(apps: List[shared.TestApp], file: TextIO):
                             r = shared.check(
                                 app=app,
                                 stderr=sys.stdout,
-                                headful=True,
+                                headful=False,
                                 browser=browser,
                             )
                             end_time = time.time()
                             result = Result(app.name,
+                                            actual=r,
+                                            expected=app.expected,
                                             duration=(end_time - start_time),
-                                            result=r,
-                                            browser=browser)
+                                            browser=browser,
+                                            subscript=subscript)
                             file.write(result.to_csv_row())
                             file.flush()
                             click.echo(result)
@@ -68,30 +73,26 @@ def todomvc_app(name: str,
 
 
 all_apps = [
-    todomvc_app("angular-dart", path="web/", expected='error'),
+    todomvc_app("angular-dart", path="web/", expected='failed'),
     todomvc_app("angular2_es2015", expected='failed'),
     todomvc_app("angular2", expected='failed'),
     todomvc_app("angularjs_require"),
     todomvc_app("angularjs", expected='failed'),
-    todomvc_app("aurelia"),
+    todomvc_app("aurelia", expected='failed'),
     todomvc_app("backbone_marionette", expected='failed'),
     todomvc_app("backbone_require"),
     todomvc_app("backbone"),
     todomvc_app("binding-scala"),
-    todomvc_app("canjs_require"),
-    todomvc_app("canjs"),
+    todomvc_app("canjs_require", expected='failed'),
+    todomvc_app("canjs", expected='failed'),
     todomvc_app("closure"),
-    todomvc_app("cujo", expected='error'),
     todomvc_app("dijon", expected='failed'),
     todomvc_app("dojo", expected='failed'),
     todomvc_app("duel", path="www/index.html", expected='failed'),
-    todomvc_app("elm"),
-    # todomvc_app("emberjs_require", expected='error'), # this should be excluded
-    todomvc_app("emberjs"),
+    todomvc_app("elm", expected='failed'),
+    todomvc_app("emberjs", expected='failed'),
     todomvc_app("enyo_backbone"),
     todomvc_app("exoskeleton"),
-    # todomvc_app("firebase-angular", expected='failed'), # excluded due to its async state updates
-    todomvc_app("gwt", expected='error'),
     todomvc_app("jquery", expected='failed'),
     todomvc_app("js_of_ocaml"),
     todomvc_app("jsblocks"),
@@ -102,10 +103,9 @@ all_apps = [
     todomvc_app("lavaca_require", expected='failed'),
     todomvc_app("mithril", expected='failed'),
     todomvc_app("polymer", expected='failed'),
-    todomvc_app("ractive"),
+    todomvc_app("ractive", expected='failed'),
     todomvc_app("react-alt"),
     todomvc_app("react-backbone"),
-    # todomvc_app("react-hooks", expected='error'), # this should be excluded
     todomvc_app("react"),
     todomvc_app("reagent", expected='failed'),
     todomvc_app("riotjs"),
@@ -119,8 +119,12 @@ all_apps = [
 ]
 
 if __name__ == "__main__":
-    output_file = sys.argv[1]
-    apps_to_run = sys.argv[2:]
+    if len(sys.argv) < 3:
+        click.echo(f"Usage: {sys.argv[0]} SUBSCRIPT OUTPUT_FILE [APPS]")
+        exit(1)
+    subscript = int(sys.argv[1])
+    output_file = sys.argv[2]
+    apps_to_run = sys.argv[3:]
     selected_apps: List[shared.TestApp] = all_apps
     if len(apps_to_run) > 0:
         selected_apps = list(filter(lambda a: a.name in apps_to_run, all_apps))
@@ -132,5 +136,4 @@ if __name__ == "__main__":
     click.echo("")
 
     with open(output_file, "w+") as f:
-        f.write(f"name,duration,result,browser\n")
-        measure(selected_apps, file=f)
+        measure(selected_apps, subscript=subscript, file=f)
