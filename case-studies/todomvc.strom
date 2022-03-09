@@ -5,6 +5,8 @@ import quickstrom;
 import todomvc/operators;
 import todomvc/elements;
 
+let subscript = 100;
+
 //-------------------------------------------------
 // Actions
 //-------------------------------------------------
@@ -239,7 +241,7 @@ let commitEdit(originalItem) =
 let ~enterEditMode =
     startEditing && nextT (
       let initialItem = itemInEditMode;
-      enterEditText until {100} (commitEdit(initialItem) || abortEdit(initialItem))
+      enterEditText until {subscript} (commitEdit(initialItem) || abortEdit(initialItem))
     );
 
 let ~editModeTransition =
@@ -276,10 +278,10 @@ let ~itemsLeftPluralized =
 // State machine definition
 
 let ~prop_safety =
-  notLoaded until {100}
+  notLoaded until {subscript}
   (
   initial
-    && (always {100}
+    && (always {subscript}
        ( focusNewTodo
            || enterNewTodoText
            || addNew
@@ -292,7 +294,7 @@ let ~prop_safety =
            || enterEditMode
            || editModeTransition
        ))
-    && always (hasFilters && hasToggleAll && correctFilterStates && editModeHasItems && itemsLeftPluralized)
+    && (always {subscript} (hasFilters && hasToggleAll && correctFilterStates && editModeHasItems && itemsLeftPluralized))
   );
 
 action ~pageLoaded? = loaded? timeout 2000;
