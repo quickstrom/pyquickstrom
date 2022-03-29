@@ -199,7 +199,8 @@ let ~startEditing =
           newTodoInput.pendingText,
           selectedFilter,
           availableFilters,
-          todoCount
+          todoCount,
+          length(items)
         ])
         && (newTodoInput != null ==> unchanged(newTodoInput.pendingText));
 
