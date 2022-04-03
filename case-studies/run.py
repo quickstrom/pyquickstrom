@@ -117,7 +117,7 @@ def todomvc_app(name: str,
                 expected: shared.ResultName = 'passed') -> shared.TestApp:
     base = "http://localhost:12345"
     url = f"{base}/examples/{name}/{path}"
-    return shared.TestApp(name, "todomvc", url, expected)
+    return shared.TestApp(name, os.getenv("TODOMVC_SPEC_MODULE", "todomvc"), url, expected)
 
 
 all_apps = [
