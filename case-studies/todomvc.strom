@@ -91,6 +91,7 @@ let ~changeFilter =
   });
 
 let ~setSameFilter =
+    editInput == null &&
     unchanged([
       selectedFilter,
       newTodoInput.pendingText,
@@ -104,7 +105,7 @@ let ~addNew =
   // Blank todo items cannot be created.
   trimmed != ""
   // Creating an item clears the input and always enabled one of the filters.
-  && newTodoInput.pendingText becomes "" && selectedFilter does not become null
+  && newTodoInput.pendingText becomes "" // && selectedFilter does not become null
   // Pressing return is the only way to create a todo item.
   && nextT (contains(keyPress!(keys.return), happened))
   && (match selectedFilter {
@@ -194,7 +195,7 @@ let ~toggleAll =
     });
 
 let ~startEditing =
-    (numInEditMode == 0) ~> (numInEditMode == 1 && editInput.active)
+    ((numInEditMode == 0) ~> (numInEditMode == 1 && editInput.active))
         && unchanged([
           newTodoInput.pendingText,
           selectedFilter,
@@ -245,8 +246,10 @@ let ~enterEditMode =
     );
 
 let ~editModeTransition =
-  (numInEditMode == 1 ~> numInEditMode == 1)
-  || (numInEditMode == 1 ~> numInEditMode == 0);
+  editInput != null
+  && editInput.active
+  && ((numInEditMode == 1 ~> numInEditMode == 1)
+    || (numInEditMode == 1 ~> numInEditMode == 0));
 
 // Global Invariants
 
