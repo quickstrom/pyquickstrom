@@ -162,7 +162,7 @@ class Check():
                         element = WebElement(driver, id)
                         element.send_keys(action.args[0])
                     elif action.id == 'clear':
-                        id = action.args[1]
+                        id = action.args[0]
                         element = WebElement(driver, id)
                         element.clear()
                     else:
