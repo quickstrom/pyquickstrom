@@ -1,2 +1,2 @@
 { pkgs }:
-pkgs.callPackage (fetchTarball "https://github.com/nix-community/poetry2nix/archive/705cbfa10e3d9bfed2e59e0256844ae3704dbd7e.tar.gz") { inherit pkgs; }
+pkgs.callPackage (fetchTarball "https://github.com/nix-community/poetry2nix/archive/88ffae91c605aaafc2797f4096ca9f065152796a.tar.gz") { inherit pkgs; }

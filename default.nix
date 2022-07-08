@@ -5,7 +5,7 @@ let
 
   quickstrom = poetry2nix.mkPoetryApplication {
     projectDir = ./.;
-    python = pkgs.python38;
+    python = pkgs.python39;
     propagatedBuildInputs = [ specstrom ];
     checkInputs = [ pkgs.nodePackages.pyright ];
     checkPhase = ''
@@ -18,23 +18,34 @@ let
   client-side = import ./client-side { inherit pkgs; };
   html-report = import ./html-report { inherit pkgs; };
 
-  runtimeDeps = [ specstrom pkgs.geckodriver pkgs.chromedriver ]
-    ++ pkgs.lib.optionals includeBrowsers [ pkgs.firefox pkgs.chromium ];
+  runtimeDeps = [ specstrom pkgs.chromedriver ]
+    ++ pkgs.lib.optionals includeBrowsers [ pkgs.chromium ];
 
-  quickstrom-wrapped = pkgs.symlinkJoin {
+  quickstrom-wrapped = { includeBrowsers }:
+    pkgs.symlinkJoin {
+      name = "quickstrom";
+      paths = [ quickstrom ];
+      buildInputs = [ pkgs.makeWrapper ];
+      postBuild = ''
+        mkdir -p $out/share
+        cp -r ${./ulib} $out/share/ulib
+        wrapProgram $out/bin/quickstrom \
+          --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
+          --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
+          --set PATH ${pkgs.lib.makeBinPath runtimeDeps} \
+          --add-flags "-I$out/share/ulib"
+
+      '';
+    };
+
+  docker = pkgs.dockerTools.buildImage {
     name = "quickstrom";
-    paths = [ quickstrom ];
-    buildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      mkdir -p $out/share
-      cp -r ${./ulib} $out/share/ulib
-      wrapProgram $out/bin/quickstrom \
-        --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
-        --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
-        --set PATH ${pkgs.lib.makeBinPath runtimeDeps} \
-        --add-flags "-I$out/share/ulib"
-
-    '';
+    contents =
+      [ pkgs.coreutils (quickstrom-wrapped { includeBrowsers = true; }) ];
+    config = { Cmd = [ "quickstrom" ]; };
   };
-in quickstrom-wrapped
+in {
+  quickstrom = quickstrom-wrapped { inherit includeBrowsers; };
+  docker = docker;
+}
 
