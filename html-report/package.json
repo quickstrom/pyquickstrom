@@ -2,7 +2,7 @@
   "name": "html-report",
   "version": "0.1.0",
   "scripts": {
-    "build": "mkdir -p dist && browserify src/index.tsx -p [ tsify ] > dist/index.js && cp src/*.{css,html} dist/",
+    "build": "mkdir -p dist && browserify src/index.tsx -p [ tsify ] > dist/index.js && cp src/index.html dist/ && cp src/*.css dist/",
     "dev": "yarn build && cp -r dev/* dist/",
     "clean": "rm -rf dist"
   },
