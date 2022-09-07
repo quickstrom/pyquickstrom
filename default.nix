@@ -1,5 +1,8 @@
-{ pkgs ? (import ./nix/nixpkgs.nix), specstrom ? import ./nix/specstrom.nix
-, includeBrowsers ? true }:
+{ pkgs ? (import ./nix/nixpkgs.nix)
+, specstrom ? import ./nix/specstrom.nix
+, chromedriver ? pkgs.chromedriver
+, includeBrowsers ? true
+}:
 let
   poetry2nix = import ./nix/poetry2nix.nix { inherit pkgs; };
 
@@ -18,7 +21,7 @@ let
   client-side = import ./client-side { inherit pkgs; };
   html-report = import ./html-report { inherit pkgs; };
 
-  runtimeDeps = [ specstrom pkgs.chromedriver ]
+  runtimeDeps = [ specstrom chromedriver ]
     ++ pkgs.lib.optionals includeBrowsers [ pkgs.chromium ];
 
   quickstrom-wrapped = { includeBrowsers }:
