@@ -2,25 +2,16 @@
   "name": "html-report",
   "version": "0.1.0",
   "scripts": {
-    "start": "NODE_ENV=dev parcel dev/index.html",
-    "build": "parcel build --no-source-maps --no-content-hash --public-url=. src/index.html -d dist && sed -i 's/<body>/<body><script src=\"report.jsonp.js\"><\\/script>/' dist/index.html"
+    "build": "mkdir -p dist && browserify src/index.tsx -p [ tsify ] > dist/index.js && cp src/index.html dist/ && cp src/*.css dist/",
+    "dev": "yarn build && cp -r dev/* dist/",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "preact": "^10.5.7"
   },
   "devDependencies": {
-    "@types/jest": "^25.1.4",
-    "jest": "^25.1.0",
-    "parcel-bundler": "^1.12.4",
-    "parcel-plugin-static-files-copy": "^2.5.0",
-    "ts-jest": "^25.2.1",
+    "browserify": "^17.0.0",
+    "tsify": "^5.0.4",
     "typescript": "^4.1.2"
-  },
-  "jest": {
-    "preset": "ts-jest"
-  },
-  "staticFiles": {
-    "staticPath": [{ "staticPath": "dev", "env": "dev" }],
-    "watcherGlob": "**"
   }
 }

@@ -1,6 +1,6 @@
-{ pkgs ? import ../nix/nixpkgs.nix, browser ? "chrome" }:
+{ pkgs ? (import ../nix/nixpkgs.nix), browser ? "chrome" }:
 let
-  quickstrom = (import ../. { inherit pkgs; });
+  quickstrom = (import ../. { inherit pkgs; }).quickstrom;
 
   webdriver-deps = if browser == "chrome" then [
     pkgs.chromedriver

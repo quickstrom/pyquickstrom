@@ -1,8 +1,7 @@
 import logging
-from quickstrom.protocol import ErrorResult, RunResult
 from quickstrom.reporter import Reporter
 import click
-from typing import Tuple, cast, Dict, List, Optional, IO, AnyStr
+from typing import Tuple, cast, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
@@ -109,15 +108,16 @@ def check(module: str, origin: str, browser: executor.Browser, headless: bool,
           json_report_file: str, json_report_files_directory: str,
           html_report_directory: str, cookie: List[Tuple[str, str, str]]):
     """Checks the configured properties in the given module."""
+
     def reporters_by_names(names: List[str]) -> List[Reporter]:
         all_reporters = {
             'json':
-            json_reporter.JsonReporter(Path(json_report_file),
-                                       Path(json_report_files_directory)),
+                json_reporter.JsonReporter(Path(json_report_file),
+                                           Path(json_report_files_directory)),
             'html':
-            html_reporter.HtmlReporter(Path(html_report_directory)),
+                html_reporter.HtmlReporter(Path(html_report_directory)),
             'console':
-            console_reporter.ConsoleReporter(console_report_on_success)
+                console_reporter.ConsoleReporter(console_report_on_success)
         }
         chosen_reporters = []
         for name in names:
@@ -172,12 +172,12 @@ def check(module: str, origin: str, browser: executor.Browser, headless: bool,
                             result.passed_tests,
                             f"failed with {result.failed_test.validity.certainty} {result.failed_test.validity.value}."
                         ),
-                                    fg="red"))
+                            fg="red"))
                 elif isinstance(result, Errored):
                     click.echo(
                         click.style(format_after_passed_tests_str(
                             result.passed_tests, f"errored!"),
-                                    fg="red"))
+                            fg="red"))
 
             if any([(isinstance(r, Errored)) for r in results]):
                 exit(1)
@@ -194,4 +194,4 @@ root.add_command(check)
 
 
 def run():
-    root()
+    root()  # type: ignore

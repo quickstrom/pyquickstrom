@@ -1,3 +1,3 @@
 (import (fetchTarball
-  "https://github.com/quickstrom/specstrom/archive/d5086152a818a10a9d07b747ef860dc17235235e.tar.gz") {
+  "https://github.com/quickstrom/specstrom/archive/8ee871ee7c81de6586f191034bb8c233685e9c93.tar.gz") {
   }).specstrom
