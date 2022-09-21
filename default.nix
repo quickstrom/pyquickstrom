@@ -25,14 +25,14 @@ let
     ++ pkgs.lib.optionals includeBrowsers [ pkgs.chromium ];
 
   quickstrom-wrapped = { includeBrowsers }:
-    pkgs.symlinkJoin {
-      name = "quickstrom";
-      paths = [ quickstrom ];
+    pkgs.stdenv.mkDerivation {
+      name = "quickstrom-wrapped";
+      src = ./.;
       buildInputs = [ pkgs.makeWrapper ];
-      postBuild = ''
+      installPhase = ''
         mkdir -p $out/share
-        cp -r ${./ulib} $out/share/ulib
-        wrapProgram $out/bin/quickstrom \
+        cp -r ulib $out/share/ulib
+        makeWrapper ${quickstrom}/bin/quickstrom $out/bin/quickstrom \
           --set QUICKSTROM_CLIENT_SIDE_DIRECTORY ${client-side} \
           --set QUICKSTROM_HTML_REPORT_DIRECTORY ${html-report} \
           --set PATH ${pkgs.lib.makeBinPath runtimeDeps} \
