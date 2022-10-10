@@ -28,7 +28,7 @@ let
             echo "Expected exit code (${
               toString expectedExitCode
             }) was returned."
-        else 
+        else
             cat geckodriver.log || echo "No geckodriver log"
             cat interpreter.log
             echo "Expected exit code ${
@@ -67,4 +67,5 @@ in makeTests {
   liveness = passing("liveness");
   async-change = passing("async-change");
   async-css-change = passing("async-css-change");
+  only-noop = passing("only-noop");
 }
