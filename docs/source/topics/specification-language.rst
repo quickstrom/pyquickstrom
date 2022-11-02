@@ -1,140 +1,446 @@
 The Specification Language
 ==========================
 
-In Quickstrom, the behavior of a web application is described in a
-specification language. It’s a propositional temporal logic and functional
-language, heavily inspired by TLA+ and LTL, most notably adding web-specific
-operators. The specification language of Quickstrom is based on `PureScript
-<https://www.purescript.org/>`__.
+In Quickstrom, the intended behavior of a web application is described
+in a specification language called *Specstrom*. It’s a propositional
+temporal logic with a functional expression language. Syntax-wise we
+try to keep the language close to JavaScript, although semantically
+it's quite different.
 
-Like in TLA+, specifications in Quickstrom are based on state machines.
-A *behavior* is a finite sequence of states. A *step* is a tuple of two
-successive states in a behavior. A specification describes valid
-*behaviors* of a web application in terms of valid states and
-transitions between states.
+This document is a high-level and informal walkthrough of the
+language. Have a look at the paper `Quickstrom: Property-based
+Acceptance Testing with LTL Specifications
+<https://arxiv.org/pdf/2203.11532.pdf>`__ if you're interested in a
+more detailed description of the underlying temporal logic, called
+QuickLTL.
 
-As in regular PureScript, every expression evaluates to a *value*. A
-*proposition* is a boolean expression in a specification, evaluating to
-either ``true`` or ``false``. A specification that accepts *any*
-behavior could therefore be:
+Source Files
+------------
 
-.. code-block:: haskell
+Specifications are written in source files with a ``.strom`` file
+extension. Other files can be imported using the ``import <name
+without extension>`` syntax at the top of a source file.
 
-   module Spec where
+For instance, if we have a file ``foo.strom`` with the following contents:
 
-   proposition = true
+.. code-block:: js
+    :caption: foo.strom
 
-   ... -- more definitions, explained further down
+    let x = 1;
 
-To define a useful specification, though, we need to perform *queries*
-and describe how things change over time (using *temporal operators*).
+We can import it from another file and refer to its bindings and actions:
 
-Queries
--------
+.. code-block:: js
+    :caption: bar.strom
 
-Quickstrom provides two ways of querying the DOM in your specification:
+    import foo;
 
--  ``queryAll``
--  ``queryOne``
+    let y = x + 1;
 
-Both take a CSS selector and a record of element state specifiers, e.g.
-attributes or properties that you’re interested in.
+Quickstrom has a list of *include paths*, i.e. directories in which it
+tries to find the imported files. The current working directory is
+implicitly an include path.
 
-For example, the following query finds all buttons, including their text
-contents and disabled flags:
+Formulae
+--------
 
-.. code-block:: haskell
+The top level construct in Quickstrom are linear temporal logic
+formulae, where you can describe how the state of the web application
+should be now and in the future.
 
-   myButtons = queryAll "button" { textContent, disabled }
+For example, if we want ``x`` to be true in the current state, and
+``y`` in the next state, we can express it like this:
 
-The type of the above expression is:
+.. code-block:: js
 
-::
+   x && next y
 
-   Array { textContent :: String, disabled :: Boolean }
+If we want ``x`` to be true zero or more states until ``y`` becomes true,
+we say:
 
-You can use regular PureScript function to map, filter, or whatever
-you’d like, on the array of button records.
+.. code-block:: js
 
-In contrast to ``queryAll`` returning an ``Array``, ``queryOne`` returns
-a ``Maybe``.
+   x until y
+
+These examples are formulae, where ``x`` and ``y`` are free variables,
+and ``next`` and ``until`` are temporal operators.
+
+Expressions
+-----------
+
+At a lower level we have an expression language, which is a functional
+language. We can do basic stuff like arithmetic and comparisons:
+
+.. code-block:: js
+
+   x + y
+
+   x >= (y - z)
+
+Boolean expressions are automatically lifted to the formulae
+level. Here's an expression (``x > y``) which is lifted into a formula
+(``next ...``):
+
+.. code-block:: js
+
+   next (x > y)
+
+Selectors
+---------
+
+A selector is a CSS selector written inside backticks, which evaluates
+to a list of elements. For example, the following selector evaluates
+to a list of all button elements in a given state:
+
+.. code-block:: js
+
+   `button`
+
+We can iterate over the list of elements and refer to attributes,
+properties, CSS styles, and more:
+
+.. code-block:: js
+
+   for b in `button` { b.textContent }
+
+The example above evaluates to a list of strings.
+
+If we're only interested in the first element, we can directly select
+from it, as long as the list is not empty:
+
+.. code-block:: js
+
+   `button`.textContent
+
+A selector's evaluated is state-dependent, meaning that it can
+evaluate to different lists of elements depending on in which state it
+is evaluated.
+
+In the following example, we might not get the same list for both
+selectors, so it could be true:
+
+.. code-block:: js
+
+   length(`button`) == 1 && next (length(`button`) == 2)
+
+Elements
+--------
+
+The elements we get by evaluating selectors are objects. We can refer
+to various things in those objects to read relevant state from the DOM:
+
+``enabled``
+   is the element enabled?
+``visible``
+   is the element visible?
+``interactable``
+   is the element interactable (e.g. clickable)?
+``active``
+   is the element active?
+``classList``
+   a list of strings, based on the ``class`` attribute
+``css``
+   a nested object with computed styles
+``attributes``
+   a nested object with HTML element attributes
+
+As a fallback, any other key is evaluated as a property on the
+corresponding runtime object of the element.
+
+The Quickstrom expression ```button`.textContent`` corresponds to the
+following JavaScript expression:
+
+.. code-block:: js
+
+   document.querySelector("button").textContent
+
+Let Bindings
+------------
+
+In expressions and in formulae, we bind values to names using ``let``.
+The general form is:
+
+.. code-block:: js
+
+   let name = expression; body
+
+If we need many bindings, we can put them on separate lines:
+
+.. code-block:: js
+
+   let foo = 1;
+   let bar = 2;
+   let baz = 3;
+   ...
+
+Let is also supported as a top-level construct in source files.
+
+Lazy Bindings
+-------------
+
+When expressions in let bindings are state-dependent, like those
+involving selectors, we don't want the expression to be evaluated when
+bound. Instead we annotate the binding using a tilde prefix, meaning
+it's a lazy binding:
+
+.. code-block:: js
+
+   let ~myButtons = `.btn`;
+
+The expression, in this case ```.btn```, is evaluated when another
+expression refers to ``myButtons`` and is itself evaluated. Different
+evaluations of ``myButtons`` may result in different values, depending
+in which state the evaluation occurs. For example, the formula ``next
+myButtons`` might not be equivalent to ``next (next myButtons)``.
+
+
+Propositions
+------------
+
+When testing web apps using Quickstrom, we define *propositions* and
+ask Quickstrom to check them for us. A proposition is a formula defined
+at the top level. Useful propositions are state-dependent, so they are
+always bound lazily in practice.
+
+Let's say we have some proposition bound to ``prop``. We could check
+it like so:
+
+.. code-block:: js
+
+   import quickstrom;
+
+   let ~prop = ...;
+
+   check prop with * when loaded?;
+
+Read more about the ``check`` statement in the `Check`_ section.
 
 Temporal Operators
 ------------------
 
-In Quickstrom specifications, there are three core temporal operators:
+In Quickstrom specifications, there are a bunch of built-in temporal
+operators:
 
--  ``next :: forall a. a -> a``
--  ``always :: Boolean -> Boolean``
--  ``until :: Boolean -> Boolean -> Boolean``
+* ``next``
+* ``always``
 
-They change the *modality* of the sub-expression, i.e. in what state of
-the recorded behavior it is evaluated.
+* ``until``
 
-There are also utility functions built on top of the temporal operators:
+There are also utility operators defined using the built-in temporal
+operators:
 
-- ``unchanged :: Eq a => a -> Boolean``
+``unchanged``
 
 Let's go through the operators and utility functions provided by
-Quickstrom!
-
-Always
-~~~~~~
-
-Let’s say we have the following proposition:
-
-.. code-block:: haskell
-
-   proposition = always (title == Just "Home")
-
-   title = map _.textContent (queryOne "h1" { textContent })
-
-In every observed state the sub-expression must evaluate to ``true`` for
-the proposition to be true. In this case, the text content of the ``h1``
-must always be “Home”.
-
-Until
-~~~~~
-
-Until takes two parmeters: the prerequisite condition and the final condition.
-The prerequisite must hold ``true`` in all states until the final condition is
-``true``.
-
-.. code-block:: haskell
-
-   proposition = until (loading == Just "loading...") (title == Just "Home")
-
-   loading = map _.textContent (queryOne "loading" { textContent })
-   title = map _.textContent (queryOne "h1" { textContent })
-
-In this case, we presumably load the “Home” text from somewhere else,
-so we wait until the loading is done, and then assert that the title must be
-set accordingly.
+Quickstrom with some more examples!
 
 Next
 ~~~~
 
-Let’s modify the previous proposition to describe a state change:
+The formula ``next p`` says that the formula ``p`` is true in the next
+state.
 
-.. code-block:: haskell
+But which state is "the next state"? It depends on which is the
+current state. Temporal operators are always in relation to the
+current state.
 
-   proposition = always (goToAbout || goToContact || goHome)
+Always
+~~~~~~
 
-   goToAbout = title == Just "Home" && next title == Just "About"
+The formula ``always p`` says that the formula ``p`` is true in the
+current and all subsequent states.
 
-   goToContact = title == Just "Home" && next title == Just "Contact"
+As an example, in the following proposition we check that the heading
+is always ``"Home"``:
 
-   goHome = title /= Just "Home" && next title == Just "Home"
+.. code-block:: js
 
-   title = map _.textContent (queryOne "h1" { textContent })
+   let ~title = `h1`.textContent;
+   let ~prop = always (title == "Home");
 
-We’re now saying that it’s always the case that one or another state
-transition occurs. An state transition is represented as a boolean expression,
-using queries and ``next`` to describe the current and the next state.
+Until
+~~~~~
 
-The ``goToAbout``, ``goToContact``, and ``goHome`` transitions specify how the
-title of the page changes, and the ``proposition`` thus describes the system
-as a state machine. It can be visualized as follows:
+The formula ``p until q`` says that the formula ``p`` is true at least
+until the formula ``q`` is true.
+
+.. note::  
+
+     * It doesn't matter if ``p`` is true or false once ``q`` is true. If we wanted that kind of exclusiveness, we could say ``p until (q && not p)``.
+     * ``q`` can be true in the current state, in which case ``p`` never has to be true.
+     * ``q`` only has to be true in one state, it doesn't have to stay true forever. If we want it true forever, we could say ``p until (always q)``.
+
+In the following example, we check that a loading indicator is shown
+until the page title is set correctly:
+
+.. code-block:: js
+
+   let ~title = `h1`.textContent;
+   let ~loading = `.loading`.textContent;
+   let ~prop = (loading == "Loading...") until (title == "Home");
+
+Unchanged
+~~~~~~~~~
+
+The formula ``unchanged p`` says that ``p`` in the current state is
+equal to ``p`` in the next state. Or in other words, that ``p`` doesn't
+change from this state to the next.
+
+This operator is useful when expressing state transitions, specifying
+that a certain queried value should be the same both before and after
+a particular transition. 
+
+For instance, let's say we have a bunch of top-level definitions, all
+based on DOM queries, describing a user profile:
+
+.. code-block:: js
+
+   let ~userName = ...;
+
+   let ~userProfileUrl = ...;
+
+We can say that the user profile information should not change in a
+transition ``t`` by passing an array of those values:
+
+.. code-block:: js
+
+   let ~t = unchanged [userName, userProfileUrl]
+       && ... // actual changes in transition
+       ;
+
+Actions
+-------
+
+We must instruct Quickstrom what actions are allowed. Actions are declared
+at the top level using the ``action`` keyword. 
+
+.. code-block:: js
+
+   action launchTheMissiles! = click!(`#launch`);
+
+By convention, actions are suffixed with an exclamation mark. Events
+on the other hand are suffixed with a question mark, but still declared
+using the ``action`` keyword:
+
+.. code-block:: js
+
+   action launched? = changed?(`#launch-status`)
+     when `#launch-status`.textContent == "Launched!";
+
+Built-in Actions
+~~~~~~~~~~~~~~~~
+
+The following actions and events are provided in the Quickstrom
+library:
+
+* ``click!``
+* ``doubleClick!``
+* ``clear!``
+* ``focus!``
+* ``keyPress!``
+* ``enterText!``
+* ``enterTextInto!``
+* ``noop!``
+* ``changed?``
+* ``loaded?``
+
+.. note::
+
+   Support for more actions should be added.
+
+Action Preconditions
+~~~~~~~~~~~~~~~~~~~~
+
+Actions can be constraint to only be applicable under certain
+preconditions. We use the `when` construct to express a precondition:
+
+.. code-block:: js
+
+   action launchTheMissiles! = click!(`#launch`) when canLaunch;
+
+Many of the built-in actions in Quickstrom already have useful
+preconditions set, like `click!` only be applicable on elements that
+are interactable and enabled. This means that we don't have to specify
+such basic preconditions. It's more likely that preconditions will be
+domain-specific rules, if required at all.
+
+Event Postconditions
+~~~~~~~~~~~~~~~~~~~~
+
+Similar to action preconditions are event postconditions. They are
+used to declare an event that is only valid under certain
+conditions.
+
+For instance, a DOM element might have changed, but only if it's
+changed in a certain way we considered it a specific event. The
+`launched?` event we saw earlier is defined using a postcondition:
+
+.. code-block:: js
+
+   action launched? = changed?(`#launch-status`)
+     when `#launch-status`.textContent == "Launched!";
+
+Check
+-----
+
+We need to tell Quickstrom how to check a web application against a
+specification. We do that using the ``check`` statement, which has
+this general form:
+
+.. code-block:: js
+
+   check <props> with <actions> when <initial event>;
+
+The placeholders work this way:
+
+
+``<props>``
+   This is wildcard matcher on all bindings in the current file. You can
+   either literally refer to the propositions you want (e.g. ``prop``), or
+   use a star to match against multiple propositions (e.g. ``prop_*``).
+``<actions>``
+   Also a wildcard matcher, matching on actions declared in the current file.
+   In many cases this is just ``*``.
+``<initial event>``
+   The name of the initial event. The checker waits until this event occurs
+   before it starts performing actions. In many web applications scenarios
+   it will be ``loaded?``, but it might also be something more specialized.
+
+As an example, we might end a specification with the following statement:
+
+.. code-block:: js
+
+   check prop* with * when loaded?;
+
+State Machine Propositions
+--------------------------
+
+A powerful way of writing specifications is by expressing them as
+state machines. A transition is expressed as an assertion about the
+current state and another assertion about the next state. The state
+machine proposition says that one of the transitions are always taken.
+
+Here's an example based on a simple website with three pages:
+
+.. code-block:: js
+
+   let ~title = `h1`.textContent;
+
+   // Transitions
+
+   let ~goToAbout = title == "Home" && next title == "About";
+
+   let ~goToContact = title == "Home" && next title == "Contact";
+
+   let ~goHome = title != "Home" && next title == "Home";
+
+   // Proposition
+
+   let ~prop = always (goToAbout || goToContact || goHome);
+
+The ``goToAbout``, ``goToContact``, and ``goHome`` transitions specify
+how the title of the page changes, and the ``prop`` thus describes the
+system as a state machine. It can be visualized as follows:
 
 .. graphviz::
 
@@ -153,137 +459,3 @@ as a state machine. It can be visualized as follows:
      Contact -> Home [ label = "goHome" ];
    }
 
-Unchanged
-~~~~~~~~~
-
-In addition to the core temporal operators, the ``unchanged`` operator
-is a utility for stating that something does *not* change:
-
-.. code-block:: haskell
-
-   unchanged :: forall a. Eq a => a -> Boolean
-   unchanged x = x == next x
-
-It's useful when expressing state transitions, specifying that a
-certain queried value should be the same both before and after a
-particular transition.
-
-For instance, let's say we have a bunch of top-level definitions, all
-based on DOM queries, describing a user profile:
-
-.. code-block:: haskell
-
-   userName :: String
-   userName = ...
-
-   userProfileUrl :: String
-   userProfileUrl = ...
-
-We can say the user profile information should not change in a
-transition ``t`` by passing an array of those values:
-
-.. code-block:: haskell
-
-   t = unchanged [userName, userProfileUrl]
-       && ... -- actual changes in transition
-
-Actions
--------
-
-We must instruct Quickstrom what actions it should try. The ``actions``
-definition in a specification module is where you list possible actions.
-
-.. code-block:: haskell
-
-   actions :: Actions
-   actions = [ action1, action2, ... ]
-
-It's an array of values, where each value describes an action or a fixed
-sequence of actions. Each action also carries a weight, which specifies the
-intended probability of the action being picked, relative to the other
-actions.
-
-The default weight is ``1``. To override it, use the ``weighted`` function:
-
-.. code-block:: haskell
-
-   click "#important-action" `weighted` 10
-
-To illustrate, in the following array of actions, the probability of ``a1``
-being picked is 40%, while the others are at 20% each. This is assuming the
-action (or the first action in each sequence) is *possible* at each point a
-sequence is being picked.
-
-.. code-block:: haskell
-
-   actions = [
-       a1 `weighted` 2,
-       a2,
-       a3,
-       a4
-     ]
-
-Action Sequences
-~~~~~~~~~~~~~~~~
-
-An action sequence is either a single action or a fixed sequence of actions.
-Here's a simple sequence:
-
-.. code-block:: haskell
-
-   backAndForth = click "#back" `followedBy` click "#forward"
-
-A sequence of actions is always performed in its entirety when picked, as
-long as the first action in the sequence is considered possible by the test
-runner.
-
-Actions
-~~~~~~~
-
-The available actions are provided in the Quickstrom library:
-
-* ``focus``
-* ``keyPress``
-* ``enterText``
-* ``click``
-* ``clear``
-* ``await``
-* ``awaitWithTimeoutSecs``
-* ``navigate``
-* ``refresh``
-
-Along with those functions, there are some aliases for common actions. For
-instance, here's the definition of ``foci``:
-
-.. code-block:: haskell
-
-   -- | Generate focus actions on common focusable elements.
-   foci :: Actions
-   foci = 
-      [ focus "input"
-      , focus "textarea"
-      ]
-
-More actions and aliases should be introduced as Quickstrom evolves.
-
-Example
-~~~~~~~
-
-As an example of composing actions and sequences of actions, here's a
-collection of actions that try to log in or to click a buy button:
-
-.. code-block:: haskell
-
-   actions = 
-      [ focus "input[type=password]"
-          `followedBy` enterText "$ecr3tz"
-          `followedBy` click "input[type=submit][name=log-in]"
-      , click "input[type=submit][name=buy]"
-      ]
-
-.. note::
-
-   When specifying complex web applications, one must often carefully pick
-   selectors, actions, and weights, to effectively test enough within
-   a reasonable time. Aliases like ``clicks`` and ``foci`` might not work
-   well in such situations.
