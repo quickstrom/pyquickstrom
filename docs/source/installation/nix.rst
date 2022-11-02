@@ -18,22 +18,23 @@ executable:
 .. code-block:: console
 
    $ cachix use quickstrom
-   $ nix-env -iA quickstrom -f https://github.com/quickstrom/quickstrom/tarball/main
+   $ nix-env -iA quickstrom -f https://github.com/quickstrom/pyquickstrom/tarball/main
+
+If you're on Darwin, you're probably going to have problems with
+Firefox and Chrome from nixpkgs. You can exclude browsers from the
+Quickstrom environment and provide them on your own, but there's often
+problems with version mismatches between chromedriver and
+Chrome/Chromium. If you want to do this, override it with this command:
+
+.. code-block:: console
+
+   $ nix-env -iA quickstrom -f https://github.com/quickstrom/pyquickstrom/tarball/main \
+       --arg includeBrowsers false
 
 Verify that Quickstrom is now available in your environment:
 
 .. code-block:: console
 
-   $ quickstrom version
-
-You need to run a WebDriver server for Quickstrom checks to work. This
-user documentation mostly uses GeckoDriver and Firefox, but you can
-use other browsers and WebDriver servers.
-
-Install GeckoDriver using Nix:
-
-.. code-block:: console
-
-   $ nix-env -i geckodriver
+   $ quickstrom --help
 
 You're now ready to :doc:`check webapps using Quickstrom <../topics/checking>`.

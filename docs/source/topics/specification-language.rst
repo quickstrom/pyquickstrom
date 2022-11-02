@@ -14,33 +14,6 @@ Acceptance Testing with LTL Specifications
 more detailed description of the underlying temporal logic, called
 QuickLTL.
 
-Source Files
-------------
-
-Specifications are written in source files with a ``.strom`` file
-extension. Other files can be imported using the ``import <name
-without extension>`` syntax at the top of a source file.
-
-For instance, if we have a file ``foo.strom`` with the following contents:
-
-.. code-block:: js
-    :caption: foo.strom
-
-    let x = 1;
-
-We can import it from another file and refer to its bindings and actions:
-
-.. code-block:: js
-    :caption: bar.strom
-
-    import foo;
-
-    let y = x + 1;
-
-Quickstrom has a list of *include paths*, i.e. directories in which it
-tries to find the imported files. The current working directory is
-implicitly an include path.
-
 Formulae
 --------
 
@@ -459,3 +432,41 @@ system as a state machine. It can be visualized as follows:
      Contact -> Home [ label = "goHome" ];
    }
 
+Source Files
+------------
+
+Specifications are written in source files with a ``.strom`` file
+extension. A file is a *module*, and the module name is the filename
+without the ``.strom.`` extension.
+
+Other modules can be imported using the ``import <module name>;``
+syntax at the top of a module. For instance, if we have a file
+``foo.strom`` with the following contents:
+
+.. code-block:: js
+    :caption: foo.strom
+
+    let x = 1;
+
+We can import the ``foo`` module from the ``bar`` module and refer to
+its bindings and actions:
+
+.. code-block:: js
+    :caption: bar.strom
+
+    import foo;
+
+    let y = x + 1;
+
+The module system is very rudimentary. It works similarly as C header
+files with include guards. Bindings from transitively imported modules
+are also available. Continuing on the example above, if a third module
+imported the ``bar`` module, the ``x`` binding would also be in scope
+in ``baz``.
+
+Include Paths
+~~~~~~~~~~~~~
+
+Quickstrom has a list of *include paths*, i.e. directories in which it
+tries to find the files corresponding to imported modules. The current
+working directory is implicitly an include path.
