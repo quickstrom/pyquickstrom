@@ -1,47 +1,28 @@
-# Quickstrom (in Python)
+<div align=center>
+<h1>Quickstrom</h1>
+<p>High-confidence browser testing</p>
+<p>
+  <a href="https://docs.quickstrom.io/">Documentation</a>
+  | <a href="https://buttondown.email/quickstrom">Newsletter</a>
+  | <a href="https://wickstrom.tech/programming/2020/07/02/the-todomvc-showdown-testing-with-webcheck.html">TodoMVC Showdown</a>
+  
+</p>
+</div>
 
-[![Build and test](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml/badge.svg)](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml)
+<hr>
 
-A new Quickstrom based on Specstrom.
+<p align=center>
+  <a href="https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml">
+    <img src="https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml/badge.svg" />
+  </a>
+</p>
 
-## Development Setup
+## Other resources
 
-The developer environment is provided by this project's Nix shell.
+* [Contributing](CONTRIBUTING.md): developer guides and instructions on how to set up a developer environment for Quickstrom
 
-First, install:
+## License
 
-* [Nix](https://nixos.org/download.html)
-* [direnv](https://direnv.net/) (make sure to add the shell hook)
-
-Next, set up direnv in the repository:
-
-```shell
-echo "use nix" > .envrc
-direnv allow .
-```
-
-### MacOS
-
-Some dependencies do not work on macOS 11 (at least with the M1 processors). To run browser tests, install Google Chrome or Firefox by some other method, e.g. Homebrew.
-
-Further, the integration tests and main Nix derivation can't currently be built on macOS. The Nix shell works and should be sufficient for most development.
-
-## Check a TodoMVC Implementation
-
-```shell
-poetry run quickstrom -Iulib -Icase-studies --log-level=debug check todomvc $(nix eval --file ./case-studies/todomvc.nix --raw '')/examples/dojo/index.html --browser=chrome --capture-screenshots
-```
-
-## Run Integration Tests
-
-```shell
-nix build -f integration-tests/default.nix --option sandbox relaxed
-```
-
-## Typechecking
-
-This project uses Pyright. Typecheck all files like so:
-
-```shell
-poetry run pyright quickstrom
-```
+The Quickstrom source code is licensed under [BSD-3-Clause](LICENSE). Its
+documentation is licensed under [CC BY-NC-ND 4.0
+](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en).
