@@ -19,6 +19,10 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix show-config
     - run: nix-env -f '<nixpkgs>' -i nix-build-uncached
+    - run: |
+      version=$(nix-shell -p yj -c "yj -tj < pyproject.toml | jq -r '.tool.poetry.version'")
+      echo "version=$version" >> $GITHUB_ENV
+      echo "Version: $version"
     - run: nix-build-uncached default.nix
   
   integration-tests:
