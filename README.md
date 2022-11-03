@@ -1,4 +1,4 @@
-# Quickstrom (in Python)
+# Quickstrom
 
 [![Build and test](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml/badge.svg)](https://github.com/quickstrom/pyquickstrom/actions/workflows/test.yml)
 
